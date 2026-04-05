@@ -1,0 +1,482 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// ─────────────────────────────────────────────
+// ENUMS
+// ─────────────────────────────────────────────
+
+enum Role {
+  ADMIN
+  MODERATOR
+  USER
+}
+
+enum ResourceType {
+  BOOK
+  COURSE
+  EXAM_PAPER
+  DOCUMENT
+  AUDIO
+}
+
+enum ExamType {
+  PAST_PAPER
+  MODEL_PAPER
+  ASSIGNMENT
+  QUIZ
+}
+
+enum SubmissionStatus {
+  PENDING
+  REVIEWED
+  PASSED
+  FAILED
+}
+
+enum ClubRole {
+  OWNER
+  MODERATOR
+  MEMBER
+}
+
+// ─────────────────────────────────────────────
+// USER
+// ─────────────────────────────────────────────
+
+model User {
+  id                String   @id @default(cuid())
+  name              String
+  email             String   @unique
+  passwordHash      String
+  role              Role     @default(USER)
+  avatarUrl         String?
+  bio               String?
+  website           String?
+  country           String?
+  preferredLanguage String   @default("en")
+  isActive          Boolean  @default(true)
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  // Content
+  uploads         Resource[]
+  submissions     Submission[]
+  reviews         Review[]
+  readingProgress ReadingProgress[]
+  bookmarks       Bookmark[]
+
+  // Social
+  following       UserFollow[]     @relation("Follower")
+  followers       UserFollow[]     @relation("Following")
+  readingLists    ReadingList[]
+  clubsCreated    Club[]
+  clubMemberships ClubMember[]
+  discussions     ClubDiscussion[]
+  comments        Comment[]
+
+  @@index([email])
+  @@map("users")
+}
+
+// ─────────────────────────────────────────────
+// FOLLOW  (self-join on User)
+// ─────────────────────────────────────────────
+
+model UserFollow {
+  followerId  String
+  followingId String
+
+  follower  User @relation("Follower", fields: [followerId], references: [id], onDelete: Cascade)
+  following User @relation("Following", fields: [followingId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+
+  @@id([followerId, followingId])
+  @@index([followerId])
+  @@index([followingId])
+  @@map("user_follows")
+}
+
+// ─────────────────────────────────────────────
+// CATEGORY  (self-referencing tree)
+// ─────────────────────────────────────────────
+
+model Category {
+  id          String  @id @default(cuid())
+  name        String
+  slug        String  @unique
+  description String?
+  coverUrl    String?
+
+  parentId String?
+  parent   Category?  @relation("CategoryTree", fields: [parentId], references: [id])
+  children Category[] @relation("CategoryTree")
+
+  resources Resource[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([slug])
+  @@map("categories")
+}
+
+// ─────────────────────────────────────────────
+// RESOURCE
+// ─────────────────────────────────────────────
+
+model Resource {
+  id          String       @id @default(cuid())
+  title       String
+  slug        String       @unique
+  description String?
+  type        ResourceType
+  language    String       @default("en")
+
+  // File metadata
+  fileUrl      String
+  fileSize     Int?
+  mimeType     String?
+  thumbnailUrl String?
+  duration     Int? // seconds — audio only
+  pageCount    Int? // books and documents
+
+  // Publishing
+  isPublished Boolean   @default(false)
+  publishedAt DateTime?
+
+  // Bibliographic metadata
+  author          String?
+  publisher       String?
+  isbn            String?
+  edition         String?
+  publicationYear Int?
+
+  // Engagement stats
+  viewCount     Int @default(0)
+  downloadCount Int @default(0)
+
+  uploadedById String
+  uploadedBy   User     @relation(fields: [uploadedById], references: [id])
+  categoryId   String
+  category     Category @relation(fields: [categoryId], references: [id])
+
+  tags             ResourceTag[]
+  examPaper        ExamPaper?
+  reviews          Review[]
+  bookmarks        Bookmark[]
+  readingProgress  ReadingProgress[]
+  readingListItems ReadingListItem[]
+  comments         Comment[]
+  clubDiscussions  ClubDiscussion[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([slug])
+  @@index([type])
+  @@index([categoryId])
+  @@index([uploadedById])
+  @@index([isPublished])
+  @@index([language])
+  @@map("resources")
+}
+
+// ─────────────────────────────────────────────
+// TAG  +  many-to-many join
+// ─────────────────────────────────────────────
+
+model Tag {
+  id   String @id @default(cuid())
+  name String @unique
+  slug String @unique
+
+  resources ResourceTag[]
+
+  @@index([slug])
+  @@map("tags")
+}
+
+model ResourceTag {
+  resourceId String
+  tagId      String
+
+  resource Resource @relation(fields: [resourceId], references: [id], onDelete: Cascade)
+  tag      Tag      @relation(fields: [tagId], references: [id], onDelete: Cascade)
+
+  @@id([resourceId, tagId])
+  @@map("resource_tags")
+}
+
+// ─────────────────────────────────────────────
+// EXAM PAPER
+// ─────────────────────────────────────────────
+
+model ExamPaper {
+  id         String   @id @default(cuid())
+  resourceId String   @unique
+  resource   Resource @relation(fields: [resourceId], references: [id], onDelete: Cascade)
+
+  subject       String
+  year          Int
+  grade         String?
+  institution   String?
+  semester      String?
+  examType      ExamType @default(PAST_PAPER)
+  markSchemeUrl String?
+
+  submissions Submission[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([subject])
+  @@index([year])
+  @@map("exam_papers")
+}
+
+// ─────────────────────────────────────────────
+// SUBMISSION
+// ─────────────────────────────────────────────
+
+model Submission {
+  id String @id @default(cuid())
+
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  examPaperId String
+  examPaper   ExamPaper @relation(fields: [examPaperId], references: [id], onDelete: Cascade)
+
+  fileUrl    String
+  status     SubmissionStatus @default(PENDING)
+  score      Float?
+  feedback   String?
+  reviewedAt DateTime?
+
+  submittedAt DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // One submission per student per paper
+  @@unique([userId, examPaperId])
+  @@index([status])
+  @@map("submissions")
+}
+
+// ─────────────────────────────────────────────
+// REVIEW
+// ─────────────────────────────────────────────
+
+model Review {
+  id String @id @default(cuid())
+
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  resourceId String
+  resource   Resource @relation(fields: [resourceId], references: [id], onDelete: Cascade)
+
+  rating  Int // 1–5
+  comment String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // One review per user per resource
+  @@unique([userId, resourceId])
+  @@index([resourceId])
+  @@map("reviews")
+}
+
+// ─────────────────────────────────────────────
+// READING PROGRESS
+// ─────────────────────────────────────────────
+
+model ReadingProgress {
+  id String @id @default(cuid())
+
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  resourceId String
+  resource   Resource @relation(fields: [resourceId], references: [id], onDelete: Cascade)
+
+  currentPage Int      @default(0)
+  totalPages  Int?
+  percentage  Float    @default(0)
+  isCompleted Boolean  @default(false)
+  lastReadAt  DateTime @default(now())
+
+  @@unique([userId, resourceId])
+  @@index([userId])
+  @@map("reading_progress")
+}
+
+// ─────────────────────────────────────────────
+// BOOKMARK
+// ─────────────────────────────────────────────
+
+model Bookmark {
+  id String @id @default(cuid())
+
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  resourceId String
+  resource   Resource @relation(fields: [resourceId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+
+  @@unique([userId, resourceId])
+  @@index([userId])
+  @@map("bookmarks")
+}
+
+// ─────────────────────────────────────────────
+// READING LIST
+// ─────────────────────────────────────────────
+
+model ReadingList {
+  id          String  @id @default(cuid())
+  title       String
+  description String?
+  isPublic    Boolean @default(true)
+  coverUrl    String?
+
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  items ReadingListItem[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([userId])
+  @@index([isPublic])
+  @@map("reading_lists")
+}
+
+model ReadingListItem {
+  id        String  @id @default(cuid())
+  sortOrder Int     @default(0)
+  note      String?
+
+  listId String
+  list   ReadingList @relation(fields: [listId], references: [id], onDelete: Cascade)
+
+  resourceId String
+  resource   Resource @relation(fields: [resourceId], references: [id], onDelete: Cascade)
+
+  addedAt DateTime @default(now())
+
+  @@unique([listId, resourceId])
+  @@index([listId])
+  @@map("reading_list_items")
+}
+
+// ─────────────────────────────────────────────
+// CLUB
+// ─────────────────────────────────────────────
+
+model Club {
+  id          String  @id @default(cuid())
+  name        String
+  slug        String  @unique
+  description String?
+  coverUrl    String?
+  isPublic    Boolean @default(true)
+
+  createdById String
+  createdBy   User   @relation(fields: [createdById], references: [id])
+
+  members     ClubMember[]
+  discussions ClubDiscussion[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([slug])
+  @@index([isPublic])
+  @@map("clubs")
+}
+
+model ClubMember {
+  clubId String
+  userId String
+  role   ClubRole @default(MEMBER)
+
+  club Club @relation(fields: [clubId], references: [id], onDelete: Cascade)
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  joinedAt DateTime @default(now())
+
+  @@id([clubId, userId])
+  @@index([clubId])
+  @@map("club_members")
+}
+
+// ─────────────────────────────────────────────
+// CLUB DISCUSSION
+// ─────────────────────────────────────────────
+
+model ClubDiscussion {
+  id    String @id @default(cuid())
+  title String
+  body  String
+
+  clubId String
+  club   Club   @relation(fields: [clubId], references: [id], onDelete: Cascade)
+
+  // Optional — a discussion can be tied to a specific resource
+  resourceId String?
+  resource   Resource? @relation(fields: [resourceId], references: [id])
+
+  authorId String
+  author   User   @relation(fields: [authorId], references: [id])
+
+  comments Comment[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([clubId])
+  @@index([resourceId])
+  @@map("club_discussions")
+}
+
+// ─────────────────────────────────────────────
+// COMMENT  (threaded — on resources or discussions)
+// ─────────────────────────────────────────────
+
+model Comment {
+  id   String @id @default(cuid())
+  body String
+
+  authorId String
+  author   User   @relation(fields: [authorId], references: [id], onDelete: Cascade)
+
+  // Belongs to EITHER a resource OR a discussion, not both
+  resourceId String?
+  resource   Resource? @relation(fields: [resourceId], references: [id], onDelete: Cascade)
+
+  discussionId String?
+  discussion   ClubDiscussion? @relation(fields: [discussionId], references: [id], onDelete: Cascade)
+
+  // Self-referencing for threaded replies
+  parentId String?
+  parent   Comment?  @relation("CommentThread", fields: [parentId], references: [id])
+  replies  Comment[] @relation("CommentThread")
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([resourceId])
+  @@index([discussionId])
+  @@index([parentId])
+  @@map("comments")
+}
