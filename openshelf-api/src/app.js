@@ -1,11 +1,13 @@
 require('dotenv').config()
 
 const express = require('express')
-const cors    = require('cors')
-const helmet  = require('helmet')
-const morgan  = require('morgan')
+const cookieParser = require('cookie-parser')
+const cors = require('cors')
+const helmet = require('helmet')
+const morgan = require('morgan')
 
-const authRoutes   = require('./routes/auth.routes')
+const authRoutes = require('./routes/auth.routes')
+const resourceRoutes = require('./routes/resource.routes')
 const errorHandler = require('./middleware/errorHandler')
 
 const app = express()
@@ -17,6 +19,7 @@ app.use(cors({
   credentials: true,
 }))
 app.use(express.json())
+app.use(cookieParser())
 
 // Health check
 app.get('/health', (req, res) => {
@@ -25,6 +28,7 @@ app.get('/health', (req, res) => {
 
 // API routes
 app.use('/api/auth', authRoutes)
+app.use('/api/resources', resourceRoutes)
 
 // 404 handler
 app.use((req, res) => {
