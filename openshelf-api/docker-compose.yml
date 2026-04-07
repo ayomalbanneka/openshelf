@@ -1,12 +1,12 @@
 services:
   postgres:
     image: postgres:16-alpine
-    container_name: openself_postgres
+    container_name: openshelf_postgres
     restart: unless-stopped
     environment:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: postgres
-      POSTGRES_DB: openself_db
+      POSTGRES_DB: openshelf_db
     ports:
       - "5433:5432"
     volumes:
@@ -19,7 +19,7 @@ services:
 
   minio:
     image: minio/minio:latest
-    container_name: openself_minio
+    container_name: openshelf_minio
     restart: unless-stopped
     command: server /data --console-address ":9001"
     environment:
@@ -38,15 +38,15 @@ services:
 
   minio_init:
     image: minio/mc:latest
-    container_name: openself_minio_init
+    container_name: openshelf_minio_init
     depends_on:
       minio:
         condition: service_healthy
     entrypoint: >
       /bin/sh -c "
       mc alias set local http://minio:9000 minioadmin minioadmin;
-      mc mb --ignore-existing local/openself;
-      mc anonymous set download local/openself;
+      mc mb --ignore-existing local/openshelf;
+      mc anonymous set download local/openshelf;
       echo 'Bucket ready.';
       "
 

@@ -1,26 +1,38 @@
-const error = (err, req, res, next) => {
-    console.error(err.stack);
+const multer = require('multer')
 
-    if (err.code === 'P2002') {
-        return res.status(409).json({
-            message: 'A record with this value already exists.',
-        })
+const errorHandler = (err, req, res, next) => {
+  console.error(err.stack)
+
+  // Multer file size exceeded
+  if (err instanceof multer.MulterError) {
+    if (err.code === 'LIMIT_FILE_SIZE') {
+      return res.status(400).json({ message: 'File too large. Maximum size is 100 MB.' })
     }
+    return res.status(400).json({ message: err.message })
+  }
 
-    // Prisma record not found
-    if (err.code === 'P2025') {
-        return res.status(404).json({
-            message: 'Record not found',
-        })
-    }
+  // Blocked file type (thrown by fileFilter)
+  if (err.message?.startsWith('File type not allowed')) {
+    return res.status(400).json({ message: err.message })
+  }
 
-    const status = err.status || err.statusCode || 500
-    const message = err.message || 'Internal server error'
+  // Prisma unique constraint
+  if (err.code === 'P2002') {
+    return res.status(409).json({ message: 'A record with this value already exists' })
+  }
 
-    res.status(status).json({
-        message,
-        ...(process.env.NODE_ENV === 'development' && { stack: err.stack }),
-    })
+  // Prisma record not found
+  if (err.code === 'P2025') {
+    return res.status(404).json({ message: 'Record not found' })
+  }
+
+  const status  = err.status || err.statusCode || 500
+  const message = err.message || 'Internal server error'
+
+  res.status(status).json({
+    message,
+    ...(process.env.NODE_ENV === 'development' && { stack: err.stack }),
+  })
 }
 
-module.exports = errorHandler = error
+module.exports = errorHandler

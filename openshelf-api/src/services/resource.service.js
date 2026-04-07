@@ -1,5 +1,6 @@
 const prisma = require('../config/prisma')
 const slugify = require('../utils/slugify')
+const { uploadFile } = require('./storage.service')
 
 // ── List ──────────────────────────────────────────────────────
 const list = async ({ type, category, language, search, page = 1, limit = 20 }) => {
@@ -7,14 +8,14 @@ const list = async ({ type, category, language, search, page = 1, limit = 20 }) 
 
   const where = {
     isPublished: true,
-    ...(type     && { type }),
+    ...(type && { type }),
     ...(language && { language }),
     ...(category && { category: { slug: category } }),
-    ...(search   && {
+    ...(search && {
       OR: [
-        { title:       { contains: search, mode: 'insensitive' } },
+        { title: { contains: search, mode: 'insensitive' } },
         { description: { contains: search, mode: 'insensitive' } },
-        { author:      { contains: search, mode: 'insensitive' } },
+        { author: { contains: search, mode: 'insensitive' } },
       ],
     }),
   }
@@ -39,7 +40,7 @@ const list = async ({ type, category, language, search, page = 1, limit = 20 }) 
     data,
     meta: {
       total,
-      page:  Number(page),
+      page: Number(page),
       limit: Number(limit),
       pages: Math.ceil(total / Number(limit)),
     },
@@ -51,11 +52,11 @@ const getOne = async (slug) => {
   const resource = await prisma.resource.findUnique({
     where: { slug },
     include: {
-      category:   true,
+      category: true,
       uploadedBy: { select: { id: true, name: true, avatarUrl: true } },
-      tags:       { include: { tag: true } },
-      examPaper:  true,
-      _count:     { select: { reviews: true, bookmarks: true } },
+      tags: { include: { tag: true } },
+      examPaper: true,
+      _count: { select: { reviews: true, bookmarks: true } },
     },
   })
 
@@ -68,28 +69,29 @@ const getOne = async (slug) => {
   // Increment view count — fire and forget, don't await
   prisma.resource.update({
     where: { id: resource.id },
-    data:  { viewCount: { increment: 1 } },
-  }).catch(() => {})
+    data: { viewCount: { increment: 1 } },
+  }).catch(() => { })
 
   return resource
 }
 
 // ── Create ────────────────────────────────────────────────────
-const create = async (data, userId) => {
+const create = async (data, file, userId) => {
   const {
     title, description, type, language = 'en',
-    fileUrl, fileSize, mimeType, pageCount, duration,
+    pageCount, duration,
     author, publisher, isbn, edition, publicationYear,
     categoryId, tagIds = [],
   } = data
 
-  let slug = slugify(title)
+  // These three come from the file object, not the form body
+  const fileUrl  = await uploadFile(file, `resources/${type.toLowerCase()}`)
+  const fileSize = file.size
+  const mimeType = file.mimetype
 
-  // If slug already exists, append a short timestamp to make it unique
+  let slug = slugify(title)
   const existing = await prisma.resource.findUnique({ where: { slug } })
-  if (existing) {
-    slug = `${slug}-${Date.now().toString(36)}`
-  }
+  if (existing) slug = `${slug}-${Date.now().toString(36)}`
 
   const resource = await prisma.resource.create({
     data: {
@@ -99,21 +101,24 @@ const create = async (data, userId) => {
       type,
       language,
       fileUrl,
-      fileSize:        fileSize        ? Number(fileSize)        : null,
+      fileSize,
+      mimeType,
       pageCount:       pageCount       ? Number(pageCount)       : null,
       duration:        duration        ? Number(duration)        : null,
       publicationYear: publicationYear ? Number(publicationYear) : null,
-      mimeType,
       author,
       publisher,
       isbn,
       edition,
       uploadedById: userId,
       categoryId,
-      // Auto-publish if the uploader is an admin — otherwise wait for review
       isPublished: false,
       tags: tagIds.length
-        ? { create: tagIds.map((tagId) => ({ tag: { connect: { id: tagId } } })) }
+        ? {
+            create: JSON.parse(tagIds).map((tagId) => ({
+              tag: { connect: { id: tagId } },
+            }))
+          }
         : undefined,
     },
     include: {
@@ -154,7 +159,7 @@ const update = async (slug, data, requestingUser) => {
   const updated = await prisma.resource.update({
     where: { id: resource.id },
     data: {
-      ...(title       && { title, slug: slugify(title) }),
+      ...(title && { title, slug: slugify(title) }),
       description,
       language,
       categoryId,
@@ -181,7 +186,7 @@ const publish = async (slug) => {
 
   return prisma.resource.update({
     where: { id: resource.id },
-    data:  { isPublished: true, publishedAt: new Date() },
+    data: { isPublished: true, publishedAt: new Date() },
   })
 }
 
@@ -204,6 +209,8 @@ const remove = async (slug, requestingUser) => {
     throw err
   }
 
+  // Delete the file from storage before removing the database record
+  await deleteFile(resource.fileUrl)
   await prisma.resource.delete({ where: { id: resource.id } })
   return { message: 'Resource deleted' }
 }
