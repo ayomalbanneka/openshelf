@@ -21,7 +21,11 @@ const getOne = async (req, res, next) => {
 
 const create = async (req, res, next) => {
   try {
-    const resource = await resourceService.create(req.body, req.user.id)
+    if (!req.file) {
+      return res.status(400).json({ message: 'File is required' })
+    }
+
+    const resource = await resourceService.create(req.body, req.file, req.user.id)
     res.status(201).json(resource)
   } catch (err) {
     next(err)
