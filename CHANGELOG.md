@@ -1,5 +1,15 @@
 # Changelog
 
+## [0.2.0](https://github.com/ayomalbanneka/openshelf/compare/v0.1.0...v0.2.0) (2026-04-07)
+
+
+### Features
+
+* add S3 file upload, landing UI refactor, and resource browsing features ([f6b3c5d](https://github.com/ayomalbanneka/openshelf/commit/f6b3c5dfef7d4e9d426e5f0be16a350139c94ca2))
+* integrate AWS S3 for file storage and upload functionality. ([7914da0](https://github.com/ayomalbanneka/openshelf/commit/7914da00f23feeee2f431de643f5e2e8fce69ba8))
+* integrate AWS S3 for file storage and upload functionality. ([b711bd7](https://github.com/ayomalbanneka/openshelf/commit/b711bd7c5e66bc72d672c274942eb3b3fc25cd15))
+* **web:** refactor landing components and add browse functionality ([6f108c5](https://github.com/ayomalbanneka/openshelf/commit/6f108c57acdc122ad56a93ee33b922c3cdefec21))
+
 ## 0.1.0 (2026-04-06)
 
 
