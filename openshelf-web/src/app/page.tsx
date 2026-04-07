@@ -1,11 +1,11 @@
-import BrowsePreview from '@/components/ui/landing/BrowserPreview'
-import Community from '@/components/ui/landing/Community'
-import CTA from '@/components/ui/landing/CTA'
-import Features from '@/components/ui/landing/Features'
-import Footer from '@/components/ui/landing/Footer'
-import Hero from '@/components/ui/landing/Hero'
-import HowItWorks from '@/components/ui/landing/HowItWorks'
-import Navbar from '@/components/ui/landing/Navbar'
+import BrowsePreview from '@/components/landing/BrowserPreview'
+import Community from '@/components/landing/Community'
+import CTA from '@/components/landing/CTA'
+import Features from '@/components/landing/Features'
+import Footer from '@/components/landing/Footer'
+import Hero from '@/components/landing/Hero'
+import HowItWorks from '@/components/landing/HowItWorks'
+import Navbar from '@/components/landing/Navbar'
 
 export default function HomePage() {
   return (
