@@ -1,9 +1,10 @@
 const router = require('express').Router()
 const { body } = require('express-validator')
 const controller = require('../controllers/resource.controller')
-const validate   = require('../middleware/validate')
+const validate = require('../middleware/validate')
 const { authenticate, authorize } = require('../middleware/auth')
 const upload = require('../middleware/upload')
+const reviewController = require('../controllers/review.controller')
 
 // ── Public ────────────────────────────────────────────────────
 router.get('/', controller.list)
@@ -38,6 +39,14 @@ router.patch(
   authorize('ADMIN', 'MODERATOR'),
   controller.publish
 )
+
+// Reviews
+router.get('/:slug/reviews', reviewController.getReviews)
+router.post('/:slug/reviews', authenticate, reviewController.createReview)
+
+// Bookmarks
+router.post('/:slug/bookmark', authenticate, reviewController.addBookmark)
+router.delete('/:slug/bookmark', authenticate, reviewController.removeBookmark)
 
 router.delete(
   '/:slug',
