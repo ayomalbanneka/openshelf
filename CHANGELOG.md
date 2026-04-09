@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.3.0](https://github.com/ayomalbanneka/openshelf/compare/v0.2.0...v0.3.0) (2026-04-09)
+
+
+### Features
+
+* Add resource reviews, bookmarks, and upload system with categories ([#11](https://github.com/ayomalbanneka/openshelf/issues/11)) ([986ab7d](https://github.com/ayomalbanneka/openshelf/commit/986ab7d27c4d70d2b87c96c64e36621724105d42))
+
 ## [0.2.0](https://github.com/ayomalbanneka/openshelf/compare/v0.1.0...v0.2.0) (2026-04-07)
 
 
