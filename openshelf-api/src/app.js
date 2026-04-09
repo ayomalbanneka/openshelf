@@ -9,6 +9,7 @@ const morgan = require('morgan')
 const authRoutes = require('./routes/auth.routes')
 const resourceRoutes = require('./routes/resource.routes')
 const errorHandler = require('./middleware/errorHandler')
+const categoryRoutes = require('./routes/category.routes')
 
 const app = express()
 
@@ -29,6 +30,7 @@ app.get('/health', (req, res) => {
 // API routes
 app.use('/api/auth', authRoutes)
 app.use('/api/resources', resourceRoutes)
+app.use('/api/categories', categoryRoutes)
 
 // 404 handler
 app.use((req, res) => {
