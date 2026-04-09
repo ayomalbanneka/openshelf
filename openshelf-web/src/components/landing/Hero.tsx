@@ -120,7 +120,7 @@ export default function Hero() {
           className="flex flex-col sm:flex-row gap-4 w-full sm:w-auto"
         >
           <motion.a
-            href="#browse"
+            href="browse"
             whileHover={{ scale: 1.03, y: -2 }}
             whileTap={{ scale: 0.98 }}
             className="relative inline-flex items-center justify-center gap-2 px-8 py-4 rounded-2xl bg-blue-600 text-white font-semibold text-base shadow-xl shadow-blue-600/25 hover:shadow-blue-600/40 hover:bg-blue-700 transition-all overflow-hidden group"
@@ -137,7 +137,7 @@ export default function Hero() {
           </motion.a>
 
           <motion.a
-            href="#register"
+            href="register"
             whileHover={{ scale: 1.03, y: -2 }}
             whileTap={{ scale: 0.98 }}
             className="inline-flex items-center justify-center gap-2 px-8 py-4 rounded-2xl border border-border font-semibold text-base hover:bg-muted transition-all"

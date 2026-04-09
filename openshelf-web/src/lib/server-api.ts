@@ -24,7 +24,7 @@ const buildUrl = (path: string, params?: Record<string, string | number | undefi
 
 // A simple API client for the server endpoints
 export const serverApi = {
-  resources: {
+  resources: { // List resources with optional query parameters for filtering, pagination, etc.
     list: async (params?: FetchOptions['params']) => {
       const url = buildUrl('/resources', params)
       const res = await fetch(url, { cache: 'no-store' })
@@ -40,4 +40,15 @@ export const serverApi = {
       return res.json()
     },
   },
+
+  categories: { // Fetch the list of categories
+    list: async () => {
+      const res = await fetch(`${BASE_URL}/categories`, {
+        cache: 'no-store',
+      })
+
+      if (!res.ok) throw new Error('Failed to fetch categories')
+      return res.json()
+    }
+  }
 }
