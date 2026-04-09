@@ -20,26 +20,26 @@ interface Props {
 }
 
 const schema = z.object({
-  title:           z.string().min(2, 'Title must be at least 2 characters'),
-  type:            z.enum(['BOOK', 'COURSE', 'EXAM_PAPER', 'DOCUMENT', 'AUDIO']),
-  categoryId:      z.string().min(1, 'Category is required'),
-  language:        z.string().min(1, 'Language is required'),
-  description:     z.string().optional(),
-  author:          z.string().optional(),
-  publisher:       z.string().optional(),
-  isbn:            z.string().optional(),
+  title: z.string().min(2, 'Title must be at least 2 characters'),
+  type: z.enum(['BOOK', 'COURSE', 'EXAM_PAPER', 'DOCUMENT', 'AUDIO']),
+  categoryId: z.string().min(1, 'Category is required'),
+  language: z.string().min(1, 'Language is required'),
+  description: z.string().optional(),
+  author: z.string().optional(),
+  publisher: z.string().optional(),
+  isbn: z.string().optional(),
   publicationYear: z.string().optional(),
-  pageCount:       z.string().optional(),
+  pageCount: z.string().optional(),
 })
 
 type FormData = z.infer<typeof schema>
 
 const RESOURCE_TYPES = [
-  { value: 'BOOK',       label: '📖 Book',       description: 'Textbooks, novels, references' },
-  { value: 'COURSE',     label: '🎓 Course',     description: 'Online courses, tutorials' },
+  { value: 'BOOK', label: '📖 Book', description: 'Textbooks, novels, references' },
+  { value: 'COURSE', label: '🎓 Course', description: 'Online courses, tutorials' },
   { value: 'EXAM_PAPER', label: '📝 Exam Paper', description: 'Past papers, model papers' },
-  { value: 'DOCUMENT',   label: '📄 Document',   description: 'Articles, guides, notes' },
-  { value: 'AUDIO',      label: '🎵 Audio',      description: 'Lectures, podcasts' },
+  { value: 'DOCUMENT', label: '📄 Document', description: 'Articles, guides, notes' },
+  { value: 'AUDIO', label: '🎵 Audio', description: 'Lectures, podcasts' },
 ]
 
 const LANGUAGES = [
@@ -68,11 +68,11 @@ const labelClass = 'text-sm font-semibold block mb-2 text-foreground'
 
 export function UploadForm({ categories }: Props) {
   const router = useRouter()
-  const [file, setFile]           = useState<File | null>(null)
+  const [file, setFile] = useState<File | null>(null)
   const [fileError, setFileError] = useState('')
   const [uploading, setUploading] = useState(false)
-  const [progress, setProgress]   = useState(0)
-  const [success, setSuccess]     = useState(false)
+  const [progress, setProgress] = useState(0)
+  const [success, setSuccess] = useState(false)
 
   const {
     register,
