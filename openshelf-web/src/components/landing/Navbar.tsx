@@ -94,7 +94,7 @@ export default function Navbar() {
               </motion.button>
 
               <motion.a
-                href="https://github.com"
+                href="https://github.com/ayomalbanneka/openshelf"
                 target="_blank"
                 rel="noopener noreferrer"
                 whileHover={{ scale: 1.05 }}
@@ -106,7 +106,7 @@ export default function Navbar() {
               </motion.a>
 
               <a
-                href="#browse"
+                href="browse"
                 className="hidden md:inline-flex px-4 py-2 rounded-xl bg-blue-600 text-white text-sm font-medium hover:bg-blue-700 transition-colors shadow-sm shadow-blue-600/25"
               >
                 Get Started
