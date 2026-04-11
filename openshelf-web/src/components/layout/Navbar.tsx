@@ -125,7 +125,7 @@ export function Navbar() {
                   }}
                 >
                   <Link
-                    href={`/users/${user.id}`}
+                    href={`/user/${user.id}`}
                     onClick={() => setMenuOpen(false)}
                     className="block px-4 py-2 text-sm text-foreground hover:bg-muted transition-colors"
                   >

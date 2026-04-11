@@ -1,28 +1,30 @@
+'use client'
+
 import Link from 'next/link'
 import { Resource } from '@/types'
 
 const TYPE_LABELS: Record<string, string> = {
-  BOOK:       'Book',
-  COURSE:     'Course',
+  BOOK: 'Book',
+  COURSE: 'Course',
   EXAM_PAPER: 'Exam paper',
-  DOCUMENT:   'Document',
-  AUDIO:      'Audio',
+  DOCUMENT: 'Document',
+  AUDIO: 'Audio',
 }
 
 const TYPE_COLOURS: Record<string, { bg: string; text: string }> = {
-  BOOK:       { bg: '#DBEAFE', text: '#1E40AF' },
-  COURSE:     { bg: '#EDE9FE', text: '#5B21B6' },
+  BOOK: { bg: '#DBEAFE', text: '#1E40AF' },
+  COURSE: { bg: '#EDE9FE', text: '#5B21B6' },
   EXAM_PAPER: { bg: '#FEF3C7', text: '#92400E' },
-  DOCUMENT:   { bg: '#CCFBF1', text: '#0F766E' },
-  AUDIO:      { bg: '#FCE7F3', text: '#9D174D' },
+  DOCUMENT: { bg: '#CCFBF1', text: '#0F766E' },
+  AUDIO: { bg: '#FCE7F3', text: '#9D174D' },
 }
 
 const ICONS: Record<string, string> = {
-  BOOK:       '📖',
-  COURSE:     '🎓',
+  BOOK: '📖',
+  COURSE: '🎓',
   EXAM_PAPER: '📝',
-  DOCUMENT:   '📄',
-  AUDIO:      '🎧',
+  DOCUMENT: '📄',
+  AUDIO: '🎧',
 }
 
 export function ResourceCard({ resource }: { resource: Resource }) {
@@ -90,10 +92,24 @@ export function ResourceCard({ resource }: { resource: Resource }) {
           style={{ color: 'hsl(var(--muted-foreground))' }}
         >
           <span className="uppercase">{resource.language}</span>
-          {resource._count && (
-            <span>{resource._count.reviews} reviews</span>
-          )}
+          <div className="flex items-center gap-2">
+            {resource._count && (
+              <span>{resource._count.reviews} reviews</span>
+            )}
+          </div>
         </div>
+
+        {/* Uploader */}
+        {resource.uploadedBy && (
+          <Link
+            href={`/users/${resource.uploadedBy.id}`}
+            onClick={(e) => e.stopPropagation()}
+            className="text-xs mt-1 hover:text-blue-600 transition-colors truncate block"
+            style={{ color: 'hsl(var(--muted-foreground))' }}
+          >
+            {resource.uploadedBy.name}
+          </Link>
+        )}
       </div>
     </Link>
   )

@@ -2,6 +2,19 @@ import axios from 'axios'
 
 const BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000/api'
 
+export const api = {
+  users: {
+    isFollowing: (id: string) =>
+      http.get(`/users/${id}/is-following`).then((r) => r.data),
+    follow: (id: string) =>
+      http.post(`/users/${id}/follow`).then((r) => r.data),
+    unfollow: (id: string) =>
+      http.delete(`/users/${id}/follow`).then((r) => r.data),
+    updateProfile: (data: Record<string, string>) =>
+      http.patch('/users/me', data).then((r) => r.data),
+  },
+}
+
 export const http = axios.create({
   baseURL: BASE_URL,
   withCredentials: true,

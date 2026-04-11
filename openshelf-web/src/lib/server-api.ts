@@ -50,5 +50,24 @@ export const serverApi = {
       if (!res.ok) throw new Error('Failed to fetch categories')
       return res.json()
     }
-  }
+  },
+
+  users: {
+    getProfile: async (id: string) => {
+      const res = await fetch(`${BASE_URL}/users/${id}`, {
+        cache: 'no-store',
+      })
+
+      if (!res.ok) throw new Error('User not found')
+      return res.json()
+    },
+
+    getUploads: async (id: string) => {
+      const res = await fetch(`${BASE_URL}/users/${id}/uploads`, {
+        cache: 'no-store',
+      })
+      if (!res.ok) throw new Error('Failed to fetch user uploads')
+      return res.json()
+    },
+  },
 }
