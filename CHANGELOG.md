@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.3.1](https://github.com/ayomalbanneka/openshelf/compare/v0.3.0...v0.3.1) (2026-04-11)
+
+
+### Bug Fixes
+
+* **auth:** prevent hydration mismatch and ensure user redirection ([#14](https://github.com/ayomalbanneka/openshelf/issues/14)) ([5cdc0e2](https://github.com/ayomalbanneka/openshelf/commit/5cdc0e2b94a5bc10736fa06ef645a7efc02bf39e))
+
 ## [0.3.0](https://github.com/ayomalbanneka/openshelf/compare/v0.2.0...v0.3.0) (2026-04-09)
 
 
