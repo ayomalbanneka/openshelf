@@ -456,7 +456,7 @@ export function UploadForm({ categories }: Props) {
           borderColor: '#ef4444',
           backgroundColor: 'hsl(var(--muted))',
         }}>
-          <AlertCircle className="w-5 h-5 text-red-600 flex-shrink-0 mt-0.5" />
+          <AlertCircle className="w-5 h-5 text-red-600 shrink-0 mt-0.5" />
           <p className="text-sm text-red-600">{errors.root.message}</p>
         </div>
       )}
