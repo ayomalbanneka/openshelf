@@ -13,6 +13,23 @@ export const api = {
     updateProfile: (data: Record<string, string>) =>
       http.patch('/users/me', data).then((r) => r.data),
   },
+
+  lists: {
+    getMine: () =>
+      http.get('/lists/mine').then((r) => r.data),
+    getOne: (id: string) =>
+      http.get(`/lists/${id}`).then((r) => r.data),
+    create: (data: { title: string; description?: string; isPublic?: boolean }) =>
+      http.post('/lists', data).then((r) => r.data),
+    update: (id: string, data: { title?: string; description?: string; isPublic?: boolean }) =>
+      http.patch(`/lists/${id}`, data).then((r) => r.data),
+    remove: (id: string) =>
+      http.delete(`/lists/${id}`).then((r) => r.data),
+    addItem: (id: string, resourceId: string, note?: string) =>
+      http.post(`/lists/${id}/items`, { resourceId, note }).then((r) => r.data),
+    removeItem: (id: string, itemId: string) =>
+      http.delete(`/lists/${id}/items/${itemId}`).then((r) => r.data),
+  },
 }
 
 export const http = axios.create({

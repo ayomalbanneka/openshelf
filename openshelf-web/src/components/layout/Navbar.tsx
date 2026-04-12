@@ -10,6 +10,7 @@ import { useTheme } from 'next-themes'
 const NAV_LINKS = [
   { href: '/browse', label: 'Browse' },
   { href: '/clubs', label: 'Clubs' },
+  { href: '/lists',  label: 'Lists' },
 ]
 
 export function Navbar() {

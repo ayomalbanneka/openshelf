@@ -11,6 +11,7 @@ const resourceRoutes = require('./routes/resource.routes')
 const errorHandler = require('./middleware/errorHandler')
 const categoryRoutes = require('./routes/category.routes')
 const userRoutes = require('./routes/user.routes')
+const readingListRoutes = require('./routes/readingList.routes')
 
 const app = express()
 
@@ -33,6 +34,7 @@ app.use('/api/auth', authRoutes)
 app.use('/api/resources', resourceRoutes)
 app.use('/api/categories', categoryRoutes)
 app.use('/api/users', userRoutes)
+app.use('/api/lists', readingListRoutes)
 
 // 404 handler
 app.use((req, res) => {
