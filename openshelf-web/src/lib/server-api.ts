@@ -52,7 +52,7 @@ export const serverApi = {
     }
   },
 
-  users: {
+  users: { // Fetch user profile and uploads
     getProfile: async (id: string) => {
       const res = await fetch(`${BASE_URL}/users/${id}`, {
         cache: 'no-store',
@@ -67,6 +67,27 @@ export const serverApi = {
         cache: 'no-store',
       })
       if (!res.ok) throw new Error('Failed to fetch user uploads')
+      return res.json()
+    },
+  },
+
+  clubs: {// Fetch book clubs with optional search and pagination parameters
+    list: async (params?: { search?: string; page?: number }) => {
+      const url = buildUrl('/clubs', params)
+      const res = await fetch(url, { cache: 'no-store' })
+      if (!res.ok) throw new Error('Failed to fetch clubs')
+      return res.json()
+    },
+    getOne: async (slug: string) => {
+      const res = await fetch(`${BASE_URL}/clubs/${slug}`, { cache: 'no-store' })
+      if (!res.ok) throw new Error('Club not found')
+      return res.json()
+    },
+
+    getDiscussion: async (slug: string, discussionId: string) => {
+      const res = await fetch(`${BASE_URL}/clubs/${slug}/discussions/${discussionId}`, { cache: 'no-store' })
+
+      if (!res.ok) throw new Error('Discussion not found')
       return res.json()
     },
   },

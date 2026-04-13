@@ -97,7 +97,7 @@ const update = async (req, res, next) => {
         })
 
         if (!list) return res.status(404).json({ message: 'Reading list not found' });
-        if (!list.userId !== req.user.id) {
+        if (list.userId !== req.user.id) {
             return res.status(403).json({ message: 'Access denied' });
         }
 

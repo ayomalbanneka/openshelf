@@ -2,7 +2,13 @@ import axios from 'axios'
 
 const BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000/api'
 
+export const http = axios.create({
+  baseURL: BASE_URL,
+  withCredentials: true,
+})
+
 export const api = {
+  // Users endpoints for following/unfollowing and profile updates
   users: {
     isFollowing: (id: string) =>
       http.get(`/users/${id}/is-following`).then((r) => r.data),
@@ -14,6 +20,7 @@ export const api = {
       http.patch('/users/me', data).then((r) => r.data),
   },
 
+  // Lists endpoints for managing user-created lists and their items
   lists: {
     getMine: () =>
       http.get('/lists/mine').then((r) => r.data),
@@ -30,12 +37,31 @@ export const api = {
     removeItem: (id: string, itemId: string) =>
       http.delete(`/lists/${id}/items/${itemId}`).then((r) => r.data),
   },
-}
 
-export const http = axios.create({
-  baseURL: BASE_URL,
-  withCredentials: true,
-})
+  // Clubs endpoints for managing book clubs, discussions, and comments
+  clubs: {
+    list: (params?: { search?: string; page?: number }) =>
+      http.get('/clubs', { params }).then((r) => r.data),
+    getOne: (slug: string) =>
+      http.get(`/clubs/${slug}`).then((r) => r.data),
+    create: (data: { name: string; description?: string; isPublic?: boolean }) =>
+      http.post('/clubs', data).then((r) => r.data),
+    join: (slug: string) =>
+      http.post(`/clubs/${slug}/join`).then((r) => r.data),
+    leave: (slug: string) =>
+      http.delete(`/clubs/${slug}/leave`).then((r) => r.data),
+    getMembership: (slug: string) =>
+      http.get(`/clubs/${slug}/membership`).then((r) => r.data),
+    getDiscussions: (slug: string) =>
+      http.get(`/clubs/${slug}/discussions`).then((r) => r.data),
+    createDiscussion: (slug: string, data: { title: string; body: string; resourceId?: string }) =>
+      http.post(`/clubs/${slug}/discussions`, data).then((r) => r.data),
+    getComments: (slug: string, discussionId: string) =>
+      http.get(`/clubs/${slug}/discussions/${discussionId}/comments`).then((r) => r.data),
+    createComment: (slug: string, discussionId: string, body: string) =>
+      http.post(`/clubs/${slug}/discussions/${discussionId}/comments`, { body }).then((r) => r.data),
+  },
+}
 
 // Attach the access token to every outgoing request
 http.interceptors.request.use((config) => {
