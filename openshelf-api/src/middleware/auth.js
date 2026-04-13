@@ -41,6 +41,12 @@ const authenticate = async (req, res, next) => {
   }
 }
 
+const optionalAuthenticate = (req, res, next) => {
+  const header = req.headers.authorization
+  if (!header) return next()          // no token → just skip, don't error
+  authenticate(req, res, next)        // token present → verify it normally
+}
+
 const authorize = (...roles) => {
   return (req, res, next) => {
     if (!roles.includes(req.user.role)) {
@@ -50,4 +56,4 @@ const authorize = (...roles) => {
   }
 }
 
-module.exports = { authenticate, authorize }
+module.exports = { authenticate, authorize, optionalAuthenticate }

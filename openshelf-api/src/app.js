@@ -6,10 +6,13 @@ const cors = require('cors')
 const helmet = require('helmet')
 const morgan = require('morgan')
 
-const authRoutes = require('./routes/auth.routes')
-const resourceRoutes = require('./routes/resource.routes')
-const errorHandler = require('./middleware/errorHandler')
-const categoryRoutes = require('./routes/category.routes')
+const authRoutes = require('./routes/auth.routes'); // Authentication routes (register, login, logout)
+const resourceRoutes = require('./routes/resource.routes'); // Routes for managing resources (books, articles, etc.)
+const errorHandler = require('./middleware/errorHandler'); // Global error handling middleware
+const categoryRoutes = require('./routes/category.routes'); // Routes for managing categories (genres, topics, etc.)
+const userRoutes = require('./routes/user.routes'); // Routes for user profiles, following, etc.
+const readingListRoutes = require('./routes/readingList.routes'); // Routes for managing reading lists (create, update, delete, add/remove resources)
+const clubRoutes = require('./routes/club.routes'); // Routes for book clubs (create club, join/leave club, discussions, comments)
 
 const app = express()
 
@@ -31,6 +34,9 @@ app.get('/health', (req, res) => {
 app.use('/api/auth', authRoutes)
 app.use('/api/resources', resourceRoutes)
 app.use('/api/categories', categoryRoutes)
+app.use('/api/users', userRoutes)
+app.use('/api/lists', readingListRoutes)
+app.use('/api/clubs', clubRoutes)
 
 // 404 handler
 app.use((req, res) => {

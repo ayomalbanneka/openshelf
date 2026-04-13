@@ -4,13 +4,14 @@ import { useAuthStore } from '@/store/auth.store'
 import { http } from '@/lib/api'
 import { Resource } from '@/types'
 import Link from 'next/link'
+import { api } from '@/lib/api'
 
 const TYPE_LABELS: Record<string, string> = {
-  BOOK:       'Book',
-  COURSE:     'Course',
+  BOOK: 'Book',
+  COURSE: 'Course',
   EXAM_PAPER: 'Exam paper',
-  DOCUMENT:   'Document',
-  AUDIO:      'Audio',
+  DOCUMENT: 'Document',
+  AUDIO: 'Audio',
 }
 
 function formatBytes(bytes: number) {
@@ -23,6 +24,35 @@ export function ResourceDetail({ resource }: { resource: Resource }) {
   const { user } = useAuthStore()
   const [bookmarked, setBookmarked] = useState(false)
   const [bookmarkLoading, setBookmarkLoading] = useState(false)
+  const [lists, setLists] = useState<{ id: string; title: string }[]>([])
+  const [showListPicker, setShowListPicker] = useState(false)
+  const [savingToList, setSavingToList] = useState(false)
+  const [savedMsg, setSavedMsg] = useState('')
+
+  // Load lists when picker opens
+  const openListPicker = async () => {
+    if (!user) return
+    try {
+      const data = await api.lists.getMine()
+      setLists(data)
+      setShowListPicker(true)
+    } catch { }
+  }
+
+  const saveToList = async (listId: string) => {
+    setSavingToList(true)
+    try {
+      await api.lists.addItem(listId, resource.id)
+      setSavedMsg('Saved!')
+      setShowListPicker(false)
+      setTimeout(() => setSavedMsg(''), 2000)
+    } catch (err: any) {
+      setSavedMsg(err?.response?.data?.message || 'Failed to save')
+      setTimeout(() => setSavedMsg(''), 2000)
+    } finally {
+      setSavingToList(false)
+    }
+  }
 
   const handleBookmark = async () => {
     if (!user) return
@@ -84,10 +114,10 @@ export function ResourceDetail({ resource }: { resource: Resource }) {
               />
             ) : (
               <span>
-                {resource.type === 'BOOK'       ? '📖' :
-                 resource.type === 'AUDIO'      ? '🎧' :
-                 resource.type === 'COURSE'     ? '🎓' :
-                 resource.type === 'EXAM_PAPER' ? '📝' : '📄'}
+                {resource.type === 'BOOK' ? '📖' :
+                  resource.type === 'AUDIO' ? '🎧' :
+                    resource.type === 'COURSE' ? '🎓' :
+                      resource.type === 'EXAM_PAPER' ? '📝' : '📄'}
               </span>
             )}
           </div>
@@ -209,6 +239,84 @@ export function ResourceDetail({ resource }: { resource: Resource }) {
               </button>
             )}
 
+            {user && (
+              <div className="relative">
+                <button
+                  onClick={openListPicker}
+                  className="px-6 py-2.5 rounded-xl text-sm font-medium transition-colors"
+                  style={{
+                    border: '1px solid hsl(var(--border))',
+                    color: 'hsl(var(--foreground))',
+                  }}
+                >
+                  {savedMsg || 'Save to list'}
+                </button>
+
+                {showListPicker && (
+                  <div
+                    className="absolute left-0 top-full mt-1 w-56 rounded-xl py-1 z-20"
+                    style={{
+                      border: '1px solid hsl(var(--border))',
+                      backgroundColor: 'hsl(var(--background))',
+                      boxShadow: '0 4px 20px rgba(0,0,0,0.08)',
+                    }}
+                  >
+                    <div className="flex items-center justify-between px-3 py-2 border-b"
+                      style={{ borderColor: 'hsl(var(--border))' }}>
+                      <p className="text-xs font-semibold">Save to list</p>
+                      <button
+                        onClick={() => setShowListPicker(false)}
+                        className="text-xs"
+                        style={{ color: 'hsl(var(--muted-foreground))' }}
+                      >
+                        ✕
+                      </button>
+                    </div>
+
+                    {lists.length === 0 ? (
+                      <div className="px-3 py-4 text-center">
+                        <p className="text-xs mb-2"
+                          style={{ color: 'hsl(var(--muted-foreground))' }}>
+                          No lists yet
+                        </p>
+                        <Link
+                          href="/lists"
+                          className="text-xs text-blue-600 hover:underline"
+                          onClick={() => setShowListPicker(false)}
+                        >
+                          Create a list
+                        </Link>
+                      </div>
+                    ) : (
+                      lists.map((list) => (
+                        <button
+                          key={list.id}
+                          onClick={() => saveToList(list.id)}
+                          disabled={savingToList}
+                          className="w-full text-left px-3 py-2 text-sm transition-colors hover:bg-blue-50 hover:text-blue-600 disabled:opacity-50"
+                        >
+                          {list.title}
+                        </button>
+                      ))
+                    )}
+
+                    <div
+                      className="px-3 pt-2 pb-1 border-t"
+                      style={{ borderColor: 'hsl(var(--border))' }}
+                    >
+                      <Link
+                        href="/lists"
+                        onClick={() => setShowListPicker(false)}
+                        className="text-xs text-blue-600 hover:underline"
+                      >
+                        Manage lists →
+                      </Link>
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+
             {!user && (
               <Link
                 href="/login"
@@ -277,18 +385,18 @@ function StarRating({
 
 function ReviewsSection({ slug }: { slug: string }) {
   const { user } = useAuthStore()
-  const [reviews, setReviews]       = useState<Review[]>([])
-  const [loading, setLoading]       = useState(true)
-  const [rating, setRating]         = useState(0)
-  const [comment, setComment]       = useState('')
+  const [reviews, setReviews] = useState<Review[]>([])
+  const [loading, setLoading] = useState(true)
+  const [rating, setRating] = useState(0)
+  const [comment, setComment] = useState('')
   const [submitting, setSubmitting] = useState(false)
-  const [error, setError]           = useState('')
+  const [error, setError] = useState('')
 
   // Load reviews on mount
   useState(() => {
     http.get(`/resources/${slug}/reviews`)
       .then((r) => setReviews(r.data))
-      .catch(() => {})
+      .catch(() => { })
       .finally(() => setLoading(false))
   })
 

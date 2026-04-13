@@ -10,6 +10,7 @@ import { useTheme } from 'next-themes'
 const NAV_LINKS = [
   { href: '/browse', label: 'Browse' },
   { href: '/clubs', label: 'Clubs' },
+  { href: '/lists',  label: 'Lists' },
 ]
 
 export function Navbar() {
@@ -125,7 +126,7 @@ export function Navbar() {
                   }}
                 >
                   <Link
-                    href={`/users/${user.id}`}
+                    href={`/user/${user.id}`}
                     onClick={() => setMenuOpen(false)}
                     className="block px-4 py-2 text-sm text-foreground hover:bg-muted transition-colors"
                   >
