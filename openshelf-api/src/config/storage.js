@@ -13,6 +13,6 @@ const s3 = new S3Client({
 })
 
 const BUCKET     = process.env.STORAGE_BUCKET     || 'openself'
-const PUBLIC_URL = process.env.STORAGE_PUBLIC_URL || 'http://localhost:9000/openself'
+const PUBLIC_URL = process.env.STORAGE_PUBLIC_URL || 'http://localhost:9000/openshelf'
 
 module.exports = { s3, BUCKET, PUBLIC_URL }

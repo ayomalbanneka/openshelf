@@ -39,6 +39,14 @@ export const serverApi = {
       if (!res.ok) throw new Error('Resource not found')
       return res.json()
     },
+
+    categories: {
+      list: async () => {
+        const res = await fetch(`${BASE_URL}/categories`, { cache: 'no-store' })
+        if (!res.ok) throw new Error('Failed to fetch categories')
+        return res.json()
+      },
+    },
   },
 
   categories: { // Fetch the list of categories
