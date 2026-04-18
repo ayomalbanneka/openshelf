@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.5.0](https://github.com/ayomalbanneka/openshelf/compare/v0.4.0...v0.5.0) (2026-04-18)
+
+
+### Features
+
+* **resources:** add lesson-based course uploads and improve media handling ([#19](https://github.com/ayomalbanneka/openshelf/issues/19)) ([f01f162](https://github.com/ayomalbanneka/openshelf/commit/f01f1625c6651fd1a3d2a3fa7260914d12da04f5))
+
 ## [0.4.0](https://github.com/ayomalbanneka/openshelf/compare/v0.3.1...v0.4.0) (2026-04-13)
 
 
