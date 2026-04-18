@@ -27,16 +27,16 @@ interface Props {
 }
 
 const schema = z.object({
-  title:           z.string().min(2, 'Title must be at least 2 characters'),
-  type:            z.enum(['BOOK', 'COURSE', 'EXAM_PAPER', 'DOCUMENT', 'AUDIO']),
-  categoryId:      z.string().min(1, 'Category is required'),
-  language:        z.string().min(1, 'Language is required'),
-  description:     z.string().optional(),
-  author:          z.string().optional(),
-  publisher:       z.string().optional(),
-  isbn:            z.string().optional(),
+  title: z.string().min(2, 'Title must be at least 2 characters'),
+  type: z.enum(['BOOK', 'COURSE', 'EXAM_PAPER', 'DOCUMENT', 'AUDIO']),
+  categoryId: z.string().min(1, 'Category is required'),
+  language: z.string().min(1, 'Language is required'),
+  description: z.string().optional(),
+  author: z.string().optional(),
+  publisher: z.string().optional(),
+  isbn: z.string().optional(),
   publicationYear: z.string().optional(),
-  pageCount:       z.string().optional(),
+  pageCount: z.string().optional(),
 })
 
 type FormData = z.infer<typeof schema>
