@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.4.0](https://github.com/ayomalbanneka/openshelf/compare/v0.3.1...v0.4.0) (2026-04-13)
+
+
+### Features
+
+* introduce reading list system and club management functionality ([#17](https://github.com/ayomalbanneka/openshelf/issues/17)) ([4a1c540](https://github.com/ayomalbanneka/openshelf/commit/4a1c540a6f4165259e90cf42e450cc6905438fe5))
+
 ## [0.3.1](https://github.com/ayomalbanneka/openshelf/compare/v0.3.0...v0.3.1) (2026-04-11)
 
 

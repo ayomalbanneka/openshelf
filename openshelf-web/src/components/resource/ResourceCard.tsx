@@ -104,6 +104,18 @@ export function ResourceCard({ resource }: { resource: Resource }) {
             <span>{resource._count.reviews} reviews</span>
           )}
         </div>
+
+        {/* Uploader */}
+        {resource.uploadedBy && (
+          <Link
+            href={`/users/${resource.uploadedBy.id}`}
+            onClick={(e) => e.stopPropagation()}
+            className="text-xs mt-1 hover:text-blue-600 transition-colors truncate block"
+            style={{ color: 'hsl(var(--muted-foreground))' }}
+          >
+            {resource.uploadedBy.name}
+          </Link>
+        )}
       </div>
     </Link>
   )
