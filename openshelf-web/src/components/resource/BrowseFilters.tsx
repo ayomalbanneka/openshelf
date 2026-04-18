@@ -1,18 +1,19 @@
 'use client'
-import { cn } from '@/lib/utils'
 import { useRouter, usePathname } from 'next/navigation'
+import { useEffect, useState } from 'react'
+import { serverApi } from '@/lib/server-api'
 
 const TYPES = [
-  { value: '',           label: 'All types' },
-  { value: 'BOOK',       label: 'Books' },
-  { value: 'COURSE',     label: 'Courses' },
-  { value: 'EXAM_PAPER', label: 'Exam papers' },
-  { value: 'DOCUMENT',   label: 'Documents' },
-  { value: 'AUDIO',      label: 'Audio' },
+  { value: '',           label: 'All',          icon: '◈' },
+  { value: 'BOOK',       label: 'Books',         icon: '📖' },
+  { value: 'COURSE',     label: 'Courses',       icon: '🎓' },
+  { value: 'EXAM_PAPER', label: 'Exam papers',   icon: '📝' },
+  { value: 'DOCUMENT',   label: 'Documents',     icon: '📄' },
+  { value: 'AUDIO',      label: 'Audio',         icon: '🎧' },
 ]
 
 const LANGUAGES = [
-  { value: '',   label: 'All languages' },
+  { value: '', label: 'All languages' },
   { value: 'en', label: 'English' },
   { value: 'si', label: 'Sinhala' },
   { value: 'ta', label: 'Tamil' },
@@ -23,118 +24,176 @@ const LANGUAGES = [
   { value: 'ar', label: 'Arabic' },
 ]
 
+interface Category {
+  id: string
+  name: string
+  slug: string
+}
+
 interface Props {
   searchParams: {
     type?: string
     language?: string
     search?: string
+    category?: string
   }
 }
 
 export function BrowseFilters({ searchParams }: Props) {
   const router   = useRouter()
   const pathname = usePathname()
+  const [categories, setCategories] = useState<Category[]>([])
+
+  useEffect(() => {
+    fetch('/api/categories-proxy')
+      .catch(() => {})
+    // Fetch categories client-side
+    const base = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000/api'
+    fetch(`${base}/categories`)
+      .then((r) => r.json())
+      .then(setCategories)
+      .catch(() => {})
+  }, [])
 
   const setParam = (key: string, value: string) => {
-    const params = new URLSearchParams(
-      searchParams as Record<string, string>
-    )
-    if (value) {
-      params.set(key, value)
-    } else {
-      params.delete(key)
-    }
+    const params = new URLSearchParams(searchParams as Record<string, string>)
+    if (value) params.set(key, value)
+    else params.delete(key)
     params.delete('page')
     router.push(`${pathname}?${params.toString()}`)
   }
 
   const handleSearch = (e: React.ChangeEvent<HTMLInputElement>) => {
-    clearTimeout((window as any)._searchTimer)
-    ;(window as any)._searchTimer = setTimeout(() => {
-      setParam('search', e.target.value)
-    }, 400)
+    clearTimeout((window as any)._st)
+    ;(window as any)._st = setTimeout(() => setParam('search', e.target.value), 350)
   }
 
   const activeType     = searchParams.type     || ''
   const activeLanguage = searchParams.language || ''
+  const activeCategory = searchParams.category || ''
+
+  const sectionLabel = "text-[10px] font-bold uppercase tracking-[0.12em] mb-2 block"
+  const labelColor   = { color: 'hsl(var(--muted-foreground))' }
 
   return (
-    <div className="flex flex-col gap-6">
+    <div className="flex flex-col gap-7">
 
       {/* Search */}
-      <div className="flex flex-col gap-2">
-        <p className="text-xs font-semibold uppercase tracking-wider"
-          style={{ color: 'hsl(var(--muted-foreground))' }}>
-          Search
-        </p>
-        <input
-          type="text"
-          defaultValue={searchParams.search}
-          placeholder="Title, author…"
-          onChange={handleSearch}
-          className="h-9 w-full rounded-lg px-3 text-sm outline-none focus:ring-2 focus:ring-blue-500"
-          style={{
-            border: '1px solid hsl(var(--border))',
-            backgroundColor: 'hsl(var(--background))',
-            color: 'hsl(var(--foreground))',
-          }}
-        />
+      <div>
+        <span className={sectionLabel} style={labelColor}>Search</span>
+        <div className="relative">
+          <svg className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 pointer-events-none"
+            style={{ color: 'hsl(var(--muted-foreground))' }}
+            fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+            <circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/>
+          </svg>
+          <input
+            type="text"
+            defaultValue={searchParams.search}
+            placeholder="Title, author…"
+            onChange={handleSearch}
+            className="h-9 w-full rounded-lg pl-8 pr-3 text-sm outline-none focus:ring-2 focus:ring-blue-500 transition-all"
+            style={{
+              border: '1px solid hsl(var(--border))',
+              backgroundColor: 'hsl(var(--background))',
+              color: 'hsl(var(--foreground))',
+            }}
+          />
+        </div>
       </div>
 
-      {/* Type filter */}
-      <div className="flex flex-col gap-1.5">
-        <p className="text-xs font-semibold uppercase tracking-wider"
-          style={{ color: 'hsl(var(--muted-foreground))' }}>
-          Type
-        </p>
-        {TYPES.map((t) => (
-          <button
-            key={t.value}
-            onClick={() => setParam('type', t.value)}
-            className={cn(
-              'text-left text-sm px-3 py-1.5 rounded-lg transition-colors',
-              activeType === t.value
-                ? 'bg-blue-50 text-blue-700 font-medium'
-                : 'hover:bg-gray-100'
-            )}
-            style={
-              activeType !== t.value
-                ? { color: 'hsl(var(--foreground))' }
-                : undefined
-            }
-          >
-            {t.label}
-          </button>
-        ))}
+      {/* Type filter — icon pills */}
+      <div>
+        <span className={sectionLabel} style={labelColor}>Type</span>
+        <div className="flex flex-col gap-1">
+          {TYPES.map((t) => {
+            const active = activeType === t.value
+            return (
+              <button
+                key={t.value}
+                onClick={() => setParam('type', t.value)}
+                className="flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm text-left transition-all"
+                style={
+                  active
+                    ? { backgroundColor: '#2563eb', color: '#fff' }
+                    : { color: 'hsl(var(--foreground))' }
+                }
+              >
+                <span className="text-base leading-none">{t.icon}</span>
+                <span className={active ? 'font-medium' : ''}>{t.label}</span>
+              </button>
+            )
+          })}
+        </div>
       </div>
+
+      {/* Category filter */}
+      {categories.length > 0 && (
+        <div>
+          <span className={sectionLabel} style={labelColor}>Category</span>
+          <div className="flex flex-col gap-1">
+            <button
+              onClick={() => setParam('category', '')}
+              className="text-left text-sm px-3 py-2 rounded-lg transition-all"
+              style={
+                activeCategory === ''
+                  ? { backgroundColor: 'hsl(var(--muted))', fontWeight: 500, color: 'hsl(var(--foreground))' }
+                  : { color: 'hsl(var(--muted-foreground))' }
+              }
+            >
+              All categories
+            </button>
+            {categories.map((c) => (
+              <button
+                key={c.id}
+                onClick={() => setParam('category', c.slug)}
+                className="text-left text-sm px-3 py-2 rounded-lg transition-all truncate"
+                style={
+                  activeCategory === c.slug
+                    ? { backgroundColor: 'hsl(var(--muted))', fontWeight: 500, color: 'hsl(var(--foreground))' }
+                    : { color: 'hsl(var(--muted-foreground))' }
+                }
+              >
+                {c.name}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* Language filter */}
-      <div className="flex flex-col gap-1.5">
-        <p className="text-xs font-semibold uppercase tracking-wider"
-          style={{ color: 'hsl(var(--muted-foreground))' }}>
-          Language
-        </p>
-        {LANGUAGES.map((l) => (
-          <button
-            key={l.value}
-            onClick={() => setParam('language', l.value)}
-            className={cn(
-              'text-left text-sm px-3 py-1.5 rounded-lg transition-colors',
-              activeLanguage === l.value
-                ? 'bg-blue-50 text-blue-700 font-medium'
-                : 'hover:bg-gray-100'
-            )}
-            style={
-              activeLanguage !== l.value
-                ? { color: 'hsl(var(--foreground))' }
-                : undefined
-            }
-          >
-            {l.label}
-          </button>
-        ))}
+      <div>
+        <span className={sectionLabel} style={labelColor}>Language</span>
+        <div className="flex flex-col gap-1">
+          {LANGUAGES.map((l) => {
+            const active = activeLanguage === l.value
+            return (
+              <button
+                key={l.value}
+                onClick={() => setParam('language', l.value)}
+                className="text-left text-sm px-3 py-2 rounded-lg transition-all"
+                style={
+                  active
+                    ? { backgroundColor: 'hsl(var(--muted))', fontWeight: 500, color: 'hsl(var(--foreground))' }
+                    : { color: 'hsl(var(--muted-foreground))' }
+                }
+              >
+                {l.label}
+              </button>
+            )
+          })}
+        </div>
       </div>
 
+      {/* Clear all */}
+      {(activeType || activeLanguage || activeCategory || searchParams.search) && (
+        <button
+          onClick={() => router.push(pathname)}
+          className="text-xs font-medium text-blue-600 hover:underline text-left"
+        >
+          Clear all filters
+        </button>
+      )}
     </div>
   )
 }

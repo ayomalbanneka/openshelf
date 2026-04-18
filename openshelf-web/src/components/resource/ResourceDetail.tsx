@@ -99,7 +99,7 @@ export function ResourceDetail({ resource }: { resource: Resource }) {
         {/* Cover */}
         <div className="shrink-0 w-full md:w-52">
           <div
-            className="w-full rounded-2xl flex items-center justify-center text-6xl"
+            className="relative w-full rounded-2xl overflow-hidden flex items-center justify-center text-6xl"
             style={{
               aspectRatio: '3/4',
               backgroundColor: 'hsl(var(--muted))',
@@ -110,7 +110,7 @@ export function ResourceDetail({ resource }: { resource: Resource }) {
               <img
                 src={resource.thumbnailUrl}
                 alt={resource.title}
-                className="w-full h-full object-cover rounded-2xl"
+                className="absolute inset-0 w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
               />
             ) : (
               <span>
@@ -194,6 +194,57 @@ export function ResourceDetail({ resource }: { resource: Resource }) {
             </dd>
           </dl>
 
+          {/* Lessons — shown for courses only */}
+          {resource.type === 'COURSE' && resource.lessons && resource.lessons.length > 0 && (
+            <div className="mt-10">
+              <h2 className="text-xl font-bold mb-4">
+                Course content
+                <span
+                  className="text-sm font-normal ml-2"
+                  style={{ color: 'hsl(var(--muted-foreground))' }}
+                >
+                  {resource.lessons.length} lessons
+                </span>
+              </h2>
+
+              <div className="flex flex-col gap-2">
+                {resource.lessons.map((lesson, i) => (
+
+                  <a key={lesson.id}
+                    href={lesson.fileUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex items-center gap-4 p-4 rounded-xl transition-colors hover:bg-blue-50 group"
+                    style={{
+                      border: '1px solid hsl(var(--border))',
+                      backgroundColor: 'hsl(var(--background))',
+                    }}
+                  >
+                    <div
+                      className="h-8 w-8 rounded-full flex items-center justify-center text-xs font-bold text-white shrink-0"
+                      style={{ backgroundColor: '#2563eb' }}
+                    >
+                      {i + 1}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-medium group-hover:text-blue-600 transition-colors">
+                        {lesson.title}
+                      </p>
+                    </div>
+                    {lesson.duration && (
+                      <span
+                        className="text-xs shrink-0"
+                        style={{ color: 'hsl(var(--muted-foreground))' }}
+                      >
+                        {lesson.duration}
+                      </span>
+                    )}
+                  </a>
+                ))}
+              </div>
+            </div>
+          )}
+
           {/* Tags */}
           {resource.tags.length > 0 && (
             <div className="flex flex-wrap gap-2">
@@ -215,14 +266,16 @@ export function ResourceDetail({ resource }: { resource: Resource }) {
 
           {/* Action buttons */}
           <div className="flex flex-wrap gap-3 pt-2">
-            <a
-              href={resource.fileUrl}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="px-6 py-2.5 rounded-xl bg-blue-600 text-white text-sm font-medium hover:bg-blue-700 transition-colors"
-            >
-              Download
-            </a>
+            {resource.type !== 'COURSE' && (
+              <a
+                href={resource.fileUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="px-6 py-2.5 rounded-xl bg-blue-600 text-white text-sm font-medium hover:bg-blue-700 transition-colors"
+              >
+                Download
+              </a>
+            )}
 
             {user && (
               <button

@@ -1,6 +1,6 @@
 const prisma = require('../config/prisma')
 const slugify = require('../utils/slugify')
-const { uploadFile } = require('./storage.service')
+const { uploadFile, deleteFile } = require('./storage.service')
 
 // ── List ──────────────────────────────────────────────────────
 const list = async ({ type, category, language, search, page = 1, limit = 20 }) => {
@@ -52,11 +52,12 @@ const getOne = async (slug) => {
   const resource = await prisma.resource.findUnique({
     where: { slug },
     include: {
-      category: true,
+      category:   true,
       uploadedBy: { select: { id: true, name: true, avatarUrl: true } },
-      tags: { include: { tag: true } },
-      examPaper: true,
-      _count: { select: { reviews: true, bookmarks: true } },
+      tags:       { include: { tag: true } },
+      examPaper:  true,
+      lessons:    { orderBy: { sortOrder: 'asc' } },
+      _count:     { select: { reviews: true, bookmarks: true } },
     },
   })
 
@@ -66,32 +67,76 @@ const getOne = async (slug) => {
     throw err
   }
 
-  // Increment view count — fire and forget, don't await
   prisma.resource.update({
     where: { id: resource.id },
-    data: { viewCount: { increment: 1 } },
-  }).catch(() => { })
+    data:  { viewCount: { increment: 1 } },
+  }).catch(() => {})
 
   return resource
 }
 
 // ── Create ────────────────────────────────────────────────────
-const create = async (data, file, userId) => {
+const create = async (data, files, userId) => {
   const {
-    title, description, type, language = 'en',
-    pageCount, duration,
-    author, publisher, isbn, edition, publicationYear,
-    categoryId, tagIds = [],
+    title,
+    description,
+    type,
+    language = 'en',
+    pageCount,
+    duration,
+    author,
+    publisher,
+    isbn,
+    edition,
+    publicationYear,
+    categoryId,
+    tagIds = [],
+    lessons,
   } = data
 
-  // These three come from the file object, not the form body
-  const fileUrl  = await uploadFile(file, `resources/${type.toLowerCase()}`)
-  const fileSize = file.size
-  const mimeType = file.mimetype
+  const isCourse = type === 'COURSE'
+  const uploadedFiles = Array.isArray(files) ? files : []
+
+  // Thumbnail is optional for all types
+  const thumbnailFile = uploadedFiles.find((f) => f.fieldname === 'thumbnail')
+  const thumbnailUrl = thumbnailFile
+    ? await uploadFile(thumbnailFile, 'resources/thumbnails')
+    : null
+
+  // For courses: main file is not required — lessons carry their own files
+  // For all other types: main file is required
+  const mainFile = uploadedFiles.find((f) => f.fieldname === 'file')
+
+  if (!isCourse && !mainFile) {
+    const err = new Error('File is required')
+    err.status = 400
+    throw err
+  }
+
+  if (isCourse && !lessons) {
+    const err = new Error('Course must have at least one lesson')
+    err.status = 400
+    throw err
+  }
+
+  // Upload main file for non-courses; courses use 'course-content' as placeholder
+  let fileUrl = 'course-content'
+  let fileSize = 0
+  let mimeType = 'application/octet-stream'
+
+  if (mainFile) {
+    fileUrl  = await uploadFile(mainFile, `resources/${type.toLowerCase()}`)
+    fileSize = mainFile.size
+    mimeType = mainFile.mimetype
+  }
 
   let slug = slugify(title)
   const existing = await prisma.resource.findUnique({ where: { slug } })
   if (existing) slug = `${slug}-${Date.now().toString(36)}`
+
+  const parsedTagIds = Array.isArray(tagIds)
+    ? tagIds
+    : tagIds ? JSON.parse(tagIds) : []
 
   const resource = await prisma.resource.create({
     data: {
@@ -103,8 +148,9 @@ const create = async (data, file, userId) => {
       fileUrl,
       fileSize,
       mimeType,
-      pageCount:       pageCount       ? Number(pageCount)       : null,
-      duration:        duration        ? Number(duration)        : null,
+      thumbnailUrl,
+      pageCount:       pageCount ? Number(pageCount) : null,
+      duration:        duration ? Number(duration) : null,
       publicationYear: publicationYear ? Number(publicationYear) : null,
       author,
       publisher,
@@ -113,12 +159,12 @@ const create = async (data, file, userId) => {
       uploadedById: userId,
       categoryId,
       isPublished: false,
-      tags: tagIds.length
+      tags: parsedTagIds.length
         ? {
-            create: JSON.parse(tagIds).map((tagId) => ({
-              tag: { connect: { id: tagId } },
-            }))
-          }
+          create: parsedTagIds.map((tagId) => ({
+            tag: { connect: { id: tagId } },
+          })),
+        }
         : undefined,
     },
     include: {
@@ -127,6 +173,44 @@ const create = async (data, file, userId) => {
       tags:       { include: { tag: true } },
     },
   })
+
+  // Upload each lesson's file independently to resources/course/lessons
+  if (isCourse && lessons) {
+    const lessonsMeta = JSON.parse(lessons)
+
+    await Promise.all(
+      lessonsMeta.map(async (meta, i) => {
+        const lessonFile = uploadedFiles.find((f) => f.fieldname === `lessonFile_${i}`)
+
+        if (!lessonFile) {
+          // Skip lessons with no file attached — title-only lessons are allowed
+          return prisma.lesson.create({
+            data: {
+              title:     meta.title || `Lesson ${i + 1}`,
+              sortOrder: i,
+              duration:  meta.duration || null,
+              fileUrl:   'pending',
+              resourceId: resource.id,
+            },
+          })
+        }
+
+        const lessonFileUrl = await uploadFile(lessonFile, 'resources/course/lessons')
+
+        return prisma.lesson.create({
+          data: {
+            title:      meta.title || `Lesson ${i + 1}`,
+            sortOrder:  i,
+            duration:   meta.duration || null,
+            fileUrl:    lessonFileUrl,
+            fileSize:   lessonFile.size,
+            mimeType:   lessonFile.mimetype,
+            resourceId: resource.id,
+          },
+        })
+      })
+    )
+  }
 
   return resource
 }
@@ -141,8 +225,7 @@ const update = async (slug, data, requestingUser) => {
     throw err
   }
 
-  // Only the uploader or an admin/moderator can edit
-  const isOwner = resource.uploadedById === requestingUser.id
+  const isOwner      = resource.uploadedById === requestingUser.id
   const isPrivileged = ['ADMIN', 'MODERATOR'].includes(requestingUser.role)
 
   if (!isOwner && !isPrivileged) {
@@ -200,7 +283,7 @@ const remove = async (slug, requestingUser) => {
     throw err
   }
 
-  const isOwner = resource.uploadedById === requestingUser.id
+  const isOwner      = resource.uploadedById === requestingUser.id
   const isPrivileged = ['ADMIN', 'MODERATOR'].includes(requestingUser.role)
 
   if (!isOwner && !isPrivileged) {
@@ -209,7 +292,6 @@ const remove = async (slug, requestingUser) => {
     throw err
   }
 
-  // Delete the file from storage before removing the database record
   await deleteFile(resource.fileUrl)
   await prisma.resource.delete({ where: { id: resource.id } })
   return { message: 'Resource deleted' }

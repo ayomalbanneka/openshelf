@@ -4,7 +4,7 @@ import { ClubCard } from '@/components/clubs/ClubCard'
 import { CreateClubButton } from '@/components/clubs/CreateClubButton'
 import type { Metadata } from 'next'
 
-export const metadata: Metadata = { title: 'Reading clubs' }
+export const metadata: Metadata = { title: 'Reading Clubs — OpenShelf' }
 
 async function ClubsList() {
   const result = await serverApi.clubs.list()
@@ -18,7 +18,8 @@ async function ClubsList() {
           color: 'hsl(var(--muted-foreground))',
         }}
       >
-        <p className="text-lg font-medium mb-1">No clubs yet</p>
+        <div className="text-4xl mb-3">📚</div>
+        <p className="text-base font-medium mb-1">No clubs yet</p>
         <p className="text-sm">Be the first to start one.</p>
       </div>
     )
@@ -39,7 +40,7 @@ function ClubsSkeleton() {
       {[1, 2, 3, 4, 5, 6].map((i) => (
         <div
           key={i}
-          className="h-40 rounded-xl animate-pulse"
+          className="h-44 rounded-xl animate-pulse"
           style={{ backgroundColor: 'hsl(var(--muted))' }}
         />
       ))}
@@ -49,11 +50,13 @@ function ClubsSkeleton() {
 
 export default function ClubsPage() {
   return (
-    <div className="max-w-7xl mx-auto px-4 py-10">
+    <div className="max-w-7xl mx-auto px-4 py-8">
+
+      {/* Header */}
       <div className="flex items-start justify-between mb-8">
         <div>
-          <h1 className="text-3xl font-bold mb-1">Reading clubs</h1>
-          <p style={{ color: 'hsl(var(--muted-foreground))' }}>
+          <h1 className="text-2xl font-bold tracking-tight mb-0.5">Reading clubs</h1>
+          <p className="text-sm" style={{ color: 'hsl(var(--muted-foreground))' }}>
             Join a club, discuss books, and meet readers from around the world.
           </p>
         </div>

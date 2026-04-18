@@ -14,7 +14,7 @@ router.get('/:slug', controller.getOne)
 router.post(
   '/',
   authenticate,
-  upload.single('file'), // Handle file upload from the 'file' field
+  upload.any(), // Handle file upload from the 'file' field
   [
     body('title').trim().notEmpty().withMessage('Title is required'),
     body('type')

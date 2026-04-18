@@ -57,6 +57,17 @@ export interface Resource {
   tags: { tag: Tag }[]
   _count?: { reviews: number; bookmarks: number }
   createdAt: string
+  lessons?: Lesson[]
+}
+
+export interface Lesson {
+  id: string
+  title: string
+  sortOrder: number
+  duration?: string
+  fileUrl: string
+  fileSize?: number
+  mimeType?: string
 }
 
 export interface PaginatedResponse<T> {
