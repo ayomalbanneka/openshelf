@@ -1,5 +1,6 @@
 'use client'
 import Link from 'next/link'
+import { useRouter } from 'next/navigation'
 import { Resource } from '@/types'
 
 const TYPE_LABELS: Record<string, string> = {
@@ -35,12 +36,21 @@ const TYPE_ICONS: Record<string, string> = {
 }
 
 export function ResourceCard({ resource }: { resource: Resource }) {
+  const router = useRouter()
   const color = TYPE_COLORS[resource.type]
   const coverBg = COVER_COLORS[resource.type] || '#1e3a5f'
 
   return (
-    <Link
-      href={`/resources/${resource.slug}`}
+    <div
+      role="link"
+      tabIndex={0}
+      onClick={() => router.push(`/resources/${resource.slug}`)}
+      onKeyDown={(e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault()
+          router.push(`/resources/${resource.slug}`)
+        }
+      }}
       className="group flex flex-col rounded-xl overflow-hidden transition-all duration-200 hover:-translate-y-1 hover:shadow-lg"
       style={{
         border: '1px solid hsl(var(--border))',
@@ -117,6 +127,6 @@ export function ResourceCard({ resource }: { resource: Resource }) {
           </Link>
         )}
       </div>
-    </Link>
+    </div>
   )
 }

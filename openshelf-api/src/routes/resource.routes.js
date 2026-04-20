@@ -5,12 +5,39 @@ const validate = require('../middleware/validate')
 const { authenticate, authorize } = require('../middleware/auth')
 const upload = require('../middleware/upload')
 const reviewController = require('../controllers/review.controller')
+const resourceService = require('../services/resource.service')
 
-// ── Public ────────────────────────────────────────────────────
+// Search endpoint
+router.get('/search', async (req, res, next) => {
+  try {
+    const { q, type, language, page, limit } = req.query;
+
+    if (!q || q.trim().length < 2) {
+      return res.json({
+        data: [],
+        meta: { total: 0, page: 1, limit: 10, pages: 0 }
+      })
+    }
+
+    const result = await resourceService.list({
+      search: q,
+      type,
+      language,
+      page: page || 1,
+      limit: limit || 10,
+    })
+
+    res.json(result)
+  } catch (err) {
+    next(err)
+  }
+})
+
+// Public Endpoints
 router.get('/', controller.list)
 router.get('/:slug', controller.getOne)
 
-// ── Authenticated ─────────────────────────────────────────────
+// Authenticated
 router.post(
   '/',
   authenticate,
@@ -32,7 +59,7 @@ router.patch(
   controller.update
 )
 
-// ── Admin / Moderator only ────────────────────────────────────
+// Admin / Moderator only
 router.patch(
   '/:slug/publish',
   authenticate,

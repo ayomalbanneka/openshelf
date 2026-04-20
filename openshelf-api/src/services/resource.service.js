@@ -1,23 +1,110 @@
 const prisma = require('../config/prisma')
+const { PrismaClient, Prisma } = require('@prisma/client')
 const slugify = require('../utils/slugify')
 const { uploadFile, deleteFile } = require('./storage.service')
 
-// ── List ──────────────────────────────────────────────────────
+// List
 const list = async ({ type, category, language, search, page = 1, limit = 20 }) => {
   const skip = (Number(page) - 1) * Number(limit)
 
+  // ── Full-text search path
+  if (search && search.trim().length > 0) {
+    const term = search.trim()
+
+    // Build optional filter fragments
+    const typeFilter = type ? Prisma.sql`AND r.type::text = ${type}` : Prisma.empty
+    const langFilter = language ? Prisma.sql`AND r.language = ${language}` : Prisma.empty
+    const categoryFilter = category
+      ? Prisma.sql`AND r."categoryId" = (SELECT id FROM categories WHERE slug = ${category} LIMIT 1)`
+      : Prisma.empty
+
+    // Use raw SQL for full-text search with ranking
+    const searchResults = await prisma.$queryRaw`
+    SELECT
+      r.id,
+      r.title,
+      r.slug,
+      r.description,
+      r.type::text as type,
+      r.language,
+      r."fileUrl",
+      r."fileSize",
+      r."mimeType",
+      r."thumbnailUrl",
+      r."pageCount",
+      r.duration,
+      r."isPublished",
+      r."publishedAt",
+      r.author,
+      r.publisher,
+      r.isbn,
+      r.edition,
+      r."publicationYear",
+      r."viewCount",
+      r."downloadCount",
+      r."uploadedById",
+      r."categoryId",
+      r."createdAt",
+      r."updatedAt",
+      ts_rank(r.search_vector, plainto_tsquery('english', ${term})) as rank
+        FROM resources r
+        WHERE
+          r."isPublished" = true
+          AND r.search_vector @@ plainto_tsquery('english', ${term})
+          ${typeFilter}
+          ${langFilter}
+          ${categoryFilter}
+        ORDER BY rank DESC
+        LIMIT ${Number(limit)}
+      OFFSET ${skip}`;
+
+    const countResult = await prisma.$queryRaw`
+      SELECT COUNT(*) as total
+      FROM resources r
+      WHERE
+        r."isPublished" = true
+        AND r.search_vector @@ plainto_tsquery('english', ${term})
+        ${typeFilter}
+        ${langFilter}
+        ${categoryFilter}
+    `
+
+    const total = Number(countResult[0]?.total ?? 0)
+
+    // Enrich results with relations
+    const ids = searchResults.map((r) => r.id)
+    const enriched = await prisma.resource.findMany({
+      where: { id: { in: ids } },
+      include: {
+        category: { select: { id: true, name: true, slug: true } },
+        uploadedBy: { select: { id: true, name: true } },
+        tags: { include: { tag: true } },
+        _count: { select: { reviews: true, bookmarks: true } },
+      },
+    })
+
+    // Re-sort enriched results to match the rank order from the raw query
+    const ranked = ids
+      .map((id) => enriched.find((r) => r.id === id))
+      .filter(Boolean)
+
+    return {
+      data: ranked,
+      meta: {
+        total,
+        page: Number(page),
+        limit: Number(limit),
+        pages: Math.ceil(total / Number(limit)),
+      },
+    }
+  }
+
+  // Standard filter path (no search term)
   const where = {
     isPublished: true,
     ...(type && { type }),
     ...(language && { language }),
     ...(category && { category: { slug: category } }),
-    ...(search && {
-      OR: [
-        { title: { contains: search, mode: 'insensitive' } },
-        { description: { contains: search, mode: 'insensitive' } },
-        { author: { contains: search, mode: 'insensitive' } },
-      ],
-    }),
   }
 
   const [data, total] = await Promise.all([
@@ -52,12 +139,12 @@ const getOne = async (slug) => {
   const resource = await prisma.resource.findUnique({
     where: { slug },
     include: {
-      category:   true,
+      category: true,
       uploadedBy: { select: { id: true, name: true, avatarUrl: true } },
-      tags:       { include: { tag: true } },
-      examPaper:  true,
-      lessons:    { orderBy: { sortOrder: 'asc' } },
-      _count:     { select: { reviews: true, bookmarks: true } },
+      tags: { include: { tag: true } },
+      examPaper: true,
+      lessons: { orderBy: { sortOrder: 'asc' } },
+      _count: { select: { reviews: true, bookmarks: true } },
     },
   })
 
@@ -69,8 +156,8 @@ const getOne = async (slug) => {
 
   prisma.resource.update({
     where: { id: resource.id },
-    data:  { viewCount: { increment: 1 } },
-  }).catch(() => {})
+    data: { viewCount: { increment: 1 } },
+  }).catch(() => { })
 
   return resource
 }
@@ -125,7 +212,7 @@ const create = async (data, files, userId) => {
   let mimeType = 'application/octet-stream'
 
   if (mainFile) {
-    fileUrl  = await uploadFile(mainFile, `resources/${type.toLowerCase()}`)
+    fileUrl = await uploadFile(mainFile, `resources/${type.toLowerCase()}`)
     fileSize = mainFile.size
     mimeType = mainFile.mimetype
   }
@@ -149,8 +236,8 @@ const create = async (data, files, userId) => {
       fileSize,
       mimeType,
       thumbnailUrl,
-      pageCount:       pageCount ? Number(pageCount) : null,
-      duration:        duration ? Number(duration) : null,
+      pageCount: pageCount ? Number(pageCount) : null,
+      duration: duration ? Number(duration) : null,
       publicationYear: publicationYear ? Number(publicationYear) : null,
       author,
       publisher,
@@ -168,9 +255,9 @@ const create = async (data, files, userId) => {
         : undefined,
     },
     include: {
-      category:   { select: { id: true, name: true, slug: true } },
+      category: { select: { id: true, name: true, slug: true } },
       uploadedBy: { select: { id: true, name: true } },
-      tags:       { include: { tag: true } },
+      tags: { include: { tag: true } },
     },
   })
 
@@ -186,10 +273,10 @@ const create = async (data, files, userId) => {
           // Skip lessons with no file attached — title-only lessons are allowed
           return prisma.lesson.create({
             data: {
-              title:     meta.title || `Lesson ${i + 1}`,
+              title: meta.title || `Lesson ${i + 1}`,
               sortOrder: i,
-              duration:  meta.duration || null,
-              fileUrl:   'pending',
+              duration: meta.duration || null,
+              fileUrl: 'pending',
               resourceId: resource.id,
             },
           })
@@ -199,12 +286,12 @@ const create = async (data, files, userId) => {
 
         return prisma.lesson.create({
           data: {
-            title:      meta.title || `Lesson ${i + 1}`,
-            sortOrder:  i,
-            duration:   meta.duration || null,
-            fileUrl:    lessonFileUrl,
-            fileSize:   lessonFile.size,
-            mimeType:   lessonFile.mimetype,
+            title: meta.title || `Lesson ${i + 1}`,
+            sortOrder: i,
+            duration: meta.duration || null,
+            fileUrl: lessonFileUrl,
+            fileSize: lessonFile.size,
+            mimeType: lessonFile.mimetype,
             resourceId: resource.id,
           },
         })
@@ -225,7 +312,7 @@ const update = async (slug, data, requestingUser) => {
     throw err
   }
 
-  const isOwner      = resource.uploadedById === requestingUser.id
+  const isOwner = resource.uploadedById === requestingUser.id
   const isPrivileged = ['ADMIN', 'MODERATOR'].includes(requestingUser.role)
 
   if (!isOwner && !isPrivileged) {
@@ -283,7 +370,7 @@ const remove = async (slug, requestingUser) => {
     throw err
   }
 
-  const isOwner      = resource.uploadedById === requestingUser.id
+  const isOwner = resource.uploadedById === requestingUser.id
   const isPrivileged = ['ADMIN', 'MODERATOR'].includes(requestingUser.role)
 
   if (!isOwner && !isPrivileged) {
