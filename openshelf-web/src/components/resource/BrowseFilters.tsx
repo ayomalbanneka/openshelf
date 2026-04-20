@@ -45,12 +45,7 @@ export function BrowseFilters({ searchParams }: Props) {
   const [categories, setCategories] = useState<Category[]>([])
 
   useEffect(() => {
-    fetch('/api/categories-proxy')
-      .catch(() => {})
-    // Fetch categories client-side
-    const base = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000/api'
-    fetch(`${base}/categories`)
-      .then((r) => r.json())
+    serverApi.categories.list()
       .then(setCategories)
       .catch(() => {})
   }, [])

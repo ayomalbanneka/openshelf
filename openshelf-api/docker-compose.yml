@@ -50,6 +50,19 @@ services:
       echo 'Bucket ready.';
       "
 
+  meilisearch:
+    image: getmeili/meilisearch:v1.10
+    container_name: openshelf_meilisearch
+    restart: unless-stopped
+    environment:
+      MEILI_ENV: development
+      MEILI_MASTER_KEY: 6o4WhepdzMxWBpRInGvNgge5
+    volumes:
+      - meili_data:/meili_data
+    ports:
+      - "7700:7700"
+
 volumes:
   postgres_data:
   minio_data:
+  meili_data:

@@ -5,12 +5,55 @@ const validate = require('../middleware/validate')
 const { authenticate, authorize } = require('../middleware/auth')
 const upload = require('../middleware/upload')
 const reviewController = require('../controllers/review.controller')
+const resourceService = require('../services/resource.service')
+const searchService = require('../services/search.service')
 
-// ── Public ────────────────────────────────────────────────────
+// Search endpoint
+router.get('/search', async (req, res, next) => {
+  try {
+    const { q, type, language, page, limit } = req.query;
+
+    if (!q || q.trim().length < 2) {
+      return res.json({
+        data: [],
+        meta: { total: 0, page: 1, limit: 10, pages: 0 }
+      })
+    }
+
+    let result
+
+    try {
+      // Try Meilisearch first — fast, typo-tolerant
+      result = await searchService.search({
+        q,
+        type,
+        language,
+        page: page || 1,
+        limit: limit || 20,
+      })
+    } catch (meiliErr) {
+      // Fall back to PostgreSQL if Meilisearch is down
+      console.warn('Meilisearch unavailable, falling back to PostgreSQL:', meiliErr.message)
+      result = await resourceService.list({
+        search: q,
+        type,
+        language,
+        page: page || 1,
+        limit: limit || 20,
+      })
+    }
+
+    res.json(result)
+  } catch (err) {
+    next(err)
+  }
+})
+
+// Public Endpoints
 router.get('/', controller.list)
 router.get('/:slug', controller.getOne)
 
-// ── Authenticated ─────────────────────────────────────────────
+// Authenticated
 router.post(
   '/',
   authenticate,
@@ -32,7 +75,7 @@ router.patch(
   controller.update
 )
 
-// ── Admin / Moderator only ────────────────────────────────────
+// Admin / Moderator only
 router.patch(
   '/:slug/publish',
   authenticate,

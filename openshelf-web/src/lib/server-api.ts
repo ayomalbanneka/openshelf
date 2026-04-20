@@ -40,6 +40,13 @@ export const serverApi = {
       return res.json()
     },
 
+    search: async (params?: FetchOptions['params']) => {
+      const url = buildUrl('/resources/search', params)
+      const res = await fetch(url, { cache: 'no-store' })
+      if (!res.ok) throw new Error('Search failed')
+      return res.json()
+    },
+
     categories: {
       list: async () => {
         const res = await fetch(`${BASE_URL}/categories`, { cache: 'no-store' })

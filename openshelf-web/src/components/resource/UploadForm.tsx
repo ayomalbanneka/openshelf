@@ -143,7 +143,7 @@ function ThumbnailUpload({ thumbnail, setThumbnail }: {
             style={{ border: '1px solid hsl(var(--border))' }}
           />
           <div className="flex flex-col gap-2">
-            <p className="text-xs font-medium truncate max-w-[200px]">{thumbnail!.name}</p>
+            <p className="text-xs font-medium truncate max-w-50">{thumbnail!.name}</p>
             <p className="text-xs" style={{ color: 'hsl(var(--muted-foreground))' }}>
               {(thumbnail!.size / (1024 * 1024)).toFixed(2)} MB
             </p>
@@ -559,7 +559,9 @@ export function UploadForm({ categories }: Props) {
               </svg>
             </div>
             <div className="flex-1 min-w-0">
-              <p className="text-sm font-medium truncate">{file.name}</p>
+              <p className="text-sm font-medium truncate" style={{ color: '#14532d' }}>
+                {file.name}
+              </p>
               <p className="text-xs mt-0.5" style={{ color: '#16a34a' }}>
                 {(file.size / (1024 * 1024)).toFixed(2)} MB — ready to upload
               </p>
