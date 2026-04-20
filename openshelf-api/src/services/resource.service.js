@@ -2,6 +2,7 @@ const prisma = require('../config/prisma')
 const { PrismaClient, Prisma } = require('@prisma/client')
 const slugify = require('../utils/slugify')
 const { uploadFile, deleteFile } = require('./storage.service')
+const searchService = require('./search.service')
 
 // List
 const list = async ({ type, category, language, search, page = 1, limit = 20 }) => {
@@ -261,6 +262,17 @@ const create = async (data, files, userId) => {
     },
   })
 
+  // Sync to Meilisearch after creating
+  // Re-fetch with relations for accurate indexing
+  const full = await prisma.resource.findUnique({
+    where: { id: resource.id },
+    include: {
+      category: { select: { id: true, name: true, slug: true } },
+      tags: { include: { tag: true } },
+    },
+  })
+  searchService.upsertResource(full)
+
   // Upload each lesson's file independently to resources/course/lessons
   if (isCourse && lessons) {
     const lessonsMeta = JSON.parse(lessons)
@@ -354,6 +366,18 @@ const publish = async (slug) => {
     throw err
   }
 
+  const updated = await prisma.resource.update({
+    where: { id: resource.id },
+    data: { isPublished: true, publishedAt: new Date() },
+    include: {
+      category: { select: { id: true, name: true, slug: true } },
+      tags: { include: { tag: true } },
+    },
+  })
+
+  // Now it's published — add to search index
+  searchService.upsertResource(updated)
+
   return prisma.resource.update({
     where: { id: resource.id },
     data: { isPublished: true, publishedAt: new Date() },
@@ -381,6 +405,8 @@ const remove = async (slug, requestingUser) => {
 
   await deleteFile(resource.fileUrl)
   await prisma.resource.delete({ where: { id: resource.id } })
+
+  searchService.deleteResourceFromIndex(resource.id)
   return { message: 'Resource deleted' }
 }
 

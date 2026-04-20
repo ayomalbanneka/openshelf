@@ -13,6 +13,7 @@ const categoryRoutes = require('./routes/category.routes'); // Routes for managi
 const userRoutes = require('./routes/user.routes'); // Routes for user profiles, following, etc.
 const readingListRoutes = require('./routes/readingList.routes'); // Routes for managing reading lists (create, update, delete, add/remove resources)
 const clubRoutes = require('./routes/club.routes'); // Routes for book clubs (create club, join/leave club, discussions, comments)
+const {configureIndex} = require('./config/meilisearch')
 
 const app = express()
 
@@ -29,6 +30,9 @@ app.use(cookieParser())
 app.get('/health', (req, res) => {
   res.json({ status: 'ok', env: process.env.NODE_ENV })
 })
+
+// Configure Meilisearch index on startup
+configureIndex();
 
 // API routes
 app.use('/api/auth', authRoutes)

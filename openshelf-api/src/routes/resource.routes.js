@@ -6,6 +6,7 @@ const { authenticate, authorize } = require('../middleware/auth')
 const upload = require('../middleware/upload')
 const reviewController = require('../controllers/review.controller')
 const resourceService = require('../services/resource.service')
+const searchService = require('../services/search.service')
 
 // Search endpoint
 router.get('/search', async (req, res, next) => {
@@ -19,13 +20,28 @@ router.get('/search', async (req, res, next) => {
       })
     }
 
-    const result = await resourceService.list({
-      search: q,
-      type,
-      language,
-      page: page || 1,
-      limit: limit || 10,
-    })
+    let result
+
+    try {
+      // Try Meilisearch first — fast, typo-tolerant
+      result = await searchService.search({
+        q,
+        type,
+        language,
+        page: page || 1,
+        limit: limit || 20,
+      })
+    } catch (meiliErr) {
+      // Fall back to PostgreSQL if Meilisearch is down
+      console.warn('Meilisearch unavailable, falling back to PostgreSQL:', meiliErr.message)
+      result = await resourceService.list({
+        search: q,
+        type,
+        language,
+        page: page || 1,
+        limit: limit || 20,
+      })
+    }
 
     res.json(result)
   } catch (err) {
