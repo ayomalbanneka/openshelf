@@ -13,6 +13,7 @@ const categoryRoutes = require('./routes/category.routes'); // Routes for managi
 const userRoutes = require('./routes/user.routes'); // Routes for user profiles, following, etc.
 const readingListRoutes = require('./routes/readingList.routes'); // Routes for managing reading lists (create, update, delete, add/remove resources)
 const clubRoutes = require('./routes/club.routes'); // Routes for book clubs (create club, join/leave club, discussions, comments)
+const tagRoutes = require('./routes/tag.routes'); // Routes for managing tags (create, list)
 const {configureIndex} = require('./config/meilisearch')
 
 const app = express()
@@ -41,6 +42,7 @@ app.use('/api/categories', categoryRoutes)
 app.use('/api/users', userRoutes)
 app.use('/api/lists', readingListRoutes)
 app.use('/api/clubs', clubRoutes)
+app.use('/api/tags', tagRoutes)
 
 // 404 handler
 app.use((req, res) => {

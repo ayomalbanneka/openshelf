@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
@@ -15,6 +15,12 @@ interface Category {
   children: { id: string; name: string; slug: string }[]
 }
 
+interface Tag {
+  id: string
+  name: string
+  slug: string
+}
+
 interface Lesson {
   id: string
   title: string
@@ -24,19 +30,20 @@ interface Lesson {
 
 interface Props {
   categories: Category[]
+  tags: Tag[]
 }
 
 const schema = z.object({
-  title: z.string().min(2, 'Title must be at least 2 characters'),
-  type: z.enum(['BOOK', 'COURSE', 'EXAM_PAPER', 'DOCUMENT', 'AUDIO']),
-  categoryId: z.string().min(1, 'Category is required'),
-  language: z.string().min(1, 'Language is required'),
-  description: z.string().optional(),
-  author: z.string().optional(),
-  publisher: z.string().optional(),
-  isbn: z.string().optional(),
+  title:           z.string().min(2, 'Title must be at least 2 characters'),
+  type:            z.enum(['BOOK', 'COURSE', 'EXAM_PAPER', 'DOCUMENT', 'AUDIO']),
+  categoryId:      z.string().min(1, 'Category is required'),
+  language:        z.string().min(1, 'Language is required'),
+  description:     z.string().optional(),
+  author:          z.string().optional(),
+  publisher:       z.string().optional(),
+  isbn:            z.string().optional(),
   publicationYear: z.string().optional(),
-  pageCount: z.string().optional(),
+  pageCount:       z.string().optional(),
 })
 
 type FormData = z.infer<typeof schema>
@@ -104,6 +111,183 @@ function SectionHeader({ step, title, subtitle }: {
   )
 }
 
+// ── Tag Picker ───────────────────────────────────────────────
+function TagPicker({ availableTags, selectedIds, onChange }: {
+  availableTags: Tag[]
+  selectedIds: string[]
+  onChange: (ids: string[]) => void
+}) {
+  const [query, setQuery]       = useState('')
+  const [creating, setCreating] = useState(false)
+  const inputRef                = useRef<HTMLInputElement>(null)
+
+  const filtered = availableTags.filter(
+    (t) =>
+      t.name.toLowerCase().includes(query.toLowerCase()) &&
+      !selectedIds.includes(t.id)
+  )
+
+  const selected = availableTags.filter((t) => selectedIds.includes(t.id))
+
+  const toggle = (id: string) => {
+    if (selectedIds.includes(id)) {
+      onChange(selectedIds.filter((x) => x !== id))
+    } else {
+      onChange([...selectedIds, id])
+    }
+    setQuery('')
+  }
+
+  const handleCreateTag = async () => {
+    const name = query.trim()
+    if (!name) return
+    setCreating(true)
+    try {
+      const { data } = await http.post('/tags', { name })
+      // Add the newly created tag to selection
+      availableTags.push(data)
+      onChange([...selectedIds, data.id])
+      setQuery('')
+    } catch {
+      // Tag might already exist — try to find it
+      const existing = availableTags.find(
+        (t) => t.name.toLowerCase() === name.toLowerCase()
+      )
+      if (existing) toggle(existing.id)
+    } finally {
+      setCreating(false)
+    }
+  }
+
+  const showCreate =
+    query.trim().length > 0 &&
+    !availableTags.some((t) => t.name.toLowerCase() === query.trim().toLowerCase())
+
+  return (
+    <div className="flex flex-col gap-3">
+      <label className="text-sm font-medium">Tags</label>
+      <p className="text-xs -mt-1.5" style={{ color: 'hsl(var(--muted-foreground))' }}>
+        Select existing tags or type to create a new one
+      </p>
+
+      {/* Selected tags */}
+      {selected.length > 0 && (
+        <div className="flex flex-wrap gap-1.5">
+          {selected.map((tag) => (
+            <span
+              key={tag.id}
+              className="inline-flex items-center gap-1 text-xs px-2.5 py-1 rounded-full font-medium"
+              style={{ backgroundColor: '#dbeafe', color: '#1d4ed8' }}
+            >
+              #{tag.name}
+              <button
+                type="button"
+                onClick={() => onChange(selectedIds.filter((x) => x !== tag.id))}
+                className="ml-0.5 hover:opacity-70 transition-opacity"
+              >
+                <svg width="10" height="10" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
+                  <path d="M18 6L6 18M6 6l12 12" strokeLinecap="round"/>
+                </svg>
+              </button>
+            </span>
+          ))}
+        </div>
+      )}
+
+      {/* Search / create input */}
+      <div className="relative">
+        <input
+          ref={inputRef}
+          type="text"
+          value={query}
+          onChange={(e) => setQuery(e.target.value)}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter') {
+              e.preventDefault()
+              if (filtered.length > 0) toggle(filtered[0].id)
+              else if (showCreate) handleCreateTag()
+            }
+          }}
+          placeholder="Search or create tags…"
+          className="h-10 w-full rounded-xl px-3 text-sm outline-none focus:ring-2 focus:ring-blue-500 transition-all"
+          style={inputStyle}
+        />
+      </div>
+
+      {/* Dropdown suggestions */}
+      {query.trim().length > 0 && (
+        <div
+          className="rounded-xl overflow-hidden"
+          style={{ border: '1px solid hsl(var(--border))' }}
+        >
+          {filtered.map((tag) => (
+            <button
+              key={tag.id}
+              type="button"
+              onClick={() => toggle(tag.id)}
+              className="w-full flex items-center gap-2 px-3 py-2 text-sm text-left transition-colors hover:bg-blue-50"
+              style={{ color: 'hsl(var(--foreground))' }}
+            >
+              <svg width="12" height="12" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/>
+                <line x1="7" y1="7" x2="7.01" y2="7"/>
+              </svg>
+              #{tag.name}
+            </button>
+          ))}
+
+          {showCreate && (
+            <button
+              type="button"
+              onClick={handleCreateTag}
+              disabled={creating}
+              className="w-full flex items-center gap-2 px-3 py-2 text-sm text-left transition-colors hover:bg-blue-50 disabled:opacity-50"
+              style={{
+                color: '#2563eb',
+                borderTop: filtered.length > 0 ? '1px solid hsl(var(--border))' : 'none',
+              }}
+            >
+              <svg width="12" height="12" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                <path d="M12 5v14M5 12h14" strokeLinecap="round"/>
+              </svg>
+              {creating ? 'Creating…' : `Create tag "#${query.trim()}"`}
+            </button>
+          )}
+
+          {filtered.length === 0 && !showCreate && (
+            <p className="px-3 py-2 text-xs" style={{ color: 'hsl(var(--muted-foreground))' }}>
+              No tags found
+            </p>
+          )}
+        </div>
+      )}
+
+      {/* All available tags (when input is empty) */}
+      {query.trim().length === 0 && availableTags.length > 0 && (
+        <div className="flex flex-wrap gap-1.5">
+          {availableTags
+            .filter((t) => !selectedIds.includes(t.id))
+            .map((tag) => (
+              <button
+                key={tag.id}
+                type="button"
+                onClick={() => toggle(tag.id)}
+                className="text-xs px-2.5 py-1 rounded-full transition-all hover:opacity-80"
+                style={{
+                  border: '1px solid hsl(var(--border))',
+                  color: 'hsl(var(--muted-foreground))',
+                  backgroundColor: 'hsl(var(--background))',
+                }}
+              >
+                #{tag.name}
+              </button>
+            ))}
+        </div>
+      )}
+    </div>
+  )
+}
+
 // ── Thumbnail uploader ───────────────────────────────────────
 function ThumbnailUpload({ thumbnail, setThumbnail }: {
   thumbnail: File | null
@@ -112,15 +296,9 @@ function ThumbnailUpload({ thumbnail, setThumbnail }: {
   const [preview, setPreview] = useState<string | null>(null)
 
   useEffect(() => {
-    if (!thumbnail) {
-      setPreview(null)
-      return
-    }
-
+    if (!thumbnail) { setPreview(null); return }
     const reader = new FileReader()
-    reader.onload = () => {
-      setPreview(typeof reader.result === 'string' ? reader.result : null)
-    }
+    reader.onload = () => setPreview(typeof reader.result === 'string' ? reader.result : null)
     reader.readAsDataURL(thumbnail)
   }, [thumbnail])
 
@@ -147,11 +325,8 @@ function ThumbnailUpload({ thumbnail, setThumbnail }: {
             <p className="text-xs" style={{ color: 'hsl(var(--muted-foreground))' }}>
               {(thumbnail!.size / (1024 * 1024)).toFixed(2)} MB
             </p>
-            <button
-              type="button"
-              onClick={() => setThumbnail(null)}
-              className="text-xs text-red-500 hover:underline text-left"
-            >
+            <button type="button" onClick={() => setThumbnail(null)}
+              className="text-xs text-red-500 hover:underline text-left">
               Remove image
             </button>
           </div>
@@ -159,15 +334,10 @@ function ThumbnailUpload({ thumbnail, setThumbnail }: {
       ) : (
         <label
           className="flex items-center gap-3 cursor-pointer rounded-xl px-4 py-3 transition-colors w-fit"
-          style={{
-            border: '1px dashed hsl(var(--border))',
-            color: 'hsl(var(--muted-foreground))',
-          }}
+          style={{ border: '1px dashed hsl(var(--border))', color: 'hsl(var(--muted-foreground))' }}
         >
-          <div
-            className="h-9 w-9 rounded-lg flex items-center justify-center shrink-0"
-            style={{ backgroundColor: 'hsl(var(--muted))' }}
-          >
+          <div className="h-9 w-9 rounded-lg flex items-center justify-center shrink-0"
+            style={{ backgroundColor: 'hsl(var(--muted))' }}>
             <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
               <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/>
               <circle cx="8.5" cy="8.5" r="1.5"/>
@@ -178,10 +348,7 @@ function ThumbnailUpload({ thumbnail, setThumbnail }: {
             <p className="text-sm font-medium">Upload cover image</p>
             <p className="text-xs mt-0.5">JPG, PNG, WebP up to 10 MB</p>
           </div>
-          <input
-            type="file"
-            accept="image/jpeg,image/png,image/webp"
-            className="hidden"
+          <input type="file" accept="image/jpeg,image/png,image/webp" className="hidden"
             onChange={(e) => {
               const f = e.target.files?.[0]
               if (f && f.size <= 10 * 1024 * 1024) setThumbnail(f)
@@ -199,21 +366,12 @@ function CourseLessons({ lessons, setLessons }: {
   setLessons: (l: Lesson[]) => void
 }) {
   const addLesson = () => {
-    setLessons([...lessons, {
-      id: Math.random().toString(36).slice(2),
-      title: '',
-      duration: '',
-      file: null,
-    }])
+    setLessons([...lessons, { id: Math.random().toString(36).slice(2), title: '', duration: '', file: null }])
   }
-
   const updateLesson = (id: string, key: keyof Lesson, value: any) => {
     setLessons(lessons.map((l) => l.id === id ? { ...l, [key]: value } : l))
   }
-
-  const removeLesson = (id: string) => {
-    setLessons(lessons.filter((l) => l.id !== id))
-  }
+  const removeLesson = (id: string) => setLessons(lessons.filter((l) => l.id !== id))
 
   return (
     <div className="flex flex-col gap-3">
@@ -224,10 +382,8 @@ function CourseLessons({ lessons, setLessons }: {
             Add each lesson with its video or audio file and duration
           </p>
         </div>
-        <span
-          className="text-xs px-2.5 py-1 rounded-full font-medium"
-          style={{ backgroundColor: 'hsl(var(--muted))', color: 'hsl(var(--muted-foreground))' }}
-        >
+        <span className="text-xs px-2.5 py-1 rounded-full font-medium"
+          style={{ backgroundColor: 'hsl(var(--muted))', color: 'hsl(var(--muted-foreground))' }}>
           {lessons.length} lesson{lessons.length !== 1 ? 's' : ''}
         </span>
       </div>
@@ -235,58 +391,37 @@ function CourseLessons({ lessons, setLessons }: {
       {lessons.length > 0 && (
         <div className="flex flex-col gap-2">
           {lessons.map((lesson, idx) => (
-            <div
-              key={lesson.id}
-              className="rounded-xl overflow-hidden"
-              style={{ border: '1px solid hsl(var(--border))' }}
-            >
-              {/* Lesson header */}
-              <div
-                className="flex items-center gap-3 px-4 py-3"
-                style={{ backgroundColor: 'hsl(var(--muted))' }}
-              >
-                <div
-                  className="h-7 w-7 rounded-lg flex items-center justify-center text-xs font-bold text-white shrink-0"
-                  style={{ backgroundColor: '#2563eb' }}
-                >
+            <div key={lesson.id} className="rounded-xl overflow-hidden"
+              style={{ border: '1px solid hsl(var(--border))' }}>
+              <div className="flex items-center gap-3 px-4 py-3"
+                style={{ backgroundColor: 'hsl(var(--muted))' }}>
+                <div className="h-7 w-7 rounded-lg flex items-center justify-center text-xs font-bold text-white shrink-0"
+                  style={{ backgroundColor: '#2563eb' }}>
                   {idx + 1}
                 </div>
-                <input
-                  type="text"
-                  value={lesson.title}
+                <input type="text" value={lesson.title}
                   onChange={(e) => updateLesson(lesson.id, 'title', e.target.value)}
                   placeholder={`Lesson ${idx + 1} title…`}
                   className="flex-1 bg-transparent text-sm outline-none font-medium"
-                  style={{ color: 'hsl(var(--foreground))' }}
-                />
-                <input
-                  type="text"
-                  value={lesson.duration}
+                  style={{ color: 'hsl(var(--foreground))' }} />
+                <input type="text" value={lesson.duration}
                   onChange={(e) => updateLesson(lesson.id, 'duration', e.target.value)}
                   placeholder="MM:SS"
                   className="w-16 bg-transparent text-xs outline-none text-right"
-                  style={{ color: 'hsl(var(--muted-foreground))' }}
-                />
-                <button
-                  type="button"
-                  onClick={() => removeLesson(lesson.id)}
+                  style={{ color: 'hsl(var(--muted-foreground))' }} />
+                <button type="button" onClick={() => removeLesson(lesson.id)}
                   className="shrink-0 h-6 w-6 rounded-md flex items-center justify-center transition-colors hover:bg-red-100 hover:text-red-500"
-                  style={{ color: 'hsl(var(--muted-foreground))' }}
-                >
+                  style={{ color: 'hsl(var(--muted-foreground))' }}>
                   <svg width="12" height="12" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
                     <path d="M18 6L6 18M6 6l12 12" strokeLinecap="round"/>
                   </svg>
                 </button>
               </div>
-
-              {/* File attach */}
               <div className="px-4 py-3">
                 {lesson.file ? (
                   <div className="flex items-center gap-3">
-                    <div
-                      className="h-8 w-8 rounded-lg flex items-center justify-center shrink-0"
-                      style={{ backgroundColor: '#dcfce7' }}
-                    >
+                    <div className="h-8 w-8 rounded-lg flex items-center justify-center shrink-0"
+                      style={{ backgroundColor: '#dcfce7' }}>
                       <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="#16a34a" strokeWidth={2}>
                         <path d="M9 12l2 2 4-4M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0z" strokeLinecap="round" strokeLinejoin="round"/>
                       </svg>
@@ -297,35 +432,23 @@ function CourseLessons({ lessons, setLessons }: {
                         {(lesson.file.size / (1024 * 1024)).toFixed(1)} MB
                       </p>
                     </div>
-                    <button
-                      type="button"
-                      onClick={() => updateLesson(lesson.id, 'file', null)}
-                      className="text-xs text-red-500 hover:underline shrink-0"
-                    >
+                    <button type="button" onClick={() => updateLesson(lesson.id, 'file', null)}
+                      className="text-xs text-red-500 hover:underline shrink-0">
                       Remove
                     </button>
                   </div>
                 ) : (
-                  <label
-                    className="flex items-center gap-3 cursor-pointer rounded-lg px-3 py-2.5"
-                    style={{
-                      border: '1px dashed hsl(var(--border))',
-                      color: 'hsl(var(--muted-foreground))',
-                    }}
-                  >
+                  <label className="flex items-center gap-3 cursor-pointer rounded-lg px-3 py-2.5"
+                    style={{ border: '1px dashed hsl(var(--border))', color: 'hsl(var(--muted-foreground))' }}>
                     <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
                       <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M17 8l-5-5-5 5M12 3v12" strokeLinecap="round" strokeLinejoin="round"/>
                     </svg>
                     <span className="text-xs">Click to attach video or audio file</span>
-                    <input
-                      type="file"
-                      accept="video/*,audio/*,.mp4,.mov,.avi,.mkv,.mp3,.wav"
-                      className="hidden"
+                    <input type="file" accept="video/*,audio/*,.mp4,.mov,.avi,.mkv,.mp3,.wav" className="hidden"
                       onChange={(e) => {
                         const f = e.target.files?.[0]
                         if (f) updateLesson(lesson.id, 'file', f)
-                      }}
-                    />
+                      }} />
                   </label>
                 )}
               </div>
@@ -335,23 +458,15 @@ function CourseLessons({ lessons, setLessons }: {
       )}
 
       {lessons.length === 0 && (
-        <div
-          className="text-center py-8 rounded-xl text-sm"
-          style={{
-            border: '2px dashed hsl(var(--border))',
-            color: 'hsl(var(--muted-foreground))',
-          }}
-        >
+        <div className="text-center py-8 rounded-xl text-sm"
+          style={{ border: '2px dashed hsl(var(--border))', color: 'hsl(var(--muted-foreground))' }}>
           No lessons yet. Add your first lesson below.
         </div>
       )}
 
-      <button
-        type="button"
-        onClick={addLesson}
+      <button type="button" onClick={addLesson}
         className="flex items-center justify-center gap-2 py-2.5 rounded-xl text-sm font-medium transition-colors hover:opacity-80"
-        style={{ border: '1px dashed hsl(var(--border))', color: '#2563eb' }}
-      >
+        style={{ border: '1px dashed hsl(var(--border))', color: '#2563eb' }}>
         <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
           <path d="M12 5v14M5 12h14" strokeLinecap="round"/>
         </svg>
@@ -362,15 +477,17 @@ function CourseLessons({ lessons, setLessons }: {
 }
 
 // ── Main Upload Form ─────────────────────────────────────────────
-export function UploadForm({ categories }: Props) {
+export function UploadForm({ categories, tags: initialTags }: Props) {
   const router = useRouter()
-  const [file, setFile]           = useState<File | null>(null)
-  const [thumbnail, setThumbnail] = useState<File | null>(null)
-  const [fileError, setFileError] = useState('')
-  const [uploading, setUploading] = useState(false)
-  const [progress, setProgress]   = useState(0)
-  const [success, setSuccess]     = useState(false)
-  const [lessons, setLessons]     = useState<Lesson[]>([])
+  const [file, setFile]               = useState<File | null>(null)
+  const [thumbnail, setThumbnail]     = useState<File | null>(null)
+  const [fileError, setFileError]     = useState('')
+  const [uploading, setUploading]     = useState(false)
+  const [progress, setProgress]       = useState(0)
+  const [success, setSuccess]         = useState(false)
+  const [lessons, setLessons]         = useState<Lesson[]>([])
+  const [selectedTagIds, setSelectedTagIds] = useState<string[]>([])
+  const [availableTags, setAvailableTags]   = useState<Tag[]>(initialTags)
 
   const {
     register, handleSubmit, watch, setValue, setError,
@@ -399,32 +516,26 @@ export function UploadForm({ categories }: Props) {
   }
 
   const onSubmit = async (data: FormData) => {
-    if (isCourse && lessons.length === 0) {
-      setFileError('Add at least one lesson')
-      return
-    }
-    if (!isCourse && !file) {
-      setFileError('Please select a file')
-      return
-    }
+    if (isCourse && lessons.length === 0) { setFileError('Add at least one lesson'); return }
+    if (!isCourse && !file) { setFileError('Please select a file'); return }
 
     setUploading(true)
     setProgress(0)
 
     try {
       const formData = new FormData()
-
-      // Append text fields
       Object.entries(data).forEach(([key, value]) => {
         if (value) formData.append(key, String(value))
       })
 
-      // Thumbnail (optional, all types)
+      // Append selected tag IDs as JSON string
+      if (selectedTagIds.length > 0) {
+        formData.append('tagIds', JSON.stringify(selectedTagIds))
+      }
+
       if (thumbnail) formData.append('thumbnail', thumbnail)
 
       if (isCourse) {
-        // Courses: send lessons metadata + each lesson file separately
-        // No main 'file' field needed
         formData.append('lessons', JSON.stringify(
           lessons.map((l) => ({ title: l.title, duration: l.duration }))
         ))
@@ -432,7 +543,6 @@ export function UploadForm({ categories }: Props) {
           if (l.file) formData.append(`lessonFile_${i}`, l.file)
         })
       } else {
-        // All other types: send main file
         formData.append('file', file!)
       }
 
@@ -452,7 +562,6 @@ export function UploadForm({ categories }: Props) {
     }
   }
 
-  // ── Success ──────────────────────────────────────────────────
   if (success) {
     return (
       <div className="flex flex-col items-center gap-4 py-16 text-center">
@@ -484,16 +593,13 @@ export function UploadForm({ categories }: Props) {
           {TYPES.map((t) => {
             const active = selectedType === t.value
             return (
-              <button
-                key={t.value}
-                type="button"
+              <button key={t.value} type="button"
                 onClick={() => setValue('type', t.value as FormData['type'])}
                 className="flex items-start gap-3 p-4 rounded-xl text-left transition-all"
                 style={{
                   border: `2px solid ${active ? '#2563eb' : 'hsl(var(--border))'}`,
                   backgroundColor: active ? '#eff6ff' : 'hsl(var(--background))',
-                }}
-              >
+                }}>
                 <span className="text-2xl leading-none mt-0.5">{t.icon}</span>
                 <div>
                   <p className="font-semibold text-sm leading-tight"
@@ -505,10 +611,8 @@ export function UploadForm({ categories }: Props) {
                   </p>
                 </div>
                 {active && (
-                  <div
-                    className="ml-auto h-5 w-5 rounded-full flex items-center justify-center shrink-0 mt-0.5"
-                    style={{ backgroundColor: '#2563eb' }}
-                  >
+                  <div className="ml-auto h-5 w-5 rounded-full flex items-center justify-center shrink-0 mt-0.5"
+                    style={{ backgroundColor: '#2563eb' }}>
                     <svg width="10" height="10" fill="none" viewBox="0 0 24 24" stroke="white" strokeWidth={3}>
                       <path d="M5 13l4 4L19 7" strokeLinecap="round" strokeLinejoin="round"/>
                     </svg>
@@ -527,14 +631,11 @@ export function UploadForm({ categories }: Props) {
           title={isCourse ? 'Add course content' : 'Upload your file'}
           subtitle={isCourse ? 'Upload each lesson file separately' : undefined}
         />
-
         {isCourse ? (
           <CourseLessons lessons={lessons} setLessons={setLessons} />
         ) : !file ? (
-          <label
-            className="flex flex-col items-center justify-center gap-3 rounded-2xl p-12 text-center cursor-pointer"
-            style={{ border: '2px dashed hsl(var(--border))', backgroundColor: 'hsl(var(--muted))' }}
-          >
+          <label className="flex flex-col items-center justify-center gap-3 rounded-2xl p-12 text-center cursor-pointer"
+            style={{ border: '2px dashed hsl(var(--border))', backgroundColor: 'hsl(var(--muted))' }}>
             <input id="file-input" type="file" onChange={handleFile} className="hidden"
               accept=".pdf,.doc,.docx,.epub,.mp3,.wav,.ogg,.m4a" />
             <div className="h-12 w-12 rounded-xl flex items-center justify-center" style={{ backgroundColor: '#eff6ff' }}>
@@ -559,9 +660,7 @@ export function UploadForm({ categories }: Props) {
               </svg>
             </div>
             <div className="flex-1 min-w-0">
-              <p className="text-sm font-medium truncate" style={{ color: '#14532d' }}>
-                {file.name}
-              </p>
+              <p className="text-sm font-medium truncate" style={{ color: '#14532d' }}>{file.name}</p>
               <p className="text-xs mt-0.5" style={{ color: '#16a34a' }}>
                 {(file.size / (1024 * 1024)).toFixed(2)} MB — ready to upload
               </p>
@@ -571,7 +670,6 @@ export function UploadForm({ categories }: Props) {
             </button>
           </div>
         )}
-
         {fileError && (
           <p className="text-xs text-red-500 flex items-center gap-1.5">
             <svg width="12" height="12" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
@@ -594,15 +692,11 @@ export function UploadForm({ categories }: Props) {
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div className="sm:col-span-2">
             <Field label="Title" required error={errors.title?.message}>
-              <input
-                {...register('title')}
-                placeholder="e.g. Introduction to Algorithms"
+              <input {...register('title')} placeholder="e.g. Introduction to Algorithms"
                 className="h-10 rounded-xl px-3 text-sm outline-none focus:ring-2 focus:ring-blue-500 transition-all"
-                style={inputStyle}
-              />
+                style={inputStyle} />
             </Field>
           </div>
-
           <Field label="Category" required error={errors.categoryId?.message}>
             <select {...register('categoryId')}
               className="h-10 rounded-xl px-3 text-sm outline-none focus:ring-2 focus:ring-blue-500 transition-all"
@@ -618,7 +712,6 @@ export function UploadForm({ categories }: Props) {
               ))}
             </select>
           </Field>
-
           <Field label="Language" required>
             <select {...register('language')}
               className="h-10 rounded-xl px-3 text-sm outline-none focus:ring-2 focus:ring-blue-500 transition-all"
@@ -628,15 +721,21 @@ export function UploadForm({ categories }: Props) {
               ))}
             </select>
           </Field>
-
           <div className="sm:col-span-2">
             <Field label="Description">
               <textarea {...register('description')} rows={3}
                 placeholder="Tell us more about this resource…"
                 className="rounded-xl px-3 py-2 text-sm outline-none resize-none focus:ring-2 focus:ring-blue-500 transition-all w-full"
-                style={inputStyle}
-              />
+                style={inputStyle} />
             </Field>
+          </div>
+          {/* Tags */}
+          <div className="sm:col-span-2">
+            <TagPicker
+              availableTags={availableTags}
+              selectedIds={selectedTagIds}
+              onChange={setSelectedTagIds}
+            />
           </div>
         </div>
       </section>
@@ -724,11 +823,8 @@ export function UploadForm({ categories }: Props) {
         <p className="text-xs" style={{ color: 'hsl(var(--muted-foreground))' }}>
           Your upload will be reviewed by moderators before appearing publicly.
         </p>
-        <button
-          type="submit"
-          disabled={uploading}
-          className="flex items-center gap-2 px-6 py-2.5 rounded-xl bg-blue-600 text-white text-sm font-semibold hover:bg-blue-700 active:scale-[0.98] transition-all disabled:opacity-50 disabled:cursor-not-allowed shrink-0"
-        >
+        <button type="submit" disabled={uploading}
+          className="flex items-center gap-2 px-6 py-2.5 rounded-xl bg-blue-600 text-white text-sm font-semibold hover:bg-blue-700 active:scale-[0.98] transition-all disabled:opacity-50 disabled:cursor-not-allowed shrink-0">
           <svg width="15" height="15" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
             <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M17 8l-5-5-5 5M12 3v12" strokeLinecap="round" strokeLinejoin="round"/>
           </svg>

@@ -271,7 +271,7 @@ const create = async (data, files, userId) => {
       tags: { include: { tag: true } },
     },
   })
-  searchService.upsertResource(full)
+  await searchService.updateResourceIndex(full)
 
   // Upload each lesson's file independently to resources/course/lessons
   if (isCourse && lessons) {
@@ -376,7 +376,7 @@ const publish = async (slug) => {
   })
 
   // Now it's published — add to search index
-  searchService.upsertResource(updated)
+  await searchService.updateResourceIndex(updated)
 
   return prisma.resource.update({
     where: { id: resource.id },

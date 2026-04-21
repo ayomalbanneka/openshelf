@@ -6,15 +6,27 @@ export function SearchBar() {
   const router       = useRouter()
   const searchParams = useSearchParams()
   const inputRef     = useRef<HTMLInputElement>(null)
-  const timerRef     = useRef<ReturnType<typeof setTimeout> | undefined>(undefined)
+  const timerRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined)
 
-  const [value, setValue] = useState(searchParams.get('q') || '')
+  const [value, setValue]   = useState(searchParams.get('q') || '')
   const [focused, setFocused] = useState(false)
 
-  // Keep input in sync when URL changes (e.g. back/forward)
   useEffect(() => {
     setValue(searchParams.get('q') || '')
   }, [searchParams])
+
+  // ⌘K / Ctrl+K focuses the search bar from anywhere
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
+        e.preventDefault()
+        inputRef.current?.focus()
+        inputRef.current?.select()
+      }
+    }
+    window.addEventListener('keydown', handler)
+    return () => window.removeEventListener('keydown', handler)
+  }, [])
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const q = e.target.value
@@ -73,10 +85,24 @@ export function SearchBar() {
           onKeyDown={handleKeyDown}
           onFocus={() => setFocused(true)}
           onBlur={() => setFocused(false)}
-          placeholder="Search resources…"
+          placeholder="Search…"
           className="flex-1 bg-transparent text-sm outline-none"
           style={{ color: 'hsl(var(--foreground))' }}
         />
+
+        {/* Keyboard shortcut hint — hidden when focused or has value */}
+        {!focused && !value && (
+          <kbd
+            className="hidden sm:flex items-center gap-0.5 text-xs px-1.5 py-0.5 rounded shrink-0"
+            style={{
+              backgroundColor: 'hsl(var(--muted))',
+              color: 'hsl(var(--muted-foreground))',
+              border: '1px solid hsl(var(--border))',
+            }}
+          >
+            ⌘K
+          </kbd>
+        )}
 
         {/* Clear button */}
         {value && (
@@ -86,8 +112,8 @@ export function SearchBar() {
               setValue('')
               router.push('/search')
             }}
+            className="text-xs hover:opacity-70 transition-opacity shrink-0"
             style={{ color: 'hsl(var(--muted-foreground))' }}
-            className="text-xs hover:opacity-70 transition-opacity"
           >
             ✕
           </button>

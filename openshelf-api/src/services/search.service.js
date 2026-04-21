@@ -63,9 +63,7 @@ const search = async ({ q, type, language, page = 1, limit = 20 }) => {
     const index = getIndex()
     const offset = (Number(page) - 1) * Number(limit)
 
-    // Build filter string
-    const filters = []
-    filters.push('isPublished = true')
+    const filters = ['isPublished = true']
     if (type) filters.push(`type = "${type}"`)
     if (language) filters.push(`language = "${language}"`)
 
@@ -74,17 +72,30 @@ const search = async ({ q, type, language, page = 1, limit = 20 }) => {
         offset,
         filter: filters.join(' AND '),
         attributesToHighlight: ['title', 'author', 'description'],
-        highlightPreTag: '<mark>',
+        attributesToRetrieve: [
+            'id', 'title', 'slug', 'description', 'type', 'language',
+            'author', 'publisher', 'thumbnailUrl', 'pageCount',
+            'publicationYear', 'viewCount', 'categoryName', 'categorySlug',
+            'tags', 'createdAt',
+        ],
+        highlightPreTag: '<mark class="search-highlight">',
         highlightPostTag: '</mark>',
     })
 
+    // Merge _formatted highlights into each hit
+    const hits = result.hits.map((hit) => ({
+        ...hit,
+        _formatted: hit._formatted || {},
+    }))
+
     return {
-        data: result.hits,
+        data: hits,
         meta: {
             total: result.estimatedTotalHits,
             page: Number(page),
             limit: Number(limit),
             pages: Math.ceil(result.estimatedTotalHits / Number(limit)),
+            processingMs: result.processingTimeMs,
         },
     }
 }
