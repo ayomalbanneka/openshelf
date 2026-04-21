@@ -70,12 +70,24 @@ const login = async ({ email, password }) => {
   return { user: safeUser, ...tokens }
 }
 
-const refreshAccessToken = (refreshToken) => {
+const refreshAccessToken = async (refreshToken) => {
   try {
     const decoded = jwt.verify(refreshToken, process.env.JWT_REFRESH_SECRET)
 
+    // Ensure the token still maps to an active account.
+    const user = await prisma.user.findUnique({
+      where: { id: decoded.userId },
+      select: { id: true, isActive: true },
+    })
+
+    if (!user || !user.isActive) {
+      const err = new Error('User not found or deactivated')
+      err.status = 401
+      throw err
+    }
+
     const accessToken = jwt.sign(
-      { userId: decoded.userId },
+      { userId: user.id },
       process.env.JWT_SECRET,
       { expiresIn: process.env.JWT_EXPIRES_IN }
     )

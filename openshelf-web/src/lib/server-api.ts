@@ -67,6 +67,15 @@ export const serverApi = {
     }
   },
 
+  // Fetch the list of tags
+  tags: {
+    list: async () => {
+      const res = await fetch(`${BASE_URL}/tags`, { cache: 'no-store' })
+      if (!res.ok) throw new Error('Failed to fetch tags')
+      return res.json()
+    },
+  },
+
   users: { // Fetch user profile and uploads
     getProfile: async (id: string) => {
       const res = await fetch(`${BASE_URL}/users/${id}`, {

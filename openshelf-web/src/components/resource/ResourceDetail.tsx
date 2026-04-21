@@ -1,5 +1,5 @@
 'use client'
-import { useState } from 'react'
+import { useEffect, useState, type FormEvent } from 'react'
 import { useAuthStore } from '@/store/auth.store'
 import { http } from '@/lib/api'
 import { Resource } from '@/types'
@@ -247,20 +247,24 @@ export function ResourceDetail({ resource }: { resource: Resource }) {
 
           {/* Tags */}
           {resource.tags.length > 0 && (
-            <div className="flex flex-wrap gap-2">
-              {resource.tags.map(({ tag }) => (
-                <span
-                  key={tag.id}
-                  className="text-xs px-2.5 py-1 rounded-full"
-                  style={{
-                    backgroundColor: 'hsl(var(--muted))',
-                    color: 'hsl(var(--muted-foreground))',
-                    border: '1px solid hsl(var(--border))',
-                  }}
-                >
-                  {tag.name}
-                </span>
-              ))}
+            <div className="flex flex-col gap-2">
+              <p className="text-xs font-medium" style={{ color: 'hsl(var(--muted-foreground))' }}>Tags</p>
+              <div className="flex flex-wrap gap-1.5">
+                {resource.tags.map(({ tag }) => (
+                  <a
+                    key={tag.id}
+                    href={`/browse?search=${encodeURIComponent(tag.name)}`}
+                    className="inline-flex items-center gap-1 text-xs px-2.5 py-1 rounded-full font-medium transition-all hover:opacity-80"
+                    style={{ backgroundColor: '#dbeafe', color: '#1d4ed8' }}
+                  >
+                    <svg width="10" height="10" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                      <path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/>
+                      <line x1="7" y1="7" x2="7.01" y2="7"/>
+                    </svg>
+                    #{tag.name}
+                  </a>
+                ))}
+              </div>
             </div>
           )}
 
@@ -446,14 +450,14 @@ function ReviewsSection({ slug }: { slug: string }) {
   const [error, setError] = useState('')
 
   // Load reviews on mount
-  useState(() => {
+  useEffect(() => {
     http.get(`/resources/${slug}/reviews`)
       .then((r) => setReviews(r.data))
       .catch(() => { })
       .finally(() => setLoading(false))
-  })
+  }, [slug])
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = async (e: FormEvent) => {
     e.preventDefault()
     if (rating === 0) {
       setError('Please select a rating')

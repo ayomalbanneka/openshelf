@@ -6,7 +6,10 @@ import type { Metadata } from 'next'
 export const metadata: Metadata = { title: 'Upload resource — OpenShelf' }
 
 export default async function UploadPage() {
-  const categories = await serverApi.categories.list().catch(() => [])
+  const [categories, tags] = await Promise.all([
+    serverApi.categories.list().catch(() => []),
+    serverApi.tags.list().catch(() => []),
+  ])
 
   return (
     <RequireAuth>
@@ -17,7 +20,7 @@ export default async function UploadPage() {
             Share a book, course, exam paper, document or audio file with the world.
           </p>
         </div>
-        <UploadForm categories={categories} />
+        <UploadForm categories={categories} tags={tags} />
       </div>
     </RequireAuth>
   )
