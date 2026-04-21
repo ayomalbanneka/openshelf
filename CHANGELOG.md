@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.6.0](https://github.com/ayomalbanneka/openshelf/compare/v0.5.0...v0.6.0) (2026-04-21)
+
+
+### Features
+
+* **tags,search:** add tag create/list endpoints and enhance search with filters and highlighting ([#24](https://github.com/ayomalbanneka/openshelf/issues/24)) ([bc884d2](https://github.com/ayomalbanneka/openshelf/commit/bc884d2e9e00ad05d69842579f72f86af767956b))
+
 ## [0.5.0](https://github.com/ayomalbanneka/openshelf/compare/v0.4.0...v0.5.0) (2026-04-18)
 
 
