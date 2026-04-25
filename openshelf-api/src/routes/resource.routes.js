@@ -2,7 +2,7 @@ const router = require('express').Router()
 const { body } = require('express-validator')
 const controller = require('../controllers/resource.controller')
 const validate = require('../middleware/validate')
-const { authenticate, authorize } = require('../middleware/auth')
+const { authenticate } = require('../middleware/auth')
 const upload = require('../middleware/upload')
 const reviewController = require('../controllers/review.controller')
 const resourceService = require('../services/resource.service')
@@ -76,13 +76,6 @@ router.patch(
 )
 
 // Admin / Moderator only
-router.patch(
-  '/:slug/publish',
-  authenticate,
-  authorize('ADMIN', 'MODERATOR'),
-  controller.publish
-)
-
 // Reviews
 router.get('/:slug/reviews', reviewController.getReviews)
 router.post('/:slug/reviews', authenticate, reviewController.createReview)

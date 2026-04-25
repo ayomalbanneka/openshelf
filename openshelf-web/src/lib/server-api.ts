@@ -115,4 +115,24 @@ export const serverApi = {
       return res.json()
     },
   },
+
+  admin: {
+    getStats: async (token: string) => {
+      const res = await fetch(`${BASE_URL}/admin/stats`, {
+        cache:   'no-store',
+        headers: { Authorization: `Bearer ${token}` },
+      })
+      if (!res.ok) throw new Error('Unauthorized')
+      return res.json()
+    },
+
+    getPending: async (token: string, page = 1) => {
+      const res = await fetch(`${BASE_URL}/admin/pending?page=${page}`, {
+        cache:   'no-store',
+        headers: { Authorization: `Bearer ${token}` },
+      })
+      if (!res.ok) throw new Error('Unauthorized')
+      return res.json()
+    },
+  },
 }

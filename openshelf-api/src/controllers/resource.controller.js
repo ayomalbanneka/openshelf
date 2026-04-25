@@ -39,15 +39,6 @@ const update = async (req, res, next) => {
   }
 }
 
-const publish = async (req, res, next) => {
-  try {
-    const resource = await resourceService.publish(req.params.slug)
-    res.json(resource)
-  } catch (err) {
-    next(err)
-  }
-}
-
 const remove = async (req, res, next) => {
   try {
     const result = await resourceService.remove(req.params.slug, req.user)
@@ -57,4 +48,4 @@ const remove = async (req, res, next) => {
   }
 }
 
-module.exports = { list, getOne, create, update, publish, remove }
+module.exports = { list, getOne, create, update, remove }
