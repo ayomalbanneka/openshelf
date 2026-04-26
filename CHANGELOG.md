@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.7.0](https://github.com/ayomalbanneka/openshelf/compare/v0.6.0...v0.7.0) (2026-04-26)
+
+
+### Features
+
+* **admin:** implement admin dashboard with stats and resource moderation features ([06dbe77](https://github.com/ayomalbanneka/openshelf/commit/06dbe770d46a1e69832248b3e74f95b4faa27855))
+* **admin:** implement admin dashboard with stats and resource moderation features ([76e7d25](https://github.com/ayomalbanneka/openshelf/commit/76e7d2520906343cf34821a07545212e0cef3b48))
+
 ## [0.6.0](https://github.com/ayomalbanneka/openshelf/compare/v0.5.0...v0.6.0) (2026-04-21)
 
 
