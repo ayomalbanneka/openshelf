@@ -357,8 +357,8 @@ const update = async (slug, data, requestingUser) => {
 }
 
 // ── Publish ───────────────────────────────────────────────────
-const publish = async (slug) => {
-  const resource = await prisma.resource.findUnique({ where: { slug } })
+const publishById = async (id) => {
+  const resource = await prisma.resource.findUnique({ where: { id } })
 
   if (!resource) {
     const err = new Error('Resource not found')
@@ -378,10 +378,19 @@ const publish = async (slug) => {
   // Now it's published — add to search index
   await searchService.updateResourceIndex(updated)
 
-  return prisma.resource.update({
-    where: { id: resource.id },
-    data: { isPublished: true, publishedAt: new Date() },
-  })
+  return updated
+}
+
+const publish = async (slug) => {
+  const resource = await prisma.resource.findUnique({ where: { slug } })
+
+  if (!resource) {
+    const err = new Error('Resource not found')
+    err.status = 404
+    throw err
+  }
+
+  return publishById(resource.id)
 }
 
 // ── Delete ────────────────────────────────────────────────────
@@ -410,4 +419,4 @@ const remove = async (slug, requestingUser) => {
   return { message: 'Resource deleted' }
 }
 
-module.exports = { list, getOne, create, update, publish, remove }
+module.exports = { list, getOne, create, update, publish, publishById, remove }
