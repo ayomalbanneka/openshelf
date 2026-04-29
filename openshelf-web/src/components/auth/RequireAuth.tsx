@@ -1,32 +1,34 @@
 'use client'
+import { useEffect, useState } from 'react'
+import { useRouter, usePathname } from 'next/navigation'
+import { useAuthStore } from '@/store/auth.store'
 
-import { useAuthStore } from "@/store/auth.store"
-import { useRouter } from "next/navigation"
-import React, { useEffect, useState } from "react"
+// This component wraps protected pages and redirects unauthenticated users to the login page.
+export function RequireAuth({ children, requireVerified = false }: {
+  children: React.ReactNode
+  requireVerified?: boolean
+}) {
+  const { user }  = useAuthStore()
+  const router    = useRouter()
+  const pathname  = usePathname()
+  const [hydrated, setHydrated] = useState(false)
 
-// A component that checks if the user is authenticated before rendering its children
-export function RequireAuth({ children }: { children: React.ReactNode }) {
-    const { user } = useAuthStore()
-    const router = useRouter()
-    const [hydrated, setHydrated] = useState(false)
+  useEffect(() => { setHydrated(true) }, [])
 
-    useEffect(() =>{
-        // This is to prevent hydration mismatch error when the user state is initially null on the server
-        setHydrated(true)
-    },[])
+  useEffect(() => {
+    if (!hydrated) return
+    if (!user) {
+      router.replace('/login')
+      return
+    }
+    if (requireVerified && !user.isEmailVerified) {
+      router.replace('/verify-email')
+    }
+  }, [hydrated, user, requireVerified, router])
 
-    useEffect(() => {
-        if (hydrated && user === null) {
-            router.replace('/login')
-        }
+  if (!hydrated) return null
+  if (!user) return null
+  if (requireVerified && !user.isEmailVerified) return null
 
-    }, [hydrated,user, router])
-
-    // Still hydrating — render nothing, don't redirect yet
-    if(!hydrated) return null
-
-    // Hydrated but no user — redirect is already in flight
-    if (!user) return null
-
-    return <>{children}</>
+  return <>{children}</>
 }

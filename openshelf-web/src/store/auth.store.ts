@@ -8,6 +8,7 @@ interface User {
   email: string
   role: 'ADMIN' | 'MODERATOR' | 'USER'
   avatarUrl?: string
+  isEmailVerified: boolean
 }
 
 interface AuthState {
@@ -17,19 +18,20 @@ interface AuthState {
   register: (name: string, email: string, password: string) => Promise<void>
   logout: () => void
   fetchMe: () => Promise<void>
+  setUser: (user: User) => void
 }
 
 export const useAuthStore = create<AuthState>()(
   persist(
     (set) => ({
-      user: null,
+      user:      null,
       isLoading: false,
 
       login: async (email, password) => {
         set({ isLoading: true })
         try {
           const { data } = await http.post('/auth/login', { email, password })
-          localStorage.setItem('accessToken', data.accessToken)
+          localStorage.setItem('accessToken',  data.accessToken)
           localStorage.setItem('refreshToken', data.refreshToken)
           set({ user: data.user })
         } finally {
@@ -41,7 +43,7 @@ export const useAuthStore = create<AuthState>()(
         set({ isLoading: true })
         try {
           const { data } = await http.post('/auth/register', { name, email, password })
-          localStorage.setItem('accessToken', data.accessToken)
+          localStorage.setItem('accessToken',  data.accessToken)
           localStorage.setItem('refreshToken', data.refreshToken)
           set({ user: data.user })
         } finally {
@@ -63,10 +65,12 @@ export const useAuthStore = create<AuthState>()(
           set({ user: null })
         }
       },
+
+      setUser: (user) => set({ user }),
     }),
     {
-      name: 'auth',
-      partialize: (state) => ({ user: state.user }),
+      name:        'auth',
+      partialize:  (s) => ({ user: s.user }),
     }
   )
 )

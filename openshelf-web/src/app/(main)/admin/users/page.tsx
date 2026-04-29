@@ -14,17 +14,17 @@ interface AdminUser {
 }
 
 const ROLE_COLOURS: Record<string, { bg: string; text: string }> = {
-  ADMIN:     { bg: '#fee2e2', text: '#991b1b' },
+  ADMIN: { bg: '#fee2e2', text: '#991b1b' },
   MODERATOR: { bg: '#fef3c7', text: '#92400e' },
-  USER:      { bg: '#f0fdf4', text: '#166534' },
+  USER: { bg: '#f0fdf4', text: '#166534' },
 }
 
 export default function UsersPage() {
-  const [users, setUsers]       = useState<AdminUser[]>([])
-  const [total, setTotal]       = useState(0)
-  const [loading, setLoading]   = useState(true)
-  const [search, setSearch]     = useState('')
-  const [acting, setActing]     = useState<string | null>(null)
+  const [users, setUsers] = useState<AdminUser[]>([])
+  const [total, setTotal] = useState(0)
+  const [loading, setLoading] = useState(true)
+  const [search, setSearch] = useState('')
+  const [acting, setActing] = useState<string | null>(null)
   const timerRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined)
 
   const fetchUsers = (q = '') => {
@@ -34,7 +34,7 @@ export default function UsersPage() {
         setUsers(r.data.data)
         setTotal(r.data.meta.total)
       })
-      .catch(() => {})
+      .catch(() => { })
       .finally(() => setLoading(false))
   }
 
@@ -59,11 +59,21 @@ export default function UsersPage() {
     }
   }
 
-  const handleToggleActive = async (id: string) => {
+  const handleToggleActive = async (id: string, currentlyActive: boolean) => {
+    let reason = ''
+
+    if (currentlyActive) {
+      // Prompt for reason when deactivating
+      reason = prompt('Enter reason for blocking this user (will be emailed to them):') || ''
+      if (reason === null) return // user cancelled
+    }
+
     setActing(id)
     try {
-      const { data } = await http.patch(`/admin/users/${id}/toggle`)
-      setUsers((prev) => prev.map((u) => u.id === id ? { ...u, isActive: data.isActive } : u))
+      const { data } = await http.patch(`/admin/users/${id}/toggle`, { reason })
+      setUsers((prev) =>
+        prev.map((u) => u.id === id ? { ...u, isActive: data.isActive } : u)
+      )
     } catch (err: any) {
       alert(err?.response?.data?.message || 'Failed to update status')
     } finally {
@@ -122,7 +132,7 @@ export default function UsersPage() {
         {/* Rows */}
         {loading ? (
           <div className="flex flex-col gap-0">
-            {[1,2,3,4,5].map((i) => (
+            {[1, 2, 3, 4, 5].map((i) => (
               <div
                 key={i}
                 className="h-16 animate-pulse mx-4 my-2 rounded-lg"
@@ -208,7 +218,7 @@ export default function UsersPage() {
               {/* Toggle button */}
               <div className="col-span-2 flex justify-center">
                 <button
-                  onClick={() => handleToggleActive(user.id)}
+                  onClick={() => handleToggleActive(user.id, user.isActive)}
                   disabled={acting === user.id}
                   className="text-xs px-3 py-1 rounded-lg transition-colors disabled:opacity-50"
                   style={{

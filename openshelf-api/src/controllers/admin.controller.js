@@ -1,5 +1,6 @@
 const prisma = require('../config/prisma');
 const resourceService = require('../services/resource.service');
+const emailSvc = require('../services/email.service');
 
 // Admin Dashboard Stats
 const getStats = async (req, res, next) => {
@@ -129,46 +130,46 @@ const getUsers = async (req, res, next) => {
             }
             : {}
 
-            const [users, total] = await Promise.all([
-                prisma.user.findMany({
-                    where,
-                    skip,
-                    take: Number(limit),
-                    orderBy: { createdAt: 'desc' },
-                    select:{
-                        id: true, name: true, email: true, role: true, createdAt: true,
-                        _count: {select: {uploads: true}},
-                    }
-                }),
-                prisma.user.count({ where }),
-            ])
-
-            res.json({
-                data: users,
-                meta:{
-                    page: Number(page),
-                    limit: Number(limit),
-                    total,
-                    pages: Math.ceil(total / Number(limit)),
+        const [users, total] = await Promise.all([
+            prisma.user.findMany({
+                where,
+                skip,
+                take: Number(limit),
+                orderBy: { createdAt: 'desc' },
+                select: {
+                    id: true, name: true, email: true, role: true, createdAt: true,
+                    _count: { select: { uploads: true } },
                 }
-            })
+            }),
+            prisma.user.count({ where }),
+        ])
+
+        res.json({
+            data: users,
+            meta: {
+                page: Number(page),
+                limit: Number(limit),
+                total,
+                pages: Math.ceil(total / Number(limit)),
+            }
+        })
     } catch (err) {
         next(err);
     }
 }
 
 // Update User Role
-const updateUserRole = async (req, res, next) =>{
+const updateUserRole = async (req, res, next) => {
     try {
         const { role } = req.body;
 
-        if(!['ADMIN','MODERATOR','USER'].includes(role)){
-            return res.status(400).json({message: 'Invalid role specified'});
+        if (!['ADMIN', 'MODERATOR', 'USER'].includes(role)) {
+            return res.status(400).json({ message: 'Invalid role specified' });
         }
 
         // Prevent changing own role
-        if(req.user.id === req.params.id){
-            return res.status(400).json({message: 'You cannot change your own role'});
+        if (req.user.id === req.params.id) {
+            return res.status(400).json({ message: 'You cannot change your own role' });
         }
 
         const user = await prisma.user.update({
@@ -185,26 +186,31 @@ const updateUserRole = async (req, res, next) =>{
 
 const toggleUserActive = async (req, res, next) => {
     try {
-        if(req.params.id === req.user.id){
-            return res.status(400).json({message: 'You cannot deactivate your own account'});
+        if (req.params.id === req.user.id) {
+            return res.status(400).json({ message: 'You cannot deactivate yourself' })
         }
 
-        const user = await prisma.user.findUnique({
-            where: { id: req.params.id },
-        })
-
-        if(!user) return res.status(404).json({message: 'User not found'});
+        const user = await prisma.user.findUnique({ where: { id: req.params.id } })
+        if (!user) return res.status(404).json({ message: 'User not found' })
 
         const updated = await prisma.user.update({
             where: { id: req.params.id },
             data: { isActive: !user.isActive },
-            select: { id: true, name: true, email: true, isActive: true }
+            select: { id: true, name: true, email: true, isActive: true },
         })
 
-        res.json(updated);
-    } catch (err) {
-        next(err);
-    }
+        // If the user was just deactivated, send them an email
+        if (!updated.isActive) {
+            const { reason } = req.body
+            emailSvc.sendAccountBlockedEmail({
+                to: user.email,
+                name: user.name,
+                reason: reason || 'Violation of community guidelines',
+            }).catch(() => { }) // fire and forget
+        }
+
+        res.json(updated)
+    } catch (err) { next(err) }
 }
 
 module.exports = {

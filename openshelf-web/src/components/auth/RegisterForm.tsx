@@ -6,10 +6,10 @@ import { useRouter } from 'next/navigation'
 import { useAuthStore } from '@/store/auth.store'
 
 const schema = z.object({
-  name:     z.string().min(2, 'Name must be at least 2 characters'),
-  email:    z.string().email('Enter a valid email'),
+  name: z.string().min(2, 'Name must be at least 2 characters'),
+  email: z.string().email('Enter a valid email'),
   password: z.string().min(8, 'Password must be at least 8 characters'),
-  confirm:  z.string(),
+  confirm: z.string(),
 }).refine((d) => d.password === d.confirm, {
   message: 'Passwords do not match',
   path: ['confirm'],
@@ -24,10 +24,10 @@ const fieldStyle = {
 }
 
 const FIELDS = [
-  { id: 'name',     label: 'Full name',       type: 'text',     auto: 'name',         placeholder: 'Jane Smith' },
-  { id: 'email',    label: 'Email address',   type: 'email',    auto: 'email',        placeholder: 'you@example.com' },
-  { id: 'password', label: 'Password',        type: 'password', auto: 'new-password', placeholder: 'At least 8 characters' },
-  { id: 'confirm',  label: 'Confirm password',type: 'password', auto: 'new-password', placeholder: 'Repeat your password' },
+  { id: 'name', label: 'Full name', type: 'text', auto: 'name', placeholder: 'Jane Smith' },
+  { id: 'email', label: 'Email address', type: 'email', auto: 'email', placeholder: 'you@example.com' },
+  { id: 'password', label: 'Password', type: 'password', auto: 'new-password', placeholder: 'At least 8 characters' },
+  { id: 'confirm', label: 'Confirm password', type: 'password', auto: 'new-password', placeholder: 'Repeat your password' },
 ]
 
 export function RegisterForm() {
@@ -44,9 +44,11 @@ export function RegisterForm() {
   const onSubmit = async (data: FormData) => {
     try {
       await registerUser(data.name, data.email, data.password)
-      router.push('/browse')
+      // Always go to verify-email after register
+      router.push('/verify-email')
     } catch (err: any) {
-      setError('root', { message: err?.response?.data?.message || 'Something went wrong' })
+      const message = err?.response?.data?.message || 'Something went wrong'
+      setError('root', { message })
     }
   }
 
@@ -74,8 +76,8 @@ export function RegisterForm() {
       {errors.root && (
         <div className="flex items-center gap-2.5 px-4 py-3 rounded-xl bg-red-50 border border-red-100">
           <svg width="16" height="16" viewBox="0 0 16 16" fill="none" className="shrink-0">
-            <circle cx="8" cy="8" r="7" stroke="#ef4444" strokeWidth="1.5"/>
-            <path d="M8 5v3.5M8 11h.01" stroke="#ef4444" strokeWidth="1.5" strokeLinecap="round"/>
+            <circle cx="8" cy="8" r="7" stroke="#ef4444" strokeWidth="1.5" />
+            <path d="M8 5v3.5M8 11h.01" stroke="#ef4444" strokeWidth="1.5" strokeLinecap="round" />
           </svg>
           <p className="text-sm text-red-600">{errors.root.message}</p>
         </div>
@@ -88,8 +90,8 @@ export function RegisterForm() {
       >
         {isLoading && (
           <svg className="animate-spin h-4 w-4" fill="none" viewBox="0 0 24 24">
-            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/>
-            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"/>
+            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z" />
           </svg>
         )}
         {isLoading ? 'Creating account…' : 'Create account'}

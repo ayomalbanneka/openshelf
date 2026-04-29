@@ -7,34 +7,65 @@ datasource db {
 }
 
 model User {
-  id                String            @id @default(cuid())
-  name              String
-  email             String            @unique
-  passwordHash      String
-  role              Role              @default(USER)
-  avatarUrl         String?
-  bio               String?
-  country           String?
-  preferredLanguage String            @default("en")
-  isActive          Boolean           @default(true)
-  createdAt         DateTime          @default(now())
-  updatedAt         DateTime          @updatedAt
-  website           String?
-  bookmarks         Bookmark[]
-  discussions       ClubDiscussion[]
-  clubMemberships   ClubMember[]
-  clubsCreated      Club[]
-  comments          Comment[]
-  readingLists      ReadingList[]
-  readingProgress   ReadingProgress[]
-  uploads           Resource[]
-  reviews           Review[]
-  submissions       Submission[]
-  following         UserFollow[]      @relation("Follower")
-  followers         UserFollow[]      @relation("Following")
+  id                 String              @id @default(cuid())
+  name               String
+  email              String              @unique
+  passwordHash       String
+  role               Role                @default(USER)
+  avatarUrl          String?
+  bio                String?
+  country            String?
+  preferredLanguage  String              @default("en")
+  isActive           Boolean             @default(true)
+  isEmailVerified    Boolean             @default(false)
+  createdAt          DateTime            @default(now())
+  updatedAt          DateTime            @updatedAt
+  website            String?
+  bookmarks          Bookmark[]
+  discussions        ClubDiscussion[]
+  clubMemberships    ClubMember[]
+  clubsCreated       Club[]
+  comments           Comment[]
+  readingLists       ReadingList[]
+  readingProgress    ReadingProgress[]
+  uploads            Resource[]
+  reviews            Review[]
+  submissions        Submission[]
+  following          UserFollow[]        @relation("Follower")
+  followers          UserFollow[]        @relation("Following")
+  emailVerifications EmailVerification[]
+  passwordResets     PasswordReset[]
 
   @@index([email])
   @@map("users")
+}
+
+model EmailVerification {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  code      String   // 6-digit code
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+  @@index([code])
+  @@map("email_verifications")
+}
+
+model PasswordReset {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  code      String   // 6-digit code
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+  @@index([code])
+  @@map("password_resets")
 }
 
 model UserFollow {
