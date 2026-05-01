@@ -41,7 +41,7 @@ export default function ForgotPasswordPage() {
         </p>
         <Link
           href="/reset-password"
-          className="block w-full h-10 rounded-xl bg-blue-600 text-white font-medium text-sm hover:bg-blue-700 transition-colors flex items-center justify-center"
+          className="w-full h-10 rounded-xl bg-blue-600 text-white font-medium text-sm hover:bg-blue-700 transition-colors flex items-center justify-center"
         >
           Enter reset code →
         </Link>

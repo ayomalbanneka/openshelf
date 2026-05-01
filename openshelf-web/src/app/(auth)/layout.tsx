@@ -6,7 +6,7 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
 
       {/* Left panel — branding */}
       <div
-        className="hidden lg:flex lg:w-[420px] xl:w-[480px] shrink-0 flex-col justify-between p-12"
+        className="hidden lg:flex lg:w-150 xl:w-120 shrink-0 flex-col justify-between p-12"
         style={{ backgroundColor: '#0f172a' }}
       >
         {/* Logo */}
