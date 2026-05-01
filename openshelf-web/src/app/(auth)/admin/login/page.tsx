@@ -4,6 +4,8 @@ import { useRouter } from 'next/navigation'
 import { useAuthStore } from '@/store/auth.store'
 import { http } from '@/lib/api'
 import Link from 'next/link'
+import { Shield } from 'lucide-react'
+import { getErrorMessage } from '@/lib/errors'
 
 export default function AdminLoginPage() {
   const router  = useRouter()
@@ -56,8 +58,8 @@ export default function AdminLoginPage() {
       const { data } = await http.post('/auth/admin/login', { email, password })
       setUserId(data.userId)
       setStep('code')
-    } catch (err: any) {
-      setError(err?.response?.data?.message || 'Invalid credentials')
+    } catch (err: unknown) {
+      setError(getErrorMessage(err, 'Invalid credentials'))
     } finally {
       setLoading(false)
     }
@@ -79,8 +81,8 @@ export default function AdminLoginPage() {
       localStorage.setItem('refreshToken', data.refreshToken)
       setUser(data.user)
       router.replace('/admin')
-    } catch (err: any) {
-      setError(err?.response?.data?.message || 'Invalid or expired code')
+    } catch (err: unknown) {
+      setError(getErrorMessage(err, 'Invalid or expired code'))
       setCode(['', '', '', '', '', ''])
       inputs.current[0]?.focus()
     } finally {
@@ -96,7 +98,7 @@ export default function AdminLoginPage() {
           className="w-12 h-12 rounded-xl flex items-center justify-center mx-auto mb-4"
           style={{ backgroundColor: '#1e3a8a' }}
         >
-          <span className="text-2xl">🛡️</span>
+          <Shield className="w-6 h-6 text-white" />
         </div>
         <h1 className="text-2xl font-bold mb-1">Admin access</h1>
         <p className="text-sm" style={{ color: 'hsl(var(--muted-foreground))' }}>

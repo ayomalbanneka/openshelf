@@ -2,6 +2,7 @@
 import { useState } from 'react'
 import Link from 'next/link'
 import { http } from '@/lib/api'
+import { Inbox } from 'lucide-react'
 
 export default function ForgotPasswordPage() {
   const [email, setEmail]       = useState('')
@@ -33,7 +34,7 @@ export default function ForgotPasswordPage() {
   if (submitted) {
     return (
       <div className="text-center">
-        <div className="text-4xl mb-4">📬</div>
+        <Inbox className="w-10 h-10 mb-4" />
         <h1 className="text-2xl font-bold mb-2">Check your inbox</h1>
         <p className="text-sm mb-6" style={{ color: 'hsl(var(--muted-foreground))' }}>
           If <strong>{email}</strong> has an account, a reset code has been sent.

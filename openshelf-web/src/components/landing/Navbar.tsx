@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { BookOpen, Menu, X, Moon, Sun } from 'lucide-react';
 import { useTheme } from 'next-themes';
+import { useHydrated } from '@/hooks/useHydrated';
 
 function GithubIcon({ className }: { className?: string }) {
   return (
@@ -16,7 +17,7 @@ function GithubIcon({ className }: { className?: string }) {
 export default function Navbar() {
   const [scrolled, setScrolled] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
-  const [mounted, setMounted] = useState(false);
+  const mounted = useHydrated();
   const { resolvedTheme, setTheme } = useTheme();
   const isDark = mounted && resolvedTheme === 'dark';
 
@@ -24,10 +25,6 @@ export default function Navbar() {
     const onScroll = () => setScrolled(window.scrollY > 20);
     window.addEventListener('scroll', onScroll);
     return () => window.removeEventListener('scroll', onScroll);
-  }, []);
-
-  useEffect(() => {
-    setMounted(true);
   }, []);
 
   const links = [

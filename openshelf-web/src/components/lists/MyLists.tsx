@@ -2,6 +2,7 @@
 import { useState, useEffect } from 'react'
 import { api } from '@/lib/api'
 import Link from 'next/link'
+import { LibraryBig, List } from 'lucide-react'
 
 interface ReadingList {
   id: string
@@ -165,7 +166,7 @@ export function MyLists() {
           className="text-center py-20 rounded-2xl"
           style={{ border: '2px dashed hsl(var(--border))', color: 'hsl(var(--muted-foreground))' }}
         >
-          <div className="text-4xl mb-3">📚</div>
+          <LibraryBig className="w-10 h-10 mb-3" />
           <p className="font-medium mb-1">No lists yet</p>
           <p className="text-sm">Create your first reading list above.</p>
         </div>
@@ -186,7 +187,7 @@ export function MyLists() {
                 className="h-10 w-10 rounded-lg flex items-center justify-center text-lg shrink-0"
                 style={{ backgroundColor: 'hsl(var(--muted))' }}
               >
-                📋
+                <List className="w-5 h-5" style={{ color: 'hsl(var(--muted-foreground))' }} />
               </div>
 
               {/* Info */}

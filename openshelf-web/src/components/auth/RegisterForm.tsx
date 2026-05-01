@@ -4,6 +4,7 @@ import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
 import { useRouter } from 'next/navigation'
 import { useAuthStore } from '@/store/auth.store'
+import { getErrorMessage } from '@/lib/errors'
 
 const schema = z.object({
   name: z.string().min(2, 'Name must be at least 2 characters'),
@@ -46,9 +47,8 @@ export function RegisterForm() {
       await registerUser(data.name, data.email, data.password)
       // Always go to verify-email after register
       router.push('/verify-email')
-    } catch (err: any) {
-      const message = err?.response?.data?.message || 'Something went wrong'
-      setError('root', { message })
+    } catch (err: unknown) {
+      setError('root', { message: getErrorMessage(err, 'Something went wrong') })
     }
   }
 

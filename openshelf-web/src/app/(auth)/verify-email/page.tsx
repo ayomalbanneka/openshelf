@@ -3,6 +3,8 @@ import { useState, useRef, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { useAuthStore } from '@/store/auth.store'
 import { http } from '@/lib/api'
+import { CheckCircle, Mail } from 'lucide-react'
+import { getErrorMessage } from '@/lib/errors'
 
 export default function VerifyEmailPage() {
   const { user, setUser } = useAuthStore()
@@ -56,8 +58,8 @@ export default function VerifyEmailPage() {
       // Update local user state
       if (user) setUser({ ...user, isEmailVerified: true })
       router.replace('/browse')
-    } catch (err: any) {
-      setError(err?.response?.data?.message || 'Invalid code')
+    } catch (err: unknown) {
+      setError(getErrorMessage(err, 'Invalid code'))
       setCode(['', '', '', '', '', ''])
       inputs.current[0]?.focus()
     } finally {
@@ -81,7 +83,7 @@ export default function VerifyEmailPage() {
   return (
     <div>
       <div className="mb-8 text-center">
-        <div className="text-4xl mb-3">📧</div>
+        <Mail className="w-10 h-10 mb-3" />
         <h1 className="text-2xl font-bold mb-1">Check your email</h1>
         <p className="text-sm" style={{ color: 'hsl(var(--muted-foreground))' }}>
           We sent a 6-digit code to{' '}
@@ -119,8 +121,9 @@ export default function VerifyEmailPage() {
         )}
 
         {resent && (
-          <p className="text-sm text-green-600 text-center">
-            ✓ New code sent to your email
+          <p className="text-sm text-green-600 text-center inline-flex items-center justify-center gap-1">
+            <CheckCircle className="w-4 h-4" />
+            New code sent to your email
           </p>
         )}
 

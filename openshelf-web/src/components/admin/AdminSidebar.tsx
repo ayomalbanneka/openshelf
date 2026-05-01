@@ -2,11 +2,12 @@
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { cn } from '@/lib/utils'
+import { LayoutDashboard, Hourglass, Users } from 'lucide-react'
 
 const LINKS = [
-  { href: '/admin',          label: 'Overview',    icon: '📊' },
-  { href: '/admin/pending',  label: 'Pending',     icon: '⏳' },
-  { href: '/admin/users',    label: 'Users',       icon: '👥' },
+  { href: '/admin',          label: 'Overview',    icon: LayoutDashboard },
+  { href: '/admin/pending',  label: 'Pending',     icon: Hourglass },
+  { href: '/admin/users',    label: 'Users',       icon: Users },
 ]
 
 export function AdminSidebar() {
@@ -20,7 +21,7 @@ export function AdminSidebar() {
       >
         Admin
       </p>
-      {LINKS.map(({ href, label, icon }) => {
+      {LINKS.map(({ href, label, icon: Icon }) => {
         const active = pathname === href
         return (
           <Link
@@ -34,7 +35,7 @@ export function AdminSidebar() {
             )}
             style={!active ? { color: 'hsl(var(--foreground))' } : undefined}
           >
-            <span style={{ fontSize: 16 }}>{icon}</span>
+            <Icon className="w-4 h-4" />
             {label}
           </Link>
         )

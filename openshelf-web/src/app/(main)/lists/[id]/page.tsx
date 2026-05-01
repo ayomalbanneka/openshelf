@@ -1,4 +1,3 @@
-import { notFound } from 'next/navigation'
 import { ListDetail } from '@/components/lists/ListDetail'
 import type { Metadata } from 'next'
 

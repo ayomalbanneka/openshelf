@@ -29,7 +29,7 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
         {/* Center quote */}
         <div>
           <blockquote className="text-2xl font-medium leading-relaxed mb-4" style={{ color: '#e2e8f0' }}>
-            "A library is not a luxury but one of the necessities of life."
+            &ldquo;A library is not a luxury but one of the necessities of life.&rdquo;
           </blockquote>
           <p className="text-sm" style={{ color: '#64748b' }}>— Henry Ward Beecher</p>
         </div>

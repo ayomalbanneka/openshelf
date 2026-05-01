@@ -2,7 +2,21 @@
 
 import { motion, useInView } from 'framer-motion';
 import { useRef, useState } from 'react';
-import { Search, BookOpen, GraduationCap, FileText, Filter, Star, Download, Eye } from 'lucide-react';
+import {
+  Search,
+  BookOpen,
+  GraduationCap,
+  FileText,
+  Filter,
+  Star,
+  Download,
+  Eye,
+  Bot,
+  Zap,
+  FlaskConical,
+  Laptop,
+  Ruler,
+} from 'lucide-react';
 
 const categories = [
   { label: 'All', icon: BookOpen, active: true },
@@ -19,7 +33,7 @@ const resources = [
     rating: 4.8,
     downloads: '12.5K',
     color: 'from-blue-600 to-indigo-600',
-    emoji: '📘',
+    icon: BookOpen,
   },
   {
     title: 'Machine Learning Specialization',
@@ -28,7 +42,7 @@ const resources = [
     rating: 4.9,
     downloads: '45.2K',
     color: 'from-violet-600 to-purple-600',
-    emoji: '🤖',
+    icon: Bot,
   },
   {
     title: 'Physics: Mechanics & Thermodynamics',
@@ -37,7 +51,7 @@ const resources = [
     rating: 4.7,
     downloads: '8.3K',
     color: 'from-emerald-600 to-teal-600',
-    emoji: '⚡',
+    icon: Zap,
   },
   {
     title: 'Organic Chemistry Exam Papers',
@@ -46,7 +60,7 @@ const resources = [
     rating: 4.5,
     downloads: '6.1K',
     color: 'from-amber-600 to-orange-600',
-    emoji: '🧪',
+    icon: FlaskConical,
   },
   {
     title: 'The Art of Computer Programming',
@@ -55,7 +69,7 @@ const resources = [
     rating: 4.9,
     downloads: '18.7K',
     color: 'from-rose-600 to-pink-600',
-    emoji: '💻',
+    icon: Laptop,
   },
   {
     title: 'Linear Algebra Done Right',
@@ -64,7 +78,7 @@ const resources = [
     rating: 4.6,
     downloads: '9.8K',
     color: 'from-cyan-600 to-blue-600',
-    emoji: '📐',
+    icon: Ruler,
   },
 ];
 
@@ -168,7 +182,7 @@ export default function BrowsePreview() {
               
               <div className="p-5">
                 <div className="flex items-start gap-4">
-                  <div className="text-3xl">{resource.emoji}</div>
+                  <resource.icon className="w-7 h-7 text-muted-foreground" />
                   <div className="flex-1 min-w-0">
                     <span className="inline-flex px-2 py-0.5 rounded-md bg-muted text-xs font-medium text-muted-foreground mb-2">
                       {resource.category}

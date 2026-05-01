@@ -79,8 +79,17 @@ http.interceptors.response.use(
   (response) => response,
   async (error) => {
     const original = error.config
+    const isAuthEndpoint =
+      typeof original?.url === 'string' &&
+      (original.url.includes('/auth/login') || original.url.includes('/auth/register'))
+    const isAuthPage =
+      typeof window !== 'undefined' &&
+      (window.location.pathname === '/login' || window.location.pathname === '/register')
 
     if (error.response?.status === 401 && !original._retry) {
+      if (isAuthEndpoint || isAuthPage) {
+        return Promise.reject(error)
+      }
       original._retry = true
 
       try {

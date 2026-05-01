@@ -1,6 +1,7 @@
 'use client'
 import { useState, useRef, useEffect } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
+import { X } from 'lucide-react'
 
 export function SearchBar() {
   const router       = useRouter()
@@ -10,10 +11,6 @@ export function SearchBar() {
 
   const [value, setValue]   = useState(searchParams.get('q') || '')
   const [focused, setFocused] = useState(false)
-
-  useEffect(() => {
-    setValue(searchParams.get('q') || '')
-  }, [searchParams])
 
   // ⌘K / Ctrl+K focuses the search bar from anywhere
   useEffect(() => {
@@ -112,10 +109,11 @@ export function SearchBar() {
               setValue('')
               router.push('/search')
             }}
+            aria-label="Clear search"
             className="text-xs hover:opacity-70 transition-opacity shrink-0"
             style={{ color: 'hsl(var(--muted-foreground))' }}
           >
-            ✕
+            <X className="w-3.5 h-3.5" />
           </button>
         )}
       </div>

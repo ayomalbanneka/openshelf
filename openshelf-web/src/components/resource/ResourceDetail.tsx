@@ -5,6 +5,18 @@ import { http } from '@/lib/api'
 import { Resource } from '@/types'
 import Link from 'next/link'
 import { api } from '@/lib/api'
+import { getErrorMessage } from '@/lib/errors'
+import {
+  BookOpen,
+  GraduationCap,
+  ClipboardList,
+  FileText,
+  Headphones,
+  CheckCircle,
+  X,
+  Star,
+  type LucideIcon,
+} from 'lucide-react'
 
 const TYPE_LABELS: Record<string, string> = {
   BOOK: 'Book',
@@ -12,6 +24,14 @@ const TYPE_LABELS: Record<string, string> = {
   EXAM_PAPER: 'Exam paper',
   DOCUMENT: 'Document',
   AUDIO: 'Audio',
+}
+
+const TYPE_ICONS: Record<string, LucideIcon> = {
+  BOOK: BookOpen,
+  COURSE: GraduationCap,
+  EXAM_PAPER: ClipboardList,
+  DOCUMENT: FileText,
+  AUDIO: Headphones,
 }
 
 function formatBytes(bytes: number) {
@@ -29,6 +49,7 @@ export function ResourceDetail({ resource }: { resource: Resource }) {
   const [savingToList, setSavingToList] = useState(false)
   const [savedMsg, setSavedMsg] = useState('')
   const isVerified = user?.isEmailVerified ?? false
+  const TypeIcon = TYPE_ICONS[resource.type] || FileText
 
   // Load lists when picker opens
   const openListPicker = async () => {
@@ -47,8 +68,8 @@ export function ResourceDetail({ resource }: { resource: Resource }) {
       setSavedMsg('Saved!')
       setShowListPicker(false)
       setTimeout(() => setSavedMsg(''), 2000)
-    } catch (err: any) {
-      setSavedMsg(err?.response?.data?.message || 'Failed to save')
+    } catch (err: unknown) {
+      setSavedMsg(getErrorMessage(err, 'Failed to save'))
       setTimeout(() => setSavedMsg(''), 2000)
     } finally {
       setSavingToList(false)
@@ -114,12 +135,10 @@ export function ResourceDetail({ resource }: { resource: Resource }) {
                 className="absolute inset-0 w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
               />
             ) : (
-              <span>
-                {resource.type === 'BOOK' ? '📖' :
-                  resource.type === 'AUDIO' ? '🎧' :
-                    resource.type === 'COURSE' ? '🎓' :
-                      resource.type === 'EXAM_PAPER' ? '📝' : '📄'}
-              </span>
+              <TypeIcon
+                className="w-12 h-12"
+                style={{ color: 'hsl(var(--muted-foreground))' }}
+              />
             )}
           </div>
         </div>
@@ -293,7 +312,14 @@ export function ResourceDetail({ resource }: { resource: Resource }) {
                   color: 'hsl(var(--foreground))',
                 }}
               >
-                {bookmarked ? 'Bookmarked ✓' : 'Bookmark'}
+                {bookmarked ? (
+                  <span className="inline-flex items-center gap-1">
+                    <CheckCircle className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+                    Bookmarked
+                  </span>
+                ) : (
+                  'Bookmark'
+                )}
               </button>
             )}
 
@@ -338,10 +364,11 @@ export function ResourceDetail({ resource }: { resource: Resource }) {
                       <p className="text-xs font-semibold">Save to list</p>
                       <button
                         onClick={() => setShowListPicker(false)}
+                        aria-label="Close list picker"
                         className="text-xs"
                         style={{ color: 'hsl(var(--muted-foreground))' }}
                       >
-                        ✕
+                        <X className="w-3 h-3" />
                       </button>
                     </div>
 
@@ -445,10 +472,14 @@ function StarRating({
           key={star}
           type="button"
           onClick={() => onChange?.(star)}
+          aria-label={`Rate ${star} star${star === 1 ? '' : 's'}`}
           className={`text-xl transition-transform ${onChange ? 'hover:scale-110 cursor-pointer' : 'cursor-default'}`}
           style={{ color: star <= value ? '#F59E0B' : 'hsl(var(--border))' }}
         >
-          ★
+          <Star
+            className="w-5 h-5"
+            fill={star <= value ? 'currentColor' : 'none'}
+          />
         </button>
       ))}
     </div>
@@ -488,8 +519,8 @@ function ReviewsSection({ slug }: { slug: string }) {
       setReviews((prev) => [data, ...prev])
       setRating(0)
       setComment('')
-    } catch (err: any) {
-      setError(err?.response?.data?.message || 'Failed to submit review')
+    } catch (err: unknown) {
+      setError(getErrorMessage(err, 'Failed to submit review'))
     } finally {
       setSubmitting(false)
     }

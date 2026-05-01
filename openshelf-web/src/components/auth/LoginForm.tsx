@@ -5,6 +5,7 @@ import { z } from 'zod'
 import { useRouter } from 'next/navigation'
 import { useAuthStore } from '@/store/auth.store'
 import Link from 'next/link'
+import { getErrorMessage } from '@/lib/errors'
 
 const schema = z.object({
   email: z.string().email('Enter a valid email'),
@@ -35,9 +36,8 @@ export function LoginForm() {
       } else {
         router.push('/browse')
       }
-    } catch (err: any) {
-      const message = err?.response?.data?.message || 'Something went wrong'
-      setError('root', { message })
+    } catch (err: unknown) {
+      setError('root', { message: getErrorMessage(err, 'Something went wrong') })
     }
   }
 

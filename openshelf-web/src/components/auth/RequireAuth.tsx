@@ -1,7 +1,8 @@
 'use client'
-import { useEffect, useState } from 'react'
-import { useRouter, usePathname } from 'next/navigation'
+import { useEffect } from 'react'
+import { useRouter } from 'next/navigation'
 import { useAuthStore } from '@/store/auth.store'
+import { useHydrated } from '@/hooks/useHydrated'
 
 // This component wraps protected pages and redirects unauthenticated users to the login page.
 export function RequireAuth({ children, requireVerified = false }: {
@@ -10,10 +11,7 @@ export function RequireAuth({ children, requireVerified = false }: {
 }) {
   const { user }  = useAuthStore()
   const router    = useRouter()
-  const pathname  = usePathname()
-  const [hydrated, setHydrated] = useState(false)
-
-  useEffect(() => { setHydrated(true) }, [])
+  const hydrated = useHydrated()
 
   useEffect(() => {
     if (!hydrated) return

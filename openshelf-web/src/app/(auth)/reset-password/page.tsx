@@ -3,6 +3,8 @@ import { useState, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { http } from '@/lib/api'
+import { CheckCircle } from 'lucide-react'
+import { getErrorMessage } from '@/lib/errors'
 
 export default function ResetPasswordPage() {
   const router  = useRouter()
@@ -73,8 +75,8 @@ export default function ResetPasswordPage() {
       })
       setSuccess(true)
       setTimeout(() => router.replace('/login'), 2500)
-    } catch (err: any) {
-      setError(err?.response?.data?.message || 'Invalid or expired code')
+    } catch (err: unknown) {
+      setError(getErrorMessage(err, 'Invalid or expired code'))
       setStep('code')
       setCode(['', '', '', '', '', ''])
     } finally {
@@ -85,7 +87,7 @@ export default function ResetPasswordPage() {
   if (success) {
     return (
       <div className="text-center">
-        <div className="text-4xl mb-4">✅</div>
+        <CheckCircle className="w-10 h-10 mb-4 text-green-600" />
         <h1 className="text-2xl font-bold mb-2 text-green-600">Password reset!</h1>
         <p className="text-sm" style={{ color: 'hsl(var(--muted-foreground))' }}>
           Redirecting you to login…

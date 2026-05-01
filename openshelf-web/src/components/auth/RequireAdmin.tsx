@@ -1,14 +1,13 @@
 'use client'
-import { useEffect, useState } from 'react'
+import { useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { useAuthStore } from '@/store/auth.store'
+import { useHydrated } from '@/hooks/useHydrated'
 
 export function RequireAdmin({ children }: { children: React.ReactNode }) {
   const { user }  = useAuthStore()
   const router    = useRouter()
-  const [hydrated, setHydrated] = useState(false)
-
-  useEffect(() => { setHydrated(true) }, [])
+  const hydrated = useHydrated()
 
   useEffect(() => {
     if (!hydrated) return

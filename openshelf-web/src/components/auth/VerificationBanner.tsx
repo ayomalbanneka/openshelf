@@ -4,6 +4,7 @@ import { useAuthStore } from '@/store/auth.store'
 import { useRouter } from 'next/navigation'
 import { http } from '@/lib/api'
 import Link from 'next/link'
+import { AlertTriangle, X } from 'lucide-react'
 
 export function VerificationBanner() {
   const { user } = useAuthStore()
@@ -37,7 +38,7 @@ export function VerificationBanner() {
       }}
     >
       <div className="flex items-center gap-2">
-        <span>⚠️</span>
+        <AlertTriangle className="w-4 h-4 text-amber-700" />
         <p className="text-amber-800">
           Please verify your email address to unlock all features.
         </p>
@@ -62,7 +63,7 @@ export function VerificationBanner() {
           className="text-amber-600 hover:text-amber-800 transition-colors"
           aria-label="Dismiss"
         >
-          ✕
+          <X className="w-3.5 h-3.5" />
         </button>
       </div>
     </div>

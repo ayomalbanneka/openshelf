@@ -2,6 +2,7 @@
 import { useEffect, useState, useRef } from 'react'
 import { http } from '@/lib/api'
 import Link from 'next/link'
+import { getErrorMessage } from '@/lib/errors'
 
 interface AdminUser {
   id: string
@@ -52,8 +53,8 @@ export default function UsersPage() {
     try {
       const { data } = await http.patch(`/admin/users/${id}/role`, { role })
       setUsers((prev) => prev.map((u) => u.id === id ? { ...u, role: data.role } : u))
-    } catch (err: any) {
-      alert(err?.response?.data?.message || 'Failed to update role')
+    } catch (err: unknown) {
+      alert(getErrorMessage(err, 'Failed to update role'))
     } finally {
       setActing(null)
     }
@@ -74,8 +75,8 @@ export default function UsersPage() {
       setUsers((prev) =>
         prev.map((u) => u.id === id ? { ...u, isActive: data.isActive } : u)
       )
-    } catch (err: any) {
-      alert(err?.response?.data?.message || 'Failed to update status')
+    } catch (err: unknown) {
+      alert(getErrorMessage(err, 'Failed to update status'))
     } finally {
       setActing(null)
     }

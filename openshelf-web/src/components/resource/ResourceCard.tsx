@@ -2,6 +2,14 @@
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { Resource } from '@/types'
+import {
+  BookOpen,
+  GraduationCap,
+  ClipboardList,
+  FileText,
+  Headphones,
+  type LucideIcon,
+} from 'lucide-react'
 
 const TYPE_LABELS: Record<string, string> = {
   BOOK: 'Book',
@@ -27,12 +35,12 @@ const COVER_COLORS: Record<string, string> = {
   AUDIO: '#701a75',
 }
 
-const TYPE_ICONS: Record<string, string> = {
-  BOOK: '📖',
-  COURSE: '🎓',
-  EXAM_PAPER: '📝',
-  DOCUMENT: '📄',
-  AUDIO: '🎧',
+const TYPE_ICONS: Record<string, LucideIcon> = {
+  BOOK: BookOpen,
+  COURSE: GraduationCap,
+  EXAM_PAPER: ClipboardList,
+  DOCUMENT: FileText,
+  AUDIO: Headphones,
 }
 
 export function ResourceCard({ resource }: { resource: Resource }) {
@@ -71,7 +79,10 @@ export function ResourceCard({ resource }: { resource: Resource }) {
           />
         ) : (
           <div className="flex flex-col items-center gap-3 p-4 text-center">
-            <span style={{ fontSize: 36 }}>{TYPE_ICONS[resource.type]}</span>
+            {(() => {
+              const Icon = TYPE_ICONS[resource.type] || FileText
+              return <Icon className="w-9 h-9 text-white/80" />
+            })()}
             <p className="text-xs font-medium leading-snug line-clamp-3 text-white/80 px-2">
               {resource.title}
             </p>

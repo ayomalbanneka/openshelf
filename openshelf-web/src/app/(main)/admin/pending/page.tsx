@@ -2,6 +2,7 @@
 import { useEffect, useState } from 'react'
 import { http } from '@/lib/api'
 import Link from 'next/link'
+import { CheckCircle } from 'lucide-react'
 
 interface PendingResource {
   id: string
@@ -101,7 +102,7 @@ export default function PendingPage() {
             color: 'hsl(var(--muted-foreground))',
           }}
         >
-          <span className="text-4xl mb-3">✅</span>
+          <CheckCircle className="w-10 h-10 mb-3 text-green-600" />
           <p className="text-lg font-medium mb-1">All caught up!</p>
           <p className="text-sm">No resources are waiting for review.</p>
         </div>
