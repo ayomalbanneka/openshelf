@@ -12,9 +12,9 @@ export function RequireAdmin({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     if (!hydrated) return
     if (!user) {
-      router.replace('/login')
+      router.replace('/admin/login')
     } else if (user.role !== 'ADMIN' && user.role !== 'MODERATOR') {
-      router.replace('/')
+      router.replace('/admin/login')
     }
   }, [hydrated, user, router])
 

@@ -21,9 +21,9 @@ export default function AdminLoginPage() {
   const inputs = useRef<(HTMLInputElement | null)[]>([])
 
   const inputStyle = {
-    border: '1px solid hsl(var(--border))',
-    backgroundColor: 'hsl(var(--background))',
-    color: 'hsl(var(--foreground))',
+    border: '1px solid var(--admin-border)',
+    backgroundColor: 'var(--admin-surface)',
+    color: 'var(--admin-text)',
   }
 
   const handleCodeChange = (i: number, val: string) => {
@@ -91,20 +91,26 @@ export default function AdminLoginPage() {
   }
 
   return (
-    <div>
+    <div className="admin-theme min-h-screen flex items-center justify-center px-6"
+      style={{ background: 'radial-gradient(900px 500px at 12% -10%, rgba(14,165,233,0.18), transparent 60%), var(--admin-bg)' }}>
+      <div className="w-full max-w-md rounded-2xl p-8"
+        style={{ backgroundColor: 'var(--admin-surface)', border: '1px solid var(--admin-border)', boxShadow: 'var(--admin-shadow)' }}>
       {/* Header */}
       <div className="mb-8 text-center">
         <div
           className="w-12 h-12 rounded-xl flex items-center justify-center mx-auto mb-4"
-          style={{ backgroundColor: '#1e3a8a' }}
+          style={{ background: 'var(--admin-sidebar-accent)' }}
         >
           <Shield className="w-6 h-6 text-white" />
         </div>
-        <h1 className="text-2xl font-bold mb-1">Admin access</h1>
-        <p className="text-sm" style={{ color: 'hsl(var(--muted-foreground))' }}>
+        <h1 className="text-2xl font-bold mb-1" style={{ color: 'var(--admin-text)' }}>Admin access</h1>
+        <p className="text-sm" style={{ color: 'var(--admin-muted)' }}>
           {step === 'credentials'
             ? 'Sign in with your admin credentials.'
             : 'Enter the 6-digit code sent to your email.'}
+        </p>
+        <p className="text-xs mt-2" style={{ color: 'var(--admin-muted)' }}>
+          Not an admin? <Link href="/" className="underline" style={{ color: 'var(--admin-accent-strong)' }}>Return home</Link>
         </p>
       </div>
 
@@ -112,7 +118,7 @@ export default function AdminLoginPage() {
       {step === 'credentials' && (
         <form onSubmit={handleCredentials} className="flex flex-col gap-4">
           <div className="flex flex-col gap-1.5">
-            <label className="text-sm font-medium">Email</label>
+            <label className="text-sm font-medium" style={{ color: 'var(--admin-text)' }}>Email</label>
             <input
               type="email"
               autoComplete="email"
@@ -125,7 +131,7 @@ export default function AdminLoginPage() {
           </div>
 
           <div className="flex flex-col gap-1.5">
-            <label className="text-sm font-medium">Password</label>
+            <label className="text-sm font-medium" style={{ color: 'var(--admin-text)' }}>Password</label>
             <input
               type="password"
               autoComplete="current-password"
@@ -147,9 +153,9 @@ export default function AdminLoginPage() {
             type="submit"
             disabled={loading}
             className="h-10 rounded-xl font-medium text-sm text-white transition-colors disabled:opacity-50"
-            style={{ backgroundColor: '#1e3a8a' }}
+            style={{ backgroundColor: 'var(--admin-accent-strong)' }}
           >
-            {loading ? 'Verifying…' : 'Continue →'}
+            {loading ? 'Verifying...' : 'Continue'}
           </button>
         </form>
       )}
@@ -160,9 +166,9 @@ export default function AdminLoginPage() {
           <div
             className="text-center text-sm p-3 rounded-lg"
             style={{
-              backgroundColor: '#eff6ff',
-              color: '#1e40af',
-              border: '1px solid #bfdbfe',
+              backgroundColor: '#e0f2fe',
+              color: '#075985',
+              border: '1px solid #bae6fd',
             }}
           >
             Code sent to your email. Check your inbox.
@@ -181,9 +187,9 @@ export default function AdminLoginPage() {
                 onKeyDown={(e) => handleKeyDown(i, e)}
                 className="w-12 h-14 text-center text-xl font-bold rounded-xl outline-none focus:ring-2 focus:ring-blue-800"
                 style={{
-                  border: `2px solid ${digit ? '#1e3a8a' : 'hsl(var(--border))'}`,
-                  backgroundColor: 'hsl(var(--background))',
-                  color: 'hsl(var(--foreground))',
+                  border: `2px solid ${digit ? 'var(--admin-accent-strong)' : 'var(--admin-border)'}`,
+                  backgroundColor: 'var(--admin-surface)',
+                  color: 'var(--admin-text)',
                 }}
               />
             ))}
@@ -197,16 +203,16 @@ export default function AdminLoginPage() {
             type="submit"
             disabled={loading || code.join('').length < 6}
             className="h-10 rounded-xl font-medium text-sm text-white transition-colors disabled:opacity-50"
-            style={{ backgroundColor: '#1e3a8a' }}
+            style={{ backgroundColor: 'var(--admin-accent-strong)' }}
           >
-            {loading ? 'Verifying…' : 'Sign in to admin'}
+            {loading ? 'Verifying...' : 'Sign in to admin'}
           </button>
 
           <button
             type="button"
             onClick={() => { setStep('credentials'); setCode(['','','','','','']); setError('') }}
             className="text-sm text-center hover:underline"
-            style={{ color: 'hsl(var(--muted-foreground))' }}
+            style={{ color: 'var(--admin-muted)' }}
           >
             ← Use different credentials
           </button>
@@ -217,10 +223,11 @@ export default function AdminLoginPage() {
         <Link
           href="/login"
           className="text-sm hover:underline"
-          style={{ color: 'hsl(var(--muted-foreground))' }}
+          style={{ color: 'var(--admin-muted)' }}
         >
           Regular user? Sign in here
         </Link>
+      </div>
       </div>
     </div>
   )
