@@ -4,6 +4,7 @@ import { useRouter } from 'next/navigation'
 import { useAuthStore } from '@/store/auth.store'
 import { api } from '@/lib/api'
 import Link from 'next/link'
+import { getErrorMessage } from '@/lib/errors'
 
 export function CreateClubButton() {
   const { user }  = useAuthStore()
@@ -32,8 +33,8 @@ export function CreateClubButton() {
       setName('')
       setDesc('')
       router.push(`/clubs/${club.slug}`)
-    } catch (err: any) {
-      setError(err?.response?.data?.message || 'Failed to create club')
+    } catch (err: unknown) {
+      setError(getErrorMessage(err, 'Failed to create club'))
     } finally {
       setLoading(false)
     }

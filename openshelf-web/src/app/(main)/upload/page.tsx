@@ -12,7 +12,7 @@ export default async function UploadPage() {
   ])
 
   return (
-    <RequireAuth>
+    <RequireAuth requireVerified>
       <div className="max-w-2xl mx-auto px-4 py-8">
         <div className="mb-8">
           <h1 className="text-2xl font-bold tracking-tight mb-0.5">Upload a resource</h1>

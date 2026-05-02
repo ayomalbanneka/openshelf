@@ -1,6 +1,7 @@
 import { serverApi } from '@/lib/server-api'
 import { ResourceCard } from './ResourceCard'
 import { Resource } from '@/types'
+import { Search } from 'lucide-react'
 
 interface Props {
   searchParams: Promise<{
@@ -33,7 +34,7 @@ export async function ResourceGrid({ searchParams }: Props) {
           color: 'hsl(var(--muted-foreground))',
         }}
       >
-        <div className="text-4xl mb-3">🔍</div>
+        <Search className="w-10 h-10 mb-3" />
         <p className="text-base font-medium mb-1">No resources found</p>
         <p className="text-sm">Try adjusting your filters or search term.</p>
       </div>

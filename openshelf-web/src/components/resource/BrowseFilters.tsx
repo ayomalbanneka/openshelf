@@ -1,15 +1,23 @@
 'use client'
 import { useRouter, usePathname } from 'next/navigation'
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { serverApi } from '@/lib/server-api'
+import {
+  LayoutGrid,
+  BookOpen,
+  GraduationCap,
+  ClipboardList,
+  FileText,
+  Headphones,
+} from 'lucide-react'
 
 const TYPES = [
-  { value: '',           label: 'All',          icon: '◈' },
-  { value: 'BOOK',       label: 'Books',         icon: '📖' },
-  { value: 'COURSE',     label: 'Courses',       icon: '🎓' },
-  { value: 'EXAM_PAPER', label: 'Exam papers',   icon: '📝' },
-  { value: 'DOCUMENT',   label: 'Documents',     icon: '📄' },
-  { value: 'AUDIO',      label: 'Audio',         icon: '🎧' },
+  { value: '',           label: 'All',          icon: LayoutGrid },
+  { value: 'BOOK',       label: 'Books',         icon: BookOpen },
+  { value: 'COURSE',     label: 'Courses',       icon: GraduationCap },
+  { value: 'EXAM_PAPER', label: 'Exam papers',   icon: ClipboardList },
+  { value: 'DOCUMENT',   label: 'Documents',     icon: FileText },
+  { value: 'AUDIO',      label: 'Audio',         icon: Headphones },
 ]
 
 const LANGUAGES = [
@@ -43,6 +51,7 @@ export function BrowseFilters({ searchParams }: Props) {
   const router   = useRouter()
   const pathname = usePathname()
   const [categories, setCategories] = useState<Category[]>([])
+  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   useEffect(() => {
     serverApi.categories.list()
@@ -59,8 +68,8 @@ export function BrowseFilters({ searchParams }: Props) {
   }
 
   const handleSearch = (e: React.ChangeEvent<HTMLInputElement>) => {
-    clearTimeout((window as any)._st)
-    ;(window as any)._st = setTimeout(() => setParam('search', e.target.value), 350)
+    if (debounceRef.current) clearTimeout(debounceRef.current)
+    debounceRef.current = setTimeout(() => setParam('search', e.target.value), 350)
   }
 
   const activeType     = searchParams.type     || ''
@@ -114,7 +123,7 @@ export function BrowseFilters({ searchParams }: Props) {
                     : { color: 'hsl(var(--foreground))' }
                 }
               >
-                <span className="text-base leading-none">{t.icon}</span>
+                <t.icon className="w-4 h-4" />
                 <span className={active ? 'font-medium' : ''}>{t.label}</span>
               </button>
             )

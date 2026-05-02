@@ -2,7 +2,10 @@ import { Suspense } from 'react'
 import { serverApi } from '@/lib/server-api'
 import { SearchResultCard } from '@/components/search/SearchResultCard'
 import { SearchFilters } from '@/components/search/SearchFilters'
+import { Frown, Search } from 'lucide-react'
 import type { Metadata } from 'next'
+
+type SearchHit = Parameters<typeof SearchResultCard>[0]['hit']
 
 interface Props {
   searchParams: Promise<{
@@ -34,7 +37,7 @@ async function SearchResults({ searchParams }: Props) {
           color: 'hsl(var(--muted-foreground))',
         }}
       >
-        <span className="text-4xl mb-4">🔍</span>
+        <Search className="w-10 h-10 mb-4" />
         <p className="text-lg font-medium mb-1">What are you looking for?</p>
         <p className="text-sm">
           Search across books, courses, exam papers, documents and audio.
@@ -61,7 +64,7 @@ async function SearchResults({ searchParams }: Props) {
           color: 'hsl(var(--muted-foreground))',
         }}
       >
-        <span className="text-4xl mb-4">😕</span>
+        <Frown className="w-10 h-10 mb-4" />
         <p className="text-lg font-medium mb-1">
           No results for &ldquo;{q}&rdquo;
         </p>
@@ -95,7 +98,7 @@ async function SearchResults({ searchParams }: Props) {
 
       {/* Result list */}
       <div className="flex flex-col gap-3">
-        {result.data.map((hit: any) => (
+        {(result.data as SearchHit[]).map((hit) => (
           <SearchResultCard key={hit.id} hit={hit} />
         ))}
       </div>

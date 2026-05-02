@@ -24,14 +24,16 @@ interface Props {
   uploads: Resource[]
 }
 
+type AboutRow = { label: string; value: string; isLink?: boolean }
+
 export function UserProfile({ user, uploads }: Props) {
   const { user: currentUser } = useAuthStore()
   const isMe = currentUser?.id === user.id
 
-  const [following, setFollowing]       = useState(false)
-  const [fLoading, setFLoading]         = useState(false)
+  const [following, setFollowing] = useState(false)
+  const [fLoading, setFLoading] = useState(false)
   const [followerCount, setFollowerCount] = useState(user._count.followers)
-  const [activeTab, setActiveTab]       = useState<'uploads' | 'about'>('uploads')
+  const [activeTab, setActiveTab] = useState<'uploads' | 'about'>('uploads')
 
   useEffect(() => {
     if (!currentUser || isMe) return
@@ -60,6 +62,19 @@ export function UserProfile({ user, uploads }: Props) {
   }
 
   const joinedYear = new Date(user.createdAt).getFullYear()
+
+  const aboutRows: AboutRow[] = [
+    user.bio ? { label: 'Bio', value: user.bio } : null,
+    user.country ? { label: 'Country', value: user.country } : null,
+    user.website ? { label: 'Website', value: user.website, isLink: true } : null,
+    {
+      label: 'Member since',
+      value: new Date(user.createdAt).toLocaleDateString('en-US', {
+        year: 'numeric',
+        month: 'long',
+      }),
+    },
+  ].filter((row): row is AboutRow => Boolean(row))
 
   return (
     <div className="max-w-5xl mx-auto px-4 py-10">
@@ -95,59 +110,59 @@ export function UserProfile({ user, uploads }: Props) {
               {user.avatarUrl ? (
                 <Image
                   src={user.avatarUrl}
-                  alt={user.name}
-                  fill
-                  sizes="80px"
-                  className="object-cover"
+                  alt={`${user.name} avatar`}
+                  width={80}
+                  height={80}
+                  unoptimized
+                  className="h-20 w-20 object-cover"
                 />
               ) : (
                 user.name.charAt(0).toUpperCase()
               )}
             </div>
 
-            {/* Name + actions */}
-            <div className="flex-1 min-w-0 flex flex-wrap items-start justify-between gap-3 sm:mb-1">
-              <div>
-                <h1 className="text-xl font-bold leading-tight">{user.name}</h1>
-                <p className="text-sm mt-0.5" style={{ color: 'hsl(var(--muted-foreground))' }}>
-                  {user.country && `${user.country} · `}Member since {joinedYear}
-                </p>
-              </div>
+            {/* Info */}
+            <div className="flex-1 min-w-0">
+              <h1 className="text-2xl font-bold truncate">{user.name}</h1>
+              <p className="text-sm mt-0.5" style={{ color: 'hsl(var(--muted-foreground))' }}>
+                Member since {joinedYear}
+              </p>
+            </div>
 
-              <div className="flex items-center gap-2">
-                {!isMe && currentUser && (
-                  <button
-                    onClick={handleFollow}
-                    disabled={fLoading}
-                    className="px-5 py-2 rounded-xl text-sm font-medium transition-all disabled:opacity-50"
-                    style={
-                      following
-                        ? { border: '1px solid hsl(var(--border))', color: 'hsl(var(--foreground))' }
-                        : { backgroundColor: '#2563eb', color: '#fff' }
-                    }
-                  >
-                    {fLoading ? '…' : following ? 'Unfollow' : 'Follow'}
-                  </button>
-                )}
-                {!isMe && !currentUser && (
-                  <Link
-                    href="/login"
-                    className="px-5 py-2 rounded-xl text-sm font-medium text-white"
-                    style={{ backgroundColor: '#2563eb' }}
-                  >
-                    Follow
-                  </Link>
-                )}
-                {isMe && (
-                  <Link
-                    href="/settings"
-                    className="px-5 py-2 rounded-xl text-sm font-medium transition-colors"
-                    style={{ border: '1px solid hsl(var(--border))', color: 'hsl(var(--foreground))' }}
-                  >
-                    Edit profile
-                  </Link>
-                )}
-              </div>
+            {/* Actions */}
+            <div className="flex items-center gap-2">
+              {!isMe && !currentUser && (
+                <Link
+                  href="/login"
+                  className="px-5 py-2 rounded-xl text-sm font-medium text-white"
+                  style={{ backgroundColor: '#2563eb' }}
+                >
+                  Follow
+                </Link>
+              )}
+              {!isMe && currentUser && (
+                <button
+                  onClick={handleFollow}
+                  disabled={fLoading}
+                  className="px-5 py-2 rounded-xl text-sm font-medium transition-colors disabled:opacity-50"
+                  style={
+                    following
+                      ? { border: '1px solid hsl(var(--border))', color: 'hsl(var(--foreground))' }
+                      : { backgroundColor: '#2563eb', color: '#fff' }
+                  }
+                >
+                  {fLoading ? '...' : following ? 'Following' : 'Follow'}
+                </button>
+              )}
+              {isMe && (
+                <Link
+                  href="/settings"
+                  className="px-5 py-2 rounded-xl text-sm font-medium transition-colors"
+                  style={{ border: '1px solid hsl(var(--border))', color: 'hsl(var(--foreground))' }}
+                >
+                  Edit profile
+                </Link>
+              )}
             </div>
           </div>
 
@@ -165,8 +180,8 @@ export function UserProfile({ user, uploads }: Props) {
               className="inline-flex items-center gap-1.5 mt-2 text-sm text-blue-600 hover:underline"
             >
               <svg width="13" height="13" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/>
-                <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/>
+                <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71" />
+                <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71" />
               </svg>
               {user.website.replace(/^https?:\/\//, '')}
             </a>
@@ -178,7 +193,7 @@ export function UserProfile({ user, uploads }: Props) {
             style={{ borderTop: '1px solid hsl(var(--border))' }}
           >
             {[
-              { label: 'Uploads',   value: user._count.uploads },
+              { label: 'Uploads', value: user._count.uploads },
               { label: 'Followers', value: followerCount },
               { label: 'Following', value: user._count.following },
             ].map((s) => (
@@ -202,7 +217,7 @@ export function UserProfile({ user, uploads }: Props) {
             onClick={() => setActiveTab(tab)}
             className="px-4 py-2.5 text-sm font-medium capitalize transition-colors border-b-2 -mb-px"
             style={{
-              borderColor:  activeTab === tab ? '#2563eb' : 'transparent',
+              borderColor: activeTab === tab ? '#2563eb' : 'transparent',
               color: activeTab === tab ? '#2563eb' : 'hsl(var(--muted-foreground))',
             }}
           >
@@ -221,7 +236,7 @@ export function UserProfile({ user, uploads }: Props) {
             <p className="font-medium mb-1">{isMe ? "You haven't uploaded anything yet." : 'No uploads yet.'}</p>
             {isMe && (
               <Link href="/upload" className="text-sm text-blue-600 hover:underline">
-                Upload your first resource →
+                Upload your first resource ->
               </Link>
             )}
           </div>
@@ -239,20 +254,18 @@ export function UserProfile({ user, uploads }: Props) {
           style={{
             border: '1px solid hsl(var(--border))',
             backgroundColor: 'hsl(var(--background))',
-            // divideColor: 'hsl(var(--border))',
           }}
         >
-          {[
-            user.bio     && { label: 'Bio',     value: user.bio },
-            user.country && { label: 'Country', value: user.country },
-            user.website && { label: 'Website', value: user.website, isLink: true },
-            { label: 'Member since', value: new Date(user.createdAt).toLocaleDateString('en-US', { year: 'numeric', month: 'long' }) },
-          ].filter(Boolean).map((row: any) => (
+          {aboutRows.map((row) => (
             <div key={row.label} className="flex gap-6 px-6 py-4">
               <span className="w-28 shrink-0 font-medium text-sm">{row.label}</span>
               {row.isLink ? (
-                <a href={row.value} target="_blank" rel="noopener noreferrer"
-                  className="text-blue-600 hover:underline break-all">
+                <a
+                  href={row.value}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-blue-600 hover:underline break-all"
+                >
                   {row.value}
                 </a>
               ) : (

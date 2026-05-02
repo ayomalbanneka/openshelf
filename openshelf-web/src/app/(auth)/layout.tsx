@@ -1,12 +1,21 @@
+'use client'
 import Link from 'next/link'
+import { usePathname } from 'next/navigation'
 
 export default function AuthLayout({ children }: { children: React.ReactNode }) {
+  const pathname = usePathname()
+  const isAdminLogin = pathname.startsWith('/admin/login')
+
+  if (isAdminLogin) {
+    return <>{children}</>
+  }
+
   return (
     <div className="min-h-screen flex">
 
       {/* Left panel — branding */}
       <div
-        className="hidden lg:flex lg:w-[420px] xl:w-[480px] shrink-0 flex-col justify-between p-12"
+        className="hidden lg:flex lg:w-150 xl:w-120 shrink-0 flex-col justify-between p-12"
         style={{ backgroundColor: '#0f172a' }}
       >
         {/* Logo */}
@@ -29,7 +38,7 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
         {/* Center quote */}
         <div>
           <blockquote className="text-2xl font-medium leading-relaxed mb-4" style={{ color: '#e2e8f0' }}>
-            "A library is not a luxury but one of the necessities of life."
+            &ldquo;A library is not a luxury but one of the necessities of life.&rdquo;
           </blockquote>
           <p className="text-sm" style={{ color: '#64748b' }}>— Henry Ward Beecher</p>
         </div>

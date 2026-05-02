@@ -5,6 +5,8 @@ import { useAuthStore } from '@/store/auth.store'
 import { ResourceCard } from '@/components/resource/ResourceCard'
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
+import { LibraryBig, Lock } from 'lucide-react'
+import type { Resource } from '@/types'
 
 interface ListItem {
   id: string
@@ -76,7 +78,7 @@ export function ListDetail({ listId }: { listId: string }) {
   if (forbidden) {
     return (
       <div className="max-w-5xl mx-auto px-4 py-20 text-center">
-        <div className="text-5xl mb-4">🔒</div>
+        <Lock className="w-12 h-12 mb-4" />
         <h2 className="text-xl font-bold mb-2">This list is private</h2>
         <p className="text-sm" style={{ color: 'hsl(var(--muted-foreground))' }}>
           Only the owner can view this reading list.
@@ -150,7 +152,7 @@ export function ListDetail({ listId }: { listId: string }) {
           className="text-center py-20 rounded-2xl"
           style={{ border: '2px dashed hsl(var(--border))', color: 'hsl(var(--muted-foreground))' }}
         >
-          <div className="text-4xl mb-3">📚</div>
+          <LibraryBig className="w-10 h-10 mb-3" />
           <p className="font-medium mb-1">This list is empty</p>
           {isOwner && (
             <p className="text-sm">
@@ -163,7 +165,7 @@ export function ListDetail({ listId }: { listId: string }) {
         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
           {list.items.map((item) => (
             <div key={item.id} className="relative group">
-              <ResourceCard resource={item.resource as any} />
+              <ResourceCard resource={item.resource as Resource} />
               {isOwner && (
                 <button
                   onClick={() => handleRemoveItem(item.id)}

@@ -1,12 +1,20 @@
 'use client'
 
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
 import { useRouter } from 'next/navigation'
 import { http } from '@/lib/api'
 import Image from 'next/image'
+import {
+  BookOpen,
+  GraduationCap,
+  ClipboardList,
+  FileText,
+  Headphones,
+} from 'lucide-react'
+import { getErrorMessage } from '@/lib/errors'
 
 interface Category {
   id: string
@@ -60,11 +68,11 @@ const LANGUAGES = [
 ]
 
 const TYPES = [
-  { value: 'BOOK',       icon: '📖', label: 'Book',       desc: 'Textbooks, novels, references' },
-  { value: 'COURSE',     icon: '🎓', label: 'Course',     desc: 'Online courses, tutorials' },
-  { value: 'EXAM_PAPER', icon: '📝', label: 'Exam Paper', desc: 'Past papers, model papers' },
-  { value: 'DOCUMENT',   icon: '📄', label: 'Document',   desc: 'Articles, guides, notes' },
-  { value: 'AUDIO',      icon: '🎵', label: 'Audio',      desc: 'Lectures, podcasts' },
+  { value: 'BOOK',       icon: BookOpen,       label: 'Book',       desc: 'Textbooks, novels, references' },
+  { value: 'COURSE',     icon: GraduationCap, label: 'Course',     desc: 'Online courses, tutorials' },
+  { value: 'EXAM_PAPER', icon: ClipboardList, label: 'Exam Paper', desc: 'Past papers, model papers' },
+  { value: 'DOCUMENT',   icon: FileText,      label: 'Document',   desc: 'Articles, guides, notes' },
+  { value: 'AUDIO',      icon: Headphones,    label: 'Audio',      desc: 'Lectures, podcasts' },
 ]
 
 const inputStyle = {
@@ -112,8 +120,9 @@ function SectionHeader({ step, title, subtitle }: {
 }
 
 // ── Tag Picker ───────────────────────────────────────────────
-function TagPicker({ availableTags, selectedIds, onChange }: {
+function TagPicker({ availableTags, setAvailableTags, selectedIds, onChange }: {
   availableTags: Tag[]
+  setAvailableTags: (value: Tag[] | ((prev: Tag[]) => Tag[])) => void
   selectedIds: string[]
   onChange: (ids: string[]) => void
 }) {
@@ -145,7 +154,7 @@ function TagPicker({ availableTags, selectedIds, onChange }: {
     try {
       const { data } = await http.post('/tags', { name })
       // Add the newly created tag to selection
-      availableTags.push(data)
+      setAvailableTags((prev) => [...prev, data])
       onChange([...selectedIds, data.id])
       setQuery('')
     } catch {
@@ -293,14 +302,16 @@ function ThumbnailUpload({ thumbnail, setThumbnail }: {
   thumbnail: File | null
   setThumbnail: (f: File | null) => void
 }) {
-  const [preview, setPreview] = useState<string | null>(null)
+  const preview = useMemo(() => {
+    if (!thumbnail) return null
+    return URL.createObjectURL(thumbnail)
+  }, [thumbnail])
 
   useEffect(() => {
-    if (!thumbnail) { setPreview(null); return }
-    const reader = new FileReader()
-    reader.onload = () => setPreview(typeof reader.result === 'string' ? reader.result : null)
-    reader.readAsDataURL(thumbnail)
-  }, [thumbnail])
+    return () => {
+      if (preview) URL.revokeObjectURL(preview)
+    }
+  }, [preview])
 
   return (
     <div className="flex flex-col gap-1.5">
@@ -368,7 +379,7 @@ function CourseLessons({ lessons, setLessons }: {
   const addLesson = () => {
     setLessons([...lessons, { id: Math.random().toString(36).slice(2), title: '', duration: '', file: null }])
   }
-  const updateLesson = (id: string, key: keyof Lesson, value: any) => {
+  const updateLesson = <K extends keyof Lesson>(id: string, key: K, value: Lesson[K]) => {
     setLessons(lessons.map((l) => l.id === id ? { ...l, [key]: value } : l))
   }
   const removeLesson = (id: string) => setLessons(lessons.filter((l) => l.id !== id))
@@ -555,8 +566,8 @@ export function UploadForm({ categories, tags: initialTags }: Props) {
 
       setSuccess(true)
       setTimeout(() => router.push('/browse'), 2500)
-    } catch (err: any) {
-      setError('root', { message: err?.response?.data?.message || 'Upload failed' })
+    } catch (err: unknown) {
+      setError('root', { message: getErrorMessage(err, 'Upload failed') })
     } finally {
       setUploading(false)
     }
@@ -600,7 +611,7 @@ export function UploadForm({ categories, tags: initialTags }: Props) {
                   border: `2px solid ${active ? '#2563eb' : 'hsl(var(--border))'}`,
                   backgroundColor: active ? '#eff6ff' : 'hsl(var(--background))',
                 }}>
-                <span className="text-2xl leading-none mt-0.5">{t.icon}</span>
+                <t.icon className="w-6 h-6 mt-0.5" />
                 <div>
                   <p className="font-semibold text-sm leading-tight"
                     style={{ color: active ? '#1d4ed8' : 'hsl(var(--foreground))' }}>
@@ -733,6 +744,7 @@ export function UploadForm({ categories, tags: initialTags }: Props) {
           <div className="sm:col-span-2">
             <TagPicker
               availableTags={availableTags}
+              setAvailableTags={setAvailableTags}
               selectedIds={selectedTagIds}
               onChange={setSelectedTagIds}
             />

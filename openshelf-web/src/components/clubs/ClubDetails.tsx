@@ -3,6 +3,7 @@ import { useState, useEffect } from 'react'
 import { useAuthStore } from '@/store/auth.store'
 import { api } from '@/lib/api'
 import Link from 'next/link'
+import { getErrorMessage } from '@/lib/errors'
 
 interface Member {
   role: string
@@ -76,8 +77,8 @@ export function ClubDetail({ club }: { club: Club }) {
       setIsMember(true)
       setMyRole('MEMBER')
       setMemberCount((c) => c + 1)
-    } catch (err: any) {
-      alert(err?.response?.data?.message || 'Failed to join')
+    } catch (err: unknown) {
+      alert(getErrorMessage(err, 'Failed to join'))
     } finally {
       setJoining(false)
     }
@@ -91,8 +92,8 @@ export function ClubDetail({ club }: { club: Club }) {
       setIsMember(false)
       setMyRole(null)
       setMemberCount((c) => c - 1)
-    } catch (err: any) {
-      alert(err?.response?.data?.message || 'Failed to leave')
+    } catch (err: unknown) {
+      alert(getErrorMessage(err, 'Failed to leave'))
     } finally {
       setJoining(false)
     }
@@ -115,8 +116,8 @@ export function ClubDetail({ club }: { club: Club }) {
       setDiscTitle('')
       setDiscBody('')
       setShowNewDisc(false)
-    } catch (err: any) {
-      setPostError(err?.response?.data?.message || 'Failed to post')
+    } catch (err: unknown) {
+      setPostError(getErrorMessage(err, 'Failed to post'))
     } finally {
       setPosting(false)
     }

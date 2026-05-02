@@ -3,6 +3,7 @@ import { useState, useEffect, useRef } from 'react'
 import { useAuthStore } from '@/store/auth.store'
 import { api } from '@/lib/api'
 import Link from 'next/link'
+import { getErrorMessage } from '@/lib/errors'
 
 interface Author {
     id: string
@@ -76,8 +77,7 @@ export function DiscussionChat({ clubSlug, discussionId, discussion }: Props) {
         }
     }, [loading, comments.length])
 
-    const handleSubmit = async (e: React.FormEvent) => {
-        e.preventDefault()
+    const submitComment = async () => {
         if (!body.trim()) return
         setPosting(true)
         setError('')
@@ -87,17 +87,22 @@ export function DiscussionChat({ clubSlug, discussionId, discussion }: Props) {
             setBody('')
             textareaRef.current?.focus()
             setTimeout(() => bottomRef.current?.scrollIntoView({ behavior: 'smooth' }), 50)
-        } catch (err: any) {
-            setError(err?.response?.data?.message || 'Failed to post comment')
+        } catch (err: unknown) {
+            setError(getErrorMessage(err, 'Failed to post comment'))
         } finally {
             setPosting(false)
         }
     }
 
+    const handleSubmit = async (e: React.FormEvent) => {
+        e.preventDefault()
+        await submitComment()
+    }
+
     const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
         if (e.key === 'Enter' && !e.shiftKey) {
             e.preventDefault()
-            handleSubmit(e as any)
+            submitComment()
         }
     }
 

@@ -2,7 +2,10 @@ import { Suspense } from 'react'
 import { serverApi } from '@/lib/server-api'
 import { ClubCard } from '@/components/clubs/ClubCard'
 import { CreateClubButton } from '@/components/clubs/CreateClubButton'
+import { LibraryBig } from 'lucide-react'
 import type { Metadata } from 'next'
+
+type Club = Parameters<typeof ClubCard>[0]['club']
 
 export const metadata: Metadata = { title: 'Reading Clubs — OpenShelf' }
 
@@ -18,16 +21,18 @@ async function ClubsList() {
           color: 'hsl(var(--muted-foreground))',
         }}
       >
-        <div className="text-4xl mb-3">📚</div>
+        <LibraryBig className="w-10 h-10 mb-3" />
         <p className="text-base font-medium mb-1">No clubs yet</p>
         <p className="text-sm">Be the first to start one.</p>
       </div>
     )
   }
 
+  const clubs = result.data as Club[]
+
   return (
     <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
-      {result.data.map((club: any) => (
+      {clubs.map((club) => (
         <ClubCard key={club.id} club={club} />
       ))}
     </div>

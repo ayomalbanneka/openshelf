@@ -1,4 +1,12 @@
 import Link from 'next/link'
+import {
+  BookOpen,
+  GraduationCap,
+  ClipboardList,
+  FileText,
+  Headphones,
+  type LucideIcon,
+} from 'lucide-react'
 
 const TYPE_LABELS: Record<string, string> = {
   BOOK:       'Book',
@@ -16,12 +24,12 @@ const TYPE_COLOURS: Record<string, { bg: string; text: string }> = {
   AUDIO:      { bg: '#FCE7F3', text: '#9D174D' },
 }
 
-const ICONS: Record<string, string> = {
-  BOOK:       '📖',
-  COURSE:     '🎓',
-  EXAM_PAPER: '📝',
-  DOCUMENT:   '📄',
-  AUDIO:      '🎧',
+const ICONS: Record<string, LucideIcon> = {
+  BOOK:       BookOpen,
+  COURSE:     GraduationCap,
+  EXAM_PAPER: ClipboardList,
+  DOCUMENT:   FileText,
+  AUDIO:      Headphones,
 }
 
 interface SearchHit {
@@ -73,9 +81,15 @@ export function SearchResultCard({ hit }: { hit: SearchHit }) {
             alt={hit.title}
             className="h-20 w-16 object-cover rounded-lg"
           />
-        ) : (
-          <span>{ICONS[hit.type] || '📄'}</span>
-        )}
+        ) : (() => {
+          const Icon = ICONS[hit.type] || FileText
+          return (
+            <Icon
+              className="w-6 h-6"
+              style={{ color: 'hsl(var(--muted-foreground))' }}
+            />
+          )
+        })()}
       </div>
 
       {/* Info */}

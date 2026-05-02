@@ -1,220 +1,225 @@
 'use client'
-import { useEffect, useState } from 'react'
-import { http } from '@/lib/api'
+import { useEffect, useRef, useState } from 'react'
 import Link from 'next/link'
+import { http } from '@/lib/api'
+import { getErrorMessage } from '@/lib/errors'
 
 interface PendingResource {
-  id: string
-  title: string
-  slug: string
-  type: string
-  language: string
-  fileSize?: number
-  mimeType?: string
-  author?: string
-  description?: string
-  createdAt: string
+  id: string; title: string; slug: string; type: string; createdAt: string
   uploadedBy: { id: string; name: string; email: string }
-  category: { name: string }
+  category: { id: string; name: string }
+  _count: { reviews: number }
 }
 
-const TYPE_LABELS: Record<string, string> = {
-  BOOK: 'Book', COURSE: 'Course',
-  EXAM_PAPER: 'Exam paper', DOCUMENT: 'Document', AUDIO: 'Audio',
+interface PendingResponse {
+  data: PendingResource[]
+  meta: { total: number; page: number; limit: number; pages: number }
 }
 
-function formatBytes(bytes?: number) {
-  if (!bytes) return '—'
-  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`
-  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`
-}
+const TYPES = ['BOOK', 'COURSE', 'EXAM_PAPER', 'DOCUMENT', 'AUDIO']
 
 export default function PendingPage() {
   const [resources, setResources] = useState<PendingResource[]>([])
-  const [loading, setLoading]     = useState(true)
-  const [total, setTotal]         = useState(0)
-  const [acting, setActing]       = useState<string | null>(null)
+  const [total, setTotal] = useState(0)
+  const [page, setPage] = useState(1)
+  const [pages, setPages] = useState(1)
+  const [loading, setLoading] = useState(true)
+  const [acting, setActing] = useState<string | null>(null)
+  const [error, setError] = useState('')
+  const [search, setSearch] = useState('')
+  const timer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined)
+  const limit = 15
 
-  useEffect(() => {
-    http.get('/admin/pending')
-      .then((r) => {
-        setResources(r.data.data)
-        setTotal(r.data.meta.total)
-      })
-      .catch(() => {})
-      .finally(() => setLoading(false))
-  }, [])
+  const fetch_ = async (q = search, p = page) => {
+    setLoading(true)
+    setError('')
+    try {
+      const params = new URLSearchParams({ page: String(p), limit: String(limit) })
+      if (q) params.set('search', q)
+      const { data } = await http.get<PendingResponse>(`/admin/pending?${params}`)
+      setResources(data.data)
+      setTotal(data.meta.total)
+      setPage(data.meta.page)
+      setPages(data.meta.pages)
+    } catch (err: unknown) {
+      setError(getErrorMessage(err, 'Failed to load pending resources'))
+    } finally {
+      setLoading(false)
+    }
+  }
 
-  const handlePublish = async (id: string) => {
+  useEffect(() => { fetch_(search, page) }, [page])
+
+  const handleSearch = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const q = e.target.value
+    const shouldFetchNow = page === 1
+    setSearch(q)
+    setPage(1)
+    clearTimeout(timer.current)
+    timer.current = setTimeout(() => {
+      if (shouldFetchNow) fetch_(q, 1)
+    }, 350)
+  }
+
+  const handlePublish = async (id: string, title: string) => {
+    if (!confirm(`Publish "${title}"?`)) return
     setActing(id)
     try {
       await http.patch(`/admin/resources/${id}/publish`)
-      setResources((prev) => prev.filter((r) => r.id !== id))
-      setTotal((t) => t - 1)
-    } catch {
-      alert('Failed to publish')
+      fetch_(search, page)
+    } catch (err: unknown) {
+      alert(getErrorMessage(err, 'Failed to publish resource'))
     } finally {
       setActing(null)
     }
   }
 
   const handleReject = async (id: string, title: string) => {
-    if (!confirm(`Reject and delete "${title}"? This cannot be undone.`)) return
+    if (!confirm(`Reject "${title}"? This will delete the resource.`)) return
+    const reason = prompt('Reason for rejection (optional):')
+    if (reason === null) return
     setActing(id)
     try {
-      await http.delete(`/admin/resources/${id}`)
-      setResources((prev) => prev.filter((r) => r.id !== id))
-      setTotal((t) => t - 1)
-    } catch {
-      alert('Failed to reject')
+      await http.delete(`/admin/resources/${id}/reject`, { data: { reason } })
+      fetch_(search, page)
+    } catch (err: unknown) {
+      alert(getErrorMessage(err, 'Failed to reject resource'))
     } finally {
       setActing(null)
     }
   }
 
-  return (
-    <div className="flex flex-col gap-6">
+  const row = 'grid grid-cols-12 gap-3 px-4 py-3 items-center text-sm'
+  const inputStyle = { border: '1px solid var(--admin-border)', backgroundColor: 'var(--admin-surface)', color: 'var(--admin-text)' }
 
-      {/* Header */}
-      <div>
-        <h1 className="text-2xl font-bold mb-1">Pending review</h1>
-        <p style={{ color: 'hsl(var(--muted-foreground))' }}>
-          {total} resource{total !== 1 ? 's' : ''} waiting for moderation.
-        </p>
+  return (
+    <div className="flex flex-col gap-5">
+      <div className="flex items-center justify-between gap-4 flex-wrap">
+        <div>
+          <h1 className="text-2xl font-bold" style={{ color: 'var(--admin-text)' }}>Pending review</h1>
+          <p className="text-sm" style={{ color: 'var(--admin-muted)' }}>{total} awaiting review</p>
+        </div>
+        <div className="flex items-center gap-2">
+          <input
+            value={search}
+            onChange={handleSearch}
+            placeholder="Search title, uploader, or category"
+            className="h-9 rounded-xl px-3 text-sm outline-none w-64"
+            style={inputStyle}
+          />
+          <button
+            onClick={() => fetch_(search, page)}
+            className="text-xs px-3 py-1.5 rounded-xl font-semibold"
+            style={{ backgroundColor: 'var(--admin-soft)', color: 'var(--admin-text)' }}
+          >
+            Refresh
+          </button>
+        </div>
       </div>
 
-      {loading ? (
-        <div className="flex flex-col gap-3">
-          {[1,2,3].map((i) => (
-            <div
-              key={i}
-              className="h-36 rounded-xl animate-pulse"
-              style={{ backgroundColor: 'hsl(var(--muted))' }}
-            />
-          ))}
+      {error && (
+        <div className="flex items-center justify-between gap-3 text-sm rounded-xl px-4 py-3"
+          style={{ backgroundColor: '#fee2e2', color: '#991b1b' }}>
+          <span>{error}</span>
+          <button
+            onClick={() => fetch_(search, page)}
+            className="text-xs px-3 py-1.5 rounded-xl font-semibold"
+            style={{ backgroundColor: '#fecaca', color: '#7f1d1d' }}
+          >
+            Retry
+          </button>
         </div>
-      ) : resources.length === 0 ? (
-        <div
-          className="flex flex-col items-center justify-center py-20 rounded-2xl text-center"
-          style={{
-            border: '2px dashed hsl(var(--border))',
-            color: 'hsl(var(--muted-foreground))',
-          }}
-        >
-          <span className="text-4xl mb-3">✅</span>
-          <p className="text-lg font-medium mb-1">All caught up!</p>
-          <p className="text-sm">No resources are waiting for review.</p>
+      )}
+
+      <div className="rounded-2xl overflow-hidden" style={{ backgroundColor: 'var(--admin-surface)', border: '1px solid var(--admin-border)', boxShadow: 'var(--admin-card-shadow)' }}>
+        <div className={`${row} text-xs font-bold uppercase tracking-wider`}
+          style={{ backgroundColor: 'var(--admin-soft)', color: 'var(--admin-muted)', borderBottom: '1px solid var(--admin-border)' }}>
+          <div className="col-span-4">Resource</div>
+          <div className="col-span-2">Type</div>
+          <div className="col-span-3">Uploader</div>
+          <div className="col-span-1 text-center">Reviews</div>
+          <div className="col-span-2 text-center">Actions</div>
         </div>
-      ) : (
-        <div className="flex flex-col gap-3">
-          {resources.map((r) => (
-            <div
-              key={r.id}
-              className="rounded-xl p-5 flex flex-col gap-3"
-              style={{
-                border: '1px solid hsl(var(--border))',
-                backgroundColor: 'hsl(var(--background))',
-              }}
-            >
-              {/* Top row */}
-              <div className="flex items-start justify-between gap-4">
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2 mb-1">
-                    <span
-                      className="text-xs font-medium px-2 py-0.5 rounded-full shrink-0"
-                      style={{
-                        backgroundColor: 'hsl(var(--muted))',
-                        color: 'hsl(var(--muted-foreground))',
-                      }}
-                    >
-                      {TYPE_LABELS[r.type]}
-                    </span>
-                    <span
-                      className="text-xs uppercase shrink-0"
-                      style={{ color: 'hsl(var(--muted-foreground))' }}
-                    >
-                      {r.language}
-                    </span>
-                  </div>
-                  <h3 className="font-semibold leading-snug">{r.title}</h3>
-                  {r.author && (
-                    <p
-                      className="text-sm mt-0.5"
-                      style={{ color: 'hsl(var(--muted-foreground))' }}
-                    >
-                      by {r.author}
-                    </p>
-                  )}
-                </div>
 
-                {/* Action buttons */}
-                <div className="flex gap-2 shrink-0">
-                  <Link
-                    href={`/resources/${r.slug}`}
-                    target="_blank"
-                    className="px-3 py-1.5 rounded-lg text-xs font-medium transition-colors"
-                    style={{
-                      border: '1px solid hsl(var(--border))',
-                      color: 'hsl(var(--foreground))',
-                    }}
-                  >
-                    Preview
-                  </Link>
-                  <button
-                    onClick={() => handlePublish(r.id)}
-                    disabled={acting === r.id}
-                    className="px-3 py-1.5 rounded-lg text-xs font-medium text-white transition-colors disabled:opacity-50"
-                    style={{ backgroundColor: '#059669' }}
-                  >
-                    {acting === r.id ? '…' : 'Publish'}
-                  </button>
-                  <button
-                    onClick={() => handleReject(r.id, r.title)}
-                    disabled={acting === r.id}
-                    className="px-3 py-1.5 rounded-lg text-xs font-medium text-white transition-colors disabled:opacity-50"
-                    style={{ backgroundColor: '#dc2626' }}
-                  >
-                    {acting === r.id ? '…' : 'Reject'}
-                  </button>
-                </div>
-              </div>
-
-              {/* Description */}
-              {r.description && (
-                <p
-                  className="text-sm line-clamp-2"
-                  style={{ color: 'hsl(var(--muted-foreground))' }}
+        {loading ? (
+          <div className="flex flex-col gap-0">
+            {[1,2,3,4,5].map((i) => (
+              <div key={i} className="h-16 mx-4 my-2 rounded-xl animate-pulse" style={{ backgroundColor: 'var(--admin-soft)' }} />
+            ))}
+          </div>
+        ) : resources.length === 0 ? (
+          <div className="py-16 text-center text-sm" style={{ color: 'var(--admin-muted)' }}>
+            No pending resources.
+          </div>
+        ) : (
+          resources.map((r, i) => (
+            <div key={r.id} className={row} style={{ borderTop: i === 0 ? 'none' : '1px solid var(--admin-border)' }}>
+              <div className="col-span-4 min-w-0">
+                <Link
+                  href={`/resources/${r.slug}`}
+                  target="_blank"
+                  className="text-sm font-medium truncate block hover:text-blue-600 transition-colors"
+                  style={{ color: 'var(--admin-text)' }}
                 >
-                  {r.description}
+                  {r.title}
+                </Link>
+                <p className="text-xs truncate" style={{ color: 'var(--admin-muted)' }}>
+                  {r.category.name} · {new Date(r.createdAt).toLocaleDateString()}
                 </p>
-              )}
-
-              {/* Meta row */}
-              <div
-                className="flex flex-wrap gap-4 text-xs pt-2"
-                style={{
-                  color: 'hsl(var(--muted-foreground))',
-                  borderTop: '1px solid hsl(var(--border))',
-                }}
-              >
-                <span>
-                  Uploaded by{' '}
-                  <Link
-                    href={`/users/${r.uploadedBy.id}`}
-                    className="font-medium hover:text-blue-600 transition-colors"
-                  >
-                    {r.uploadedBy.name}
-                  </Link>
+              </div>
+              <div className="col-span-2">
+                <span className="text-xs font-semibold px-2.5 py-1 rounded-full"
+                  style={{ backgroundColor: '#fff7ed', color: '#9a3412' }}>
+                  {TYPES.includes(r.type) ? r.type.replace('_', ' ') : r.type}
                 </span>
-                <span>{r.uploadedBy.email}</span>
-                <span>{r.category.name}</span>
-                <span>{formatBytes(r.fileSize)}</span>
-                <span>{new Date(r.createdAt).toLocaleDateString('en-US', {
-                  year: 'numeric', month: 'short', day: 'numeric',
-                })}</span>
+              </div>
+              <div className="col-span-3 min-w-0">
+                <p className="text-xs font-semibold truncate" style={{ color: 'var(--admin-text)' }}>{r.uploadedBy.name}</p>
+                <p className="text-xs truncate" style={{ color: 'var(--admin-muted)' }}>{r.uploadedBy.email}</p>
+              </div>
+              <div className="col-span-1 text-center text-sm" style={{ color: 'var(--admin-muted)' }}>{r._count.reviews}</div>
+              <div className="col-span-2 flex items-center justify-center gap-2">
+                <button
+                  onClick={() => handlePublish(r.id, r.title)}
+                  disabled={acting === r.id}
+                  className="text-xs px-3 py-1.5 rounded-lg font-medium transition-colors disabled:opacity-50"
+                  style={{ backgroundColor: '#dcfce7', color: '#166534' }}
+                >
+                  {acting === r.id ? '...' : 'Publish'}
+                </button>
+                <button
+                  onClick={() => handleReject(r.id, r.title)}
+                  disabled={acting === r.id}
+                  className="text-xs px-3 py-1.5 rounded-lg font-medium transition-colors disabled:opacity-50"
+                  style={{ backgroundColor: '#fee2e2', color: '#b91c1c' }}
+                >
+                  {acting === r.id ? '...' : 'Reject'}
+                </button>
               </div>
             </div>
-          ))}
+          ))
+        )}
+      </div>
+
+      {pages > 1 && (
+        <div className="flex items-center justify-end gap-2">
+          <button
+            onClick={() => setPage((p) => Math.max(1, p - 1))}
+            disabled={page <= 1 || loading}
+            className="text-xs px-3 py-1.5 rounded-xl font-semibold disabled:opacity-50"
+            style={{ backgroundColor: 'var(--admin-soft)', color: 'var(--admin-text)' }}
+          >
+            Prev
+          </button>
+          <span className="text-xs" style={{ color: 'var(--admin-muted)' }}>Page {page} of {pages}</span>
+          <button
+            onClick={() => setPage((p) => Math.min(pages, p + 1))}
+            disabled={page >= pages || loading}
+            className="text-xs px-3 py-1.5 rounded-xl font-semibold disabled:opacity-50"
+            style={{ backgroundColor: 'var(--admin-soft)', color: 'var(--admin-text)' }}
+          >
+            Next
+          </button>
         </div>
       )}
     </div>

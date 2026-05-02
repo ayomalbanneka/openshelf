@@ -4,9 +4,11 @@ import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
 import { useRouter } from 'next/navigation'
 import { useAuthStore } from '@/store/auth.store'
+import Link from 'next/link'
+import { getErrorMessage } from '@/lib/errors'
 
 const schema = z.object({
-  email:    z.string().email('Enter a valid email'),
+  email: z.string().email('Enter a valid email'),
   password: z.string().min(1, 'Password is required'),
 })
 
@@ -23,12 +25,19 @@ export function LoginForm() {
     formState: { errors },
   } = useForm<FormData>({ resolver: zodResolver(schema) })
 
+  // Handle form submission and call the login function from the auth store to authenticate the user. 
+  // On success, redirect to verify-email if not verified, otherwise to browse.
   const onSubmit = async (data: FormData) => {
     try {
       await login(data.email, data.password)
-      router.push('/browse')
-    } catch (err: any) {
-      setError('root', { message: err?.response?.data?.message || 'Invalid email or password' })
+      const { user } = useAuthStore.getState()
+      if (user && !user.isEmailVerified) {
+        router.push('/verify-email')
+      } else {
+        router.push('/browse')
+      }
+    } catch (err: unknown) {
+      setError('root', { message: getErrorMessage(err, 'Something went wrong') })
     }
   }
 
@@ -60,6 +69,12 @@ export function LoginForm() {
       <div className="flex flex-col gap-1.5">
         <div className="flex items-center justify-between">
           <label htmlFor="password" className="text-sm font-medium">Password</label>
+          <Link
+            href="/forgot-password"
+            className="text-xs text-blue-600 hover:underline"
+          >
+            Forgot password?
+          </Link>
         </div>
         <input
           id="password"
@@ -76,8 +91,8 @@ export function LoginForm() {
       {errors.root && (
         <div className="flex items-center gap-2.5 px-4 py-3 rounded-xl bg-red-50 border border-red-100">
           <svg width="16" height="16" viewBox="0 0 16 16" fill="none" className="shrink-0">
-            <circle cx="8" cy="8" r="7" stroke="#ef4444" strokeWidth="1.5"/>
-            <path d="M8 5v3.5M8 11h.01" stroke="#ef4444" strokeWidth="1.5" strokeLinecap="round"/>
+            <circle cx="8" cy="8" r="7" stroke="#ef4444" strokeWidth="1.5" />
+            <path d="M8 5v3.5M8 11h.01" stroke="#ef4444" strokeWidth="1.5" strokeLinecap="round" />
           </svg>
           <p className="text-sm text-red-600">{errors.root.message}</p>
         </div>
@@ -90,8 +105,8 @@ export function LoginForm() {
       >
         {isLoading && (
           <svg className="animate-spin h-4 w-4" fill="none" viewBox="0 0 24 24">
-            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/>
-            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"/>
+            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z" />
           </svg>
         )}
         {isLoading ? 'Signing in…' : 'Sign in'}
