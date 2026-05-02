@@ -1,5 +1,19 @@
 # Changelog
 
+## [0.8.0](https://github.com/ayomalbanneka/openshelf/compare/v0.7.0...v0.8.0) (2026-05-02)
+
+
+### Features
+
+* add email verification feature with 2FA for admin login ([e7fa6fd](https://github.com/ayomalbanneka/openshelf/commit/e7fa6fd6a4aca13c8f03a34cc3f5c4dcf0bf85ee))
+* **admin:** enhance admin panel with categories, clubs, resources, and tags management ([7dded2b](https://github.com/ayomalbanneka/openshelf/commit/7dded2b0811ffc22dcf15374670c72b273892cd4))
+* update resource icons and improve UI components ([9d1d4c3](https://github.com/ayomalbanneka/openshelf/commit/9d1d4c37396c4272ea564cd286f96a53a333bc5b))
+
+
+### Bug Fixes
+
+* adjust width classes for layout and reset code link ([4c9c472](https://github.com/ayomalbanneka/openshelf/commit/4c9c4726692a7145208701068d86e5ca4a6ac7e5))
+
 ## [0.7.0](https://github.com/ayomalbanneka/openshelf/compare/v0.6.0...v0.7.0) (2026-04-26)
 
 
