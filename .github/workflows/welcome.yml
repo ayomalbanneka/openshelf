@@ -1,0 +1,49 @@
+name: 👋 Welcome New Contributors
+
+on:
+  issues:
+    types: [opened]
+  pull_request:
+    types: [opened]
+
+permissions:
+  issues: write
+  pull-requests: write
+
+jobs:
+  welcome:
+    name: Welcome First-Time Contributor
+    runs-on: ubuntu-latest
+    steps:
+      - name: Post welcome comment
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const isPR = !!context.payload.pull_request;
+            const actor = context.actor;
+            const number = isPR
+              ? context.payload.pull_request.number
+              : context.payload.issue.number;
+
+            // Check if this is their first issue/PR in this repo
+            const { data: issues } = await github.rest.issues.listForRepo({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              creator: actor,
+              state: 'all',
+              per_page: 10,
+            });
+
+            const isFirst = issues.filter(i => i.user.login === actor).length <= 1;
+            if (!isFirst) return;
+
+            const message = isPR
+              ? `👋 Hey @${actor}, thanks for your first PR on **OpenShelf**! 🎉\n\nHere's a quick checklist:\n- Make sure your branch targets \`develop\` (not \`main\`)\n- PR title follows \`type(scope): description\` format\n- Link the related issue with \`Closes #<number>\`\n\nA maintainer will review this shortly. Thanks for contributing! 📚`
+              : `👋 Hey @${actor}, thanks for opening your first issue on **OpenShelf**! 🎉\n\nWe'll triage this soon. In the meantime, feel free to jump into [Discussions](https://github.com/${context.repo.owner}/${context.repo.repo}/discussions) if you have questions. 📚`;
+
+            await github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: number,
+              body: message,
+            });

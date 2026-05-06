@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: 📖 OpenShelf Docs
+    url: https://github.com/ayomalbanneka/openshelf/wiki
+    about: Read the project wiki before opening an issue.
+  - name: 💬 Discussions
+    url: https://github.com/ayomalbanneka/openshelf/discussions
+    about: Ask questions and share ideas in Discussions.

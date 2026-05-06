@@ -1,0 +1,108 @@
+{
+  "_comment": "OpenShelf GitHub Project Template – reference config",
+  "_instructions": [
+    "1. Go to github.com → Your Profile → Projects → New Project",
+    "2. Choose 'Board' view from scratch",
+    "3. Name it: OpenShelf",
+    "4. Add the fields and columns listed below manually,",
+    "   OR use the GitHub CLI commands in setup-project.sh"
+  ],
+
+  "project": {
+    "name": "OpenShelf",
+    "description": "Track features, bugs, and phases for the OpenShelf open-source e-library platform.",
+    "default_repository": "YOUR_USERNAME/openshelf"
+  },
+
+  "views": [
+    {
+      "name": "📋 Board",
+      "layout": "board",
+      "group_by": "Status",
+      "description": "Main Kanban board — day-to-day work"
+    },
+    {
+      "name": "🗺️ Roadmap",
+      "layout": "roadmap",
+      "group_by": "Phase",
+      "description": "Phase-by-phase timeline view"
+    },
+    {
+      "name": "📊 Backlog",
+      "layout": "table",
+      "sort_by": "Priority",
+      "description": "Flat table of all open items sorted by priority"
+    }
+  ],
+
+  "columns": [
+    { "name": "📥 Backlog",     "description": "Scoped but not started" },
+    { "name": "🔜 To Do",       "description": "Ready to be picked up this sprint" },
+    { "name": "🔨 In Progress", "description": "Actively being worked on" },
+    { "name": "👀 In Review",   "description": "PR open, awaiting review" },
+    { "name": "✅ Done",        "description": "Merged or closed" }
+  ],
+
+  "custom_fields": [
+    {
+      "name": "Phase",
+      "type": "single_select",
+      "options": [
+        "Phase 1 – Setup",
+        "Phase 2 – Auth",
+        "Phase 3 – Resources",
+        "Phase 4 – Social",
+        "Phase 5 – Search",
+        "Phase 6 – TBD"
+      ]
+    },
+    {
+      "name": "Priority",
+      "type": "single_select",
+      "options": ["🔴 High", "🟡 Medium", "🟢 Low"]
+    },
+    {
+      "name": "Area",
+      "type": "single_select",
+      "options": ["Frontend", "Backend", "Database", "Storage", "Auth", "DevOps", "Docs"]
+    },
+    {
+      "name": "Estimate",
+      "type": "number",
+      "description": "Story points (1, 2, 3, 5, 8)"
+    },
+    {
+      "name": "Sprint",
+      "type": "iteration",
+      "description": "Current sprint / iteration"
+    }
+  ],
+
+  "workflows": [
+    {
+      "name": "Issue opened → Backlog",
+      "trigger": "issue.opened",
+      "action": "set_status(Backlog)"
+    },
+    {
+      "name": "PR linked → In Progress",
+      "trigger": "pull_request.linked_to_issue",
+      "action": "set_status(In Progress)"
+    },
+    {
+      "name": "PR review requested → In Review",
+      "trigger": "pull_request.review_requested",
+      "action": "set_status(In Review)"
+    },
+    {
+      "name": "Issue / PR closed → Done",
+      "trigger": "issue.closed OR pull_request.merged",
+      "action": "set_status(Done)"
+    },
+    {
+      "name": "Issue reopened → To Do",
+      "trigger": "issue.reopened",
+      "action": "set_status(To Do)"
+    }
+  ]
+}
