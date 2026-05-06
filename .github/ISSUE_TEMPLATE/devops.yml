@@ -1,0 +1,62 @@
+name: "⚙️ DevOps / Infrastructure"
+description: CI/CD, Docker, deployment, or infrastructure task
+title: "[DEVOPS] "
+labels: ["devops", "infrastructure", "needs-triage"]
+assignees: []
+body:
+  - type: markdown
+    attributes:
+      value: |
+        ## ⚙️ DevOps / Infrastructure Task
+        Use this for CI/CD pipelines, Docker, Cloudflare R2, deployment, or any infrastructure work.
+
+  - type: dropdown
+    id: category
+    attributes:
+      label: Category
+      options:
+        - "CI/CD (GitHub Actions)"
+        - "Docker / Docker Compose"
+        - "Storage (MinIO / Cloudflare R2)"
+        - "Database (PostgreSQL / Prisma)"
+        - "Deployment / Hosting"
+        - "Monitoring / Logging"
+        - "Security"
+        - "Other"
+    validations:
+      required: true
+
+  - type: textarea
+    id: summary
+    attributes:
+      label: Task Summary
+      description: What needs to be done and why?
+    validations:
+      required: true
+
+  - type: textarea
+    id: context
+    attributes:
+      label: Technical Context
+      description: Relevant configs, environment details, or constraints.
+
+  - type: textarea
+    id: acceptance
+    attributes:
+      label: Acceptance Criteria
+      value: |
+        - [ ] ...
+        - [ ] ...
+    validations:
+      required: true
+
+  - type: dropdown
+    id: priority
+    attributes:
+      label: Priority
+      options:
+        - "🔴 High"
+        - "🟡 Medium"
+        - "🟢 Low"
+    validations:
+      required: true

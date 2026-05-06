@@ -1,0 +1,49 @@
+name: 🕰️ Stale Issue & PR Management
+
+on:
+  schedule:
+    # Runs every Monday at 08:00 UTC
+    - cron: "0 8 * * 1"
+  workflow_dispatch:
+
+permissions:
+  issues: write
+  pull-requests: write
+
+jobs:
+  stale:
+    name: Mark & Close Stale Items
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/stale@v9
+        with:
+          repo-token: ${{ secrets.GITHUB_TOKEN }}
+
+          # ── Issues ────────────────────────────────────────────────────────
+          days-before-issue-stale: 30
+          days-before-issue-close: 7
+          stale-issue-label: "stale"
+          stale-issue-message: |
+            👋 This issue has been inactive for **30 days** and is now marked as stale.
+            If it's still relevant, please leave a comment or update the issue.
+            It will be closed in **7 days** if there is no activity.
+          close-issue-message: |
+            🔒 Closing due to inactivity. Feel free to reopen if this is still relevant.
+          exempt-issue-labels: "pinned,security,in-progress,hotfix"
+
+          # ── Pull Requests ─────────────────────────────────────────────────
+          days-before-pr-stale: 14
+          days-before-pr-close: 7
+          stale-pr-label: "stale"
+          stale-pr-message: |
+            👋 This PR has been inactive for **14 days** and is now marked as stale.
+            Please update or rebase it so it stays on track.
+            It will be closed in **7 days** if there is no activity.
+          close-pr-message: |
+            🔒 Closing this PR due to inactivity. Reopen whenever you're ready to continue.
+          exempt-pr-labels: "pinned,hotfix,work-in-progress"
+
+          # ── Shared ────────────────────────────────────────────────────────
+          ascending: true           # Process oldest items first
+          remove-stale-when-updated: true
+          operations-per-run: 60

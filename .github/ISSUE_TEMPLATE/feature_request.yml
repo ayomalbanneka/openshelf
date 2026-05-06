@@ -1,0 +1,91 @@
+name: "✨ Feature Request"
+description: Propose a new feature for OpenShelf
+title: "[FEAT] "
+labels: ["feature", "needs-triage"]
+assignees: []
+body:
+  - type: markdown
+    attributes:
+      value: |
+        ## ✨ New Feature Request
+        Thanks for helping shape OpenShelf! Fill in the details below so we can evaluate and plan this feature.
+
+  - type: dropdown
+    id: phase
+    attributes:
+      label: Project Phase
+      description: Which phase does this feature belong to?
+      options:
+        - "Phase 1 – Project Setup"
+        - "Phase 2 – Authentication"
+        - "Phase 3 – Resource Management"
+        - "Phase 4 – Social Features"
+        - "Phase 5 – Search"
+        - "Phase 6 – New Feature"
+    validations:
+      required: true
+
+  - type: dropdown
+    id: area
+    attributes:
+      label: Area
+      description: Which part of the codebase does this affect?
+      options:
+        - Frontend (Next.js)
+        - Backend (Express / Prisma)
+        - Database (PostgreSQL)
+        - Storage (MinIO / Cloudflare R2)
+        - Auth
+        - DevOps / CI/CD
+        - Documentation
+        - Other
+        - "Multiple / All Areas"
+    validations:
+      required: true
+
+  - type: textarea
+    id: summary
+    attributes:
+      label: Feature Summary
+      description: One clear sentence describing what you want to add.
+      placeholder: "As a user, I want to … so that I can …"
+    validations:
+      required: true
+
+  - type: textarea
+    id: motivation
+    attributes:
+      label: Motivation & Context
+      description: Why is this needed? What problem does it solve?
+    validations:
+      required: true
+
+  - type: textarea
+    id: design
+    attributes:
+      label: Proposed Design / Approach
+      description: Any ideas on implementation, API shape, or UI design? (Optional)
+      placeholder: "Rough idea, wireframe link, API contract, etc."
+
+  - type: textarea
+    id: acceptance
+    attributes:
+      label: Acceptance Criteria
+      description: How will we know this feature is done?
+      value: |
+        - [ ] ...
+        - [ ] ...
+        - [ ] ...
+    validations:
+      required: true
+
+  - type: dropdown
+    id: priority
+    attributes:
+      label: Priority
+      options:
+        - "🔴 High"
+        - "🟡 Medium"
+        - "🟢 Low"
+    validations:
+      required: true

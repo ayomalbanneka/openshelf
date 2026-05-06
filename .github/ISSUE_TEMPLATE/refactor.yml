@@ -1,0 +1,61 @@
+name: "🔧 Refactor / Tech Debt"
+description: Code quality improvement, refactor, or tech debt cleanup
+title: "[REFACTOR] "
+labels: ["refactor", "tech-debt"]
+assignees: []
+body:
+  - type: markdown
+    attributes:
+      value: |
+        ## 🔧 Refactor / Tech Debt
+        Keeping OpenShelf's codebase healthy and maintainable.
+
+  - type: dropdown
+    id: area
+    attributes:
+      label: Area
+      options:
+        - Frontend (Next.js)
+        - Backend (Express / Prisma)
+        - Database schema
+        - API design
+        - Testing
+        - Documentation
+        - Build / tooling
+        - DevOps / CI/CD
+        - Other
+    validations:
+      required: true
+
+  - type: textarea
+    id: problem
+    attributes:
+      label: What's the Problem?
+      description: Describe the current state and why it's a problem.
+    validations:
+      required: true
+
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposed Improvement
+      description: How should it be changed, and what will be better after?
+    validations:
+      required: true
+
+  - type: textarea
+    id: risks
+    attributes:
+      label: Risks / Breaking Changes
+      description: Any regressions or breaking changes to be aware of?
+
+  - type: textarea
+    id: acceptance
+    attributes:
+      label: Acceptance Criteria
+      value: |
+        - [ ] Tests still pass
+        - [ ] No regression in ...
+        - [ ] ...
+    validations:
+      required: true
