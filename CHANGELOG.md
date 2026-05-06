@@ -1,5 +1,14 @@
 # Changelog
 
+## [0.8.1](https://github.com/ayomalbanneka/openshelf/compare/v0.8.0...v0.8.1) (2026-05-06)
+
+
+### Bug Fixes
+
+* **labels:** add missing spaces in label definitions ([ae774b9](https://github.com/ayomalbanneka/openshelf/commit/ae774b980cd5063d330382578fe6a15d4d816e84))
+* **labels:** add missing spaces in label definitions ([1c44a3c](https://github.com/ayomalbanneka/openshelf/commit/1c44a3ce10da715818be6fe0627f2dbc71d6f6c8))
+* **script:** fix spacing in label definitions ([2fd4eae](https://github.com/ayomalbanneka/openshelf/commit/2fd4eae64ecc3458f4181e4a2469ebcc2ee918f3))
+
 ## [0.8.0](https://github.com/ayomalbanneka/openshelf/compare/v0.7.0...v0.8.0) (2026-05-02)
 
 
