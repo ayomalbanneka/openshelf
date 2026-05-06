@@ -41,9 +41,9 @@ create_label "pull-request"    "0075ca" "Associated with a PR"
 create_label "pinned"          "e4e669" "Keep open regardless of staleness"
 
 # ── Priority labels ───────────────────────────────────────────────────────────
-create_label "priority: high"  "d73a4a" "Must be done ASAP"
-create_label "priority: medium""fbca04" "Important but not urgent"
-create_label "priority: low"   "0e8a16" "Nice to have"
+create_label "priority: high"   "d73a4a" "Must be done ASAP"
+create_label "priority: medium" "fbca04" "Important but not urgent"
+create_label "priority: low"    "0e8a16" "Nice to have"
 
 # ── Phase labels ──────────────────────────────────────────────────────────────
 create_label "phase-1"         "c5def5" "Phase 1 – Project Setup"
@@ -61,7 +61,7 @@ create_label "storage"         "bfd4f2" "MinIO / Cloudflare R2"
 create_label "auth"            "bfd4f2" "Authentication / authorisation"
 
 # ── Misc ──────────────────────────────────────────────────────────────────────
-create_label "good first issue""7057ff" "Good for newcomers"
+create_label "good first issue" "7057ff" "Good for newcomers"
 create_label "help wanted"     "008672" "Extra attention is needed"
 create_label "wont-fix"        "ffffff" "This will not be worked on"
 create_label "duplicate"       "cfd3d7" "This issue or PR already exists"
