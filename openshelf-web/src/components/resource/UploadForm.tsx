@@ -7,6 +7,7 @@ import { z } from 'zod'
 import { useRouter } from 'next/navigation'
 import { http } from '@/lib/api'
 import Image from 'next/image'
+import { toast } from '@/lib/toast'
 import {
   BookOpen,
   GraduationCap,
@@ -564,9 +565,11 @@ export function UploadForm({ categories, tags: initialTags }: Props) {
         },
       })
 
+      toast.success('Upload successful! Pending review.')
       setSuccess(true)
       setTimeout(() => router.push('/browse'), 2500)
     } catch (err: unknown) {
+      toast.error('Upload failed')
       setError('root', { message: getErrorMessage(err, 'Upload failed') })
     } finally {
       setUploading(false)

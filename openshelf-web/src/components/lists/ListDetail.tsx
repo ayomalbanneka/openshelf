@@ -7,6 +7,8 @@ import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import { LibraryBig, Lock } from 'lucide-react'
 import type { Resource } from '@/types'
+import { toast } from '@/lib/toast'
+toast.error('Failed to delete list')
 
 interface ListItem {
   id: string
@@ -58,7 +60,7 @@ export function ListDetail({ listId }: { listId: string }) {
       await api.lists.removeItem(list.id, itemId)
       setList((prev) => prev ? { ...prev, items: prev.items.filter((i) => i.id !== itemId) } : prev)
     } catch {
-      alert('Failed to remove item')
+      toast.error('Failed to remove item')
     }
   }
 

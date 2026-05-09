@@ -3,6 +3,7 @@ import { useState, useEffect } from 'react'
 import { api } from '@/lib/api'
 import Link from 'next/link'
 import { LibraryBig, List } from 'lucide-react'
+import { toast } from '@/lib/toast'
 
 interface ReadingList {
   id: string
@@ -39,7 +40,7 @@ export function MyLists() {
       setLists((prev) => [newList, ...prev])
       setTitle(''); setDescription(''); setIsPublic(true); setShowForm(false)
     } catch {
-      setError('Failed to create list')
+      toast.error('Failed to create list')
     } finally {
       setCreating(false)
     }
@@ -50,8 +51,9 @@ export function MyLists() {
     try {
       await api.lists.remove(id)
       setLists((prev) => prev.filter((l) => l.id !== id))
+      toast.success('List deleted')
     } catch {
-      alert('Failed to delete list')
+      toast.error('Failed to delete list')
     }
   }
 

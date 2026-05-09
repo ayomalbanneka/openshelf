@@ -1,7 +1,9 @@
 import type { Metadata } from 'next'
 import { Inter } from 'next/font/google'
 import { ThemeProvider } from 'next-themes'
+import { ToasterClient } from '@/components/ui/ToasterClient'
 import './globals.css'
+import 'goey-toast/styles.css'
 
 const inter = Inter({ subsets: ['latin'] })
 
@@ -23,6 +25,7 @@ export default function RootLayout({
       <body className={inter.className}>
         <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
           {children}
+          <ToasterClient />
         </ThemeProvider>
       </body>
     </html>

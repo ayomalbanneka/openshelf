@@ -7,6 +7,7 @@ import { ResourceCard } from '@/components/resource/ResourceCard'
 import Link from 'next/link'
 import Image from 'next/image'
 import type { Resource } from '@/types'
+import { toast } from '@/lib/toast'
 
 interface UserData {
   id: string
@@ -55,7 +56,9 @@ export function UserProfile({ user, uploads }: Props) {
         setFollowing(true)
         setFollowerCount((c) => c + 1)
       }
+      toast.success(following ? 'Unfollowed' : 'Following!')
     } catch {
+      toast.error('Failed to update follow status')
     } finally {
       setFLoading(false)
     }
@@ -236,7 +239,7 @@ export function UserProfile({ user, uploads }: Props) {
             <p className="font-medium mb-1">{isMe ? "You haven't uploaded anything yet." : 'No uploads yet.'}</p>
             {isMe && (
               <Link href="/upload" className="text-sm text-blue-600 hover:underline">
-                Upload your first resource ->
+                Upload your first resource
               </Link>
             )}
           </div>
