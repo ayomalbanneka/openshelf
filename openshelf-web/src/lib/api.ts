@@ -18,6 +18,15 @@ export const api = {
       http.delete(`/users/${id}/follow`).then((r) => r.data),
     updateProfile: (data: Record<string, string>) =>
       http.patch('/users/me', data).then((r) => r.data),
+    changePassword: (data: { currentPassword: string; newPassword: string }) =>
+      http.patch('/users/me/password', data).then((r) => r.data),
+    uploadAvatar: (file: File) => {
+      const form = new FormData()
+      form.append('avatar', file)
+      return http.post('/users/me/avatar', form, {
+        headers: { 'Content-Type': 'multipart/form-data' },
+      }).then((r) => r.data)
+    },
   },
 
   // Lists endpoints for managing user-created lists and their items

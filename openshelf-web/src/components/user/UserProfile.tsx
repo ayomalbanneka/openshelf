@@ -8,6 +8,7 @@ import Link from 'next/link'
 import Image from 'next/image'
 import type { Resource } from '@/types'
 import { toast } from '@/lib/toast'
+import { Trash2 } from 'lucide-react'
 
 interface UserData {
   id: string
@@ -28,7 +29,7 @@ interface Props {
 type AboutRow = { label: string; value: string; isLink?: boolean }
 
 export function UserProfile({ user, uploads }: Props) {
-  const { user: currentUser } = useAuthStore()
+  const { user: currentUser, setUser } = useAuthStore()
   const isMe = currentUser?.id === user.id
 
   const [following, setFollowing] = useState(false)
@@ -65,6 +66,18 @@ export function UserProfile({ user, uploads }: Props) {
   }
 
   const joinedYear = new Date(user.createdAt).getFullYear()
+  const displayAvatarUrl = isMe ? currentUser?.avatarUrl : user.avatarUrl
+
+  const handleRemoveAvatar = async () => {
+    if (!currentUser) return
+    try {
+      const updated = await api.users.updateProfile({ avatarUrl: '' })
+      setUser(updated)
+      toast.success('Profile photo removed')
+    } catch {
+      toast.error('Failed to remove profile photo')
+    }
+  }
 
   const aboutRows: AboutRow[] = [
     user.bio ? { label: 'Bio', value: user.bio } : null,
@@ -110,9 +123,9 @@ export function UserProfile({ user, uploads }: Props) {
                 backgroundColor: '#2563eb',
               }}
             >
-              {user.avatarUrl ? (
+              {displayAvatarUrl ? (
                 <Image
-                  src={user.avatarUrl}
+                  src={displayAvatarUrl}
                   alt={`${user.name} avatar`}
                   width={80}
                   height={80}
@@ -158,13 +171,15 @@ export function UserProfile({ user, uploads }: Props) {
                 </button>
               )}
               {isMe && (
-                <Link
-                  href="/settings"
-                  className="px-5 py-2 rounded-xl text-sm font-medium transition-colors"
-                  style={{ border: '1px solid hsl(var(--border))', color: 'hsl(var(--foreground))' }}
-                >
-                  Edit profile
-                </Link>
+                <>
+                  <Link
+                    href="/settings"
+                    className="px-5 py-2 rounded-xl text-sm font-medium transition-colors"
+                    style={{ border: '1px solid hsl(var(--border))', color: 'hsl(var(--foreground))' }}
+                  >
+                    Edit profile
+                  </Link>
+                </>
               )}
             </div>
           </div>

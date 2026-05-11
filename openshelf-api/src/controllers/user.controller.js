@@ -1,3 +1,4 @@
+const bcrypt = require('bcryptjs');
 const prisma = require('../config/prisma');
 
 // Get user profile
@@ -33,26 +34,63 @@ const getProfile = async (req, res, next) => {
 // Update user profile
 const updateProfile = async (req, res, next) => {
     try {
-        const { name, bio, website, country, preferredLanguage } = req.body;
+        const {
+            name, bio, website, country,
+            preferredLanguage, avatarUrl,
+        } = req.body
 
         const user = await prisma.user.update({
             where: { id: req.user.id },
             data: {
-                ...(name && { name }),
+                ...(name !== undefined && { name }),
                 ...(bio !== undefined && { bio }),
                 ...(website !== undefined && { website }),
-                ...(country && { country }),
-                ...(preferredLanguage && { preferredLanguage }),
+                ...(country !== undefined && { country }),
+                ...(preferredLanguage !== undefined && { preferredLanguage }),
+                ...(avatarUrl !== undefined && { avatarUrl }),
             },
             select: {
-                id: true, name: true, bio: true, website: true, country: true, preferredLanguage: true
+                id: true, name: true, email: true, bio: true,
+                website: true, country: true, preferredLanguage: true,
+                avatarUrl: true, role: true, isEmailVerified: true,
             },
         })
 
-        res.json(user);
-    } catch (err) {
-        next(err);
-    }
+        res.json(user)
+    } catch (err) { next(err) }
+}
+
+const changePassword = async (req, res, next) => {
+    try {
+        const { currentPassword, newPassword } = req.body
+
+        if (!currentPassword || !newPassword) {
+            return res.status(422).json({ message: 'Both passwords are required' })
+        }
+
+        if (newPassword.length < 8) {
+            return res.status(422).json({
+                message: 'New password must be at least 8 characters',
+            })
+        }
+
+        const user = await prisma.user.findUnique({
+            where: { id: req.user.id },
+        })
+
+        const valid = await bcrypt.compare(currentPassword, user.passwordHash)
+        if (!valid) {
+            return res.status(400).json({ message: 'Current password is incorrect' })
+        }
+
+        const passwordHash = await bcrypt.hash(newPassword, 12)
+        await prisma.user.update({
+            where: { id: req.user.id },
+            data: { passwordHash },
+        })
+
+        res.json({ message: 'Password changed successfully' })
+    } catch (err) { next(err) }
 }
 
 // Follow another user
@@ -174,7 +212,7 @@ const getUploads = async (req, res, next) => {
 }
 
 module.exports = {
-    getProfile, updateProfile,
+    getProfile, updateProfile, changePassword,
     follow, unfollow, isFollowing,
     getFollowers, getFollowing,
     getUploads,
