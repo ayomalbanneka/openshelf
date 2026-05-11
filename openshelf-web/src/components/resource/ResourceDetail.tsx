@@ -7,6 +7,7 @@ import Link from 'next/link'
 import { api } from '@/lib/api'
 import { getErrorMessage } from '@/lib/errors'
 import { toast } from '@/lib/toast'
+import { ReadingProgress } from './ReadingProgress'
 import {
   BookOpen,
   GraduationCap,
@@ -441,6 +442,14 @@ export function ResourceDetail({ resource }: { resource: Resource }) {
 
         </div>
       </div>
+
+      {/* Reading progress */}
+      {user && (
+        <div className="mt-10">
+          <h2 className="text-xl font-bold mb-4">Reading progress</h2>
+          <ReadingProgress resource={resource} />
+        </div>
+      )}
 
       {/* Reviews section */}
       <ReviewsSection slug={resource.slug} />

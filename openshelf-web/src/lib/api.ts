@@ -61,6 +61,23 @@ export const api = {
     createComment: (slug: string, discussionId: string, body: string) =>
       http.post(`/clubs/${slug}/discussions/${discussionId}/comments`, { body }).then((r) => r.data),
   },
+
+  // Reading progress endpoints for tracking and updating user progress on resources
+  progress: {
+    get: (resourceId: string) =>
+      http.get(`/progress/${resourceId}`).then((r) => r.data),
+    update: (resourceId: string, data: {
+      currentPage?: number
+      totalPages?: number
+      currentTime?: number
+      totalTime?: number
+    }) =>
+      http.put(`/progress/${resourceId}`, data).then((r) => r.data),
+    getMine: () =>
+      http.get('/progress/mine').then((r) => r.data),
+    getCompleted: () =>
+      http.get('/progress/completed').then((r) => r.data),
+  },
 }
 
 // Attach the access token to every outgoing request

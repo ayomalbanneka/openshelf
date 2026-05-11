@@ -15,6 +15,7 @@ const readingListRoutes = require('./routes/readingList.routes'); // Routes for 
 const clubRoutes = require('./routes/club.routes'); // Routes for book clubs (create club, join/leave club, discussions, comments)
 const tagRoutes = require('./routes/tag.routes'); // Routes for managing tags (create, list)
 const adminRoutes = require('./routes/admin.routes'); // Routes for admin dashboard and content moderation
+const progressRoutes = require('./routes/progress.routes'); // Routes for tracking reading progress
 const {configureIndex} = require('./config/meilisearch')
 
 const app = express()
@@ -45,6 +46,7 @@ app.use('/api/lists', readingListRoutes)
 app.use('/api/clubs', clubRoutes)
 app.use('/api/tags', tagRoutes)
 app.use('/api/admin', adminRoutes)
+app.use('/api/progress', progressRoutes)
 
 // 404 handler
 app.use((req, res) => {
