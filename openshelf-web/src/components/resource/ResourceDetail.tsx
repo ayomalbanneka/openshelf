@@ -8,6 +8,7 @@ import { api } from '@/lib/api'
 import { getErrorMessage } from '@/lib/errors'
 import { toast } from '@/lib/toast'
 import { ReadingProgress } from './ReadingProgress'
+import { CommentsSection } from './CommentsSection'
 import {
   BookOpen,
   GraduationCap,
@@ -454,11 +455,14 @@ export function ResourceDetail({ resource }: { resource: Resource }) {
       {/* Reviews section */}
       <ReviewsSection slug={resource.slug} />
 
+      {/* Comments */}
+      <CommentsSection slug={resource.slug} />
+
     </div>
   )
 }
 
-// ── Reviews ───────────────────────────────────────────────────
+// Reviews
 
 interface Review {
   id: string

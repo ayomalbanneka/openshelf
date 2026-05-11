@@ -78,7 +78,21 @@ export const api = {
     getCompleted: () =>
       http.get('/progress/completed').then((r) => r.data),
   },
+
+  // Comments endpoints for managing comments on resources and club discussions
+  comments: {
+    getForResource: (slug: string) =>
+      http.get(`/resources/${slug}/comments`).then((r) => r.data),
+    create: (slug: string, body: string, parentId?: string) =>
+      http.post(`/resources/${slug}/comments`, { body, parentId })
+        .then((r) => r.data),
+    update: (id: string, body: string) =>
+      http.patch(`/comments/${id}`, { body }).then((r) => r.data),
+    delete: (id: string) =>
+      http.delete(`/comments/${id}`).then((r) => r.data),
+  },
 }
+
 
 // Attach the access token to every outgoing request
 http.interceptors.request.use((config) => {

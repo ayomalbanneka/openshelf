@@ -16,6 +16,7 @@ const clubRoutes = require('./routes/club.routes'); // Routes for book clubs (cr
 const tagRoutes = require('./routes/tag.routes'); // Routes for managing tags (create, list)
 const adminRoutes = require('./routes/admin.routes'); // Routes for admin dashboard and content moderation
 const progressRoutes = require('./routes/progress.routes'); // Routes for tracking reading progress
+const commentRoutes = require('./routes/comment.routes'); // Routes for comments on resources and club discussions
 const {configureIndex} = require('./config/meilisearch')
 
 const app = express()
@@ -47,6 +48,7 @@ app.use('/api/clubs', clubRoutes)
 app.use('/api/tags', tagRoutes)
 app.use('/api/admin', adminRoutes)
 app.use('/api/progress', progressRoutes)
+app.use('/api', commentRoutes) // Comments can be on resources or club discussions, so they use the base /api path
 
 // 404 handler
 app.use((req, res) => {
