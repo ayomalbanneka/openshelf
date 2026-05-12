@@ -1,4 +1,5 @@
 const multer = require('multer')
+const { errorsTotal } = require('../config/metrics')
 
 const errorHandler = (err, req, res, next) => {
   console.error(err.stack)
@@ -28,6 +29,9 @@ const errorHandler = (err, req, res, next) => {
 
   const status  = err.status || err.statusCode || 500
   const message = err.message || 'Internal server error'
+
+  const type = status >= 500 ? 'http_5xx' : status >= 400 ? 'http_4xx' : 'http_other'
+  errorsTotal.inc({ type })
 
   res.status(status).json({
     message,

@@ -5,6 +5,7 @@ const cookieParser = require('cookie-parser')
 const cors = require('cors')
 const helmet = require('helmet')
 const morgan = require('morgan')
+const metricsMiddleware = require('./middleware/metrics'); // Middleware for collecting Prometheus metrics
 
 const authRoutes = require('./routes/auth.routes'); // Authentication routes (register, login, logout)
 const resourceRoutes = require('./routes/resource.routes'); // Routes for managing resources (books, articles, etc.)
@@ -17,7 +18,11 @@ const tagRoutes = require('./routes/tag.routes'); // Routes for managing tags (c
 const adminRoutes = require('./routes/admin.routes'); // Routes for admin dashboard and content moderation
 const progressRoutes = require('./routes/progress.routes'); // Routes for tracking reading progress
 const commentRoutes = require('./routes/comment.routes'); // Routes for comments on resources and club discussions
-const {configureIndex} = require('./config/meilisearch')
+const metricsRoutes   = require('./routes/metrics.routes')
+let configureIndex
+if (process.env.NODE_ENV !== 'test') {
+  ; ({ configureIndex } = require('./config/meilisearch'))
+}
 
 const app = express()
 
@@ -29,6 +34,7 @@ app.use(cors({
 }))
 app.use(express.json())
 app.use(cookieParser())
+app.use(metricsMiddleware)
 
 // Health check
 app.get('/health', (req, res) => {
@@ -36,7 +42,9 @@ app.get('/health', (req, res) => {
 })
 
 // Configure Meilisearch index on startup
-configureIndex();
+if (configureIndex) {
+  configureIndex()
+}
 
 // API routes
 app.use('/api/auth', authRoutes)
@@ -48,7 +56,8 @@ app.use('/api/clubs', clubRoutes)
 app.use('/api/tags', tagRoutes)
 app.use('/api/admin', adminRoutes)
 app.use('/api/progress', progressRoutes)
-app.use('/api', commentRoutes) // Comments can be on resources or club discussions, so they use the base /api path
+app.use('/api', commentRoutes)
+app.use('/metrics', metricsRoutes)
 
 // 404 handler
 app.use((req, res) => {
@@ -60,7 +69,9 @@ app.use(errorHandler)
 
 module.exports = app
 
-const PORT = process.env.PORT || 4000
-app.listen(PORT, () => {
-  console.log(`Server running on http://localhost:${PORT}`)
-})
+if (process.env.NODE_ENV !== 'test') {
+  const PORT = process.env.PORT || 4000
+  app.listen(PORT, () => {
+    console.log(`Server running on http://localhost:${PORT}`)
+  })
+}

@@ -3,7 +3,7 @@ import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { useAuthStore } from '@/store/auth.store'
 import {
-  LayoutDashboard, Hourglass, Users, BookOpen,
+  LayoutDashboard, Hourglass, Users, BookOpen, Activity,
   Library, Tags, FolderOpen, Users2, LogOut, type LucideIcon,
 } from 'lucide-react'
 
@@ -16,6 +16,7 @@ const ADMIN_LINKS: NavSection[] = [
   ]},
   { section: 'Content', items: [
     { href: '/admin/pending',    label: 'Pending',    icon: Hourglass, badge: 'pending' },
+    { href: '/admin/monitoring', label: 'Monitoring',  icon: Activity },
     { href: '/admin/resources',  label: 'Resources',  icon: Library },
     { href: '/admin/categories', label: 'Categories', icon: FolderOpen },
     { href: '/admin/tags',       label: 'Tags',       icon: Tags },
