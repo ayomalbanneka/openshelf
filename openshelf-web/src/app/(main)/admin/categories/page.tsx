@@ -2,6 +2,7 @@
 import { useEffect, useState } from 'react'
 import { http } from '@/lib/api'
 import { getErrorMessage } from '@/lib/errors'
+import { FolderOpen, Plus, RefreshCw, Search, Trash2, CornerDownRight } from 'lucide-react'
 
 interface Category {
   id: string; name: string; slug: string; description?: string
@@ -78,18 +79,22 @@ export default function CategoriesPage() {
       </div>
 
       <div className="flex items-center justify-between gap-3 flex-wrap">
-        <input
-          value={filter}
-          onChange={(e) => setFilter(e.target.value)}
-          placeholder="Filter categories..."
-          className="h-9 rounded-xl px-3 text-sm outline-none w-64"
-          style={inputStyle}
-        />
+        <label className="relative w-full sm:w-72">
+          <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2" style={{ color: 'var(--admin-muted)' }} />
+          <input
+            value={filter}
+            onChange={(e) => setFilter(e.target.value)}
+            placeholder="Filter categories..."
+            className="h-9 rounded-xl pl-9 pr-3 text-sm outline-none w-full"
+            style={inputStyle}
+          />
+        </label>
         <button
           onClick={fetch_}
-          className="text-xs px-3 py-1.5 rounded-xl font-semibold"
-          style={{ backgroundColor: 'var(--admin-soft)', color: 'var(--admin-text)' }}
+          className="text-xs px-3 py-1.5 rounded-xl font-semibold inline-flex items-center gap-2"
+          style={{ backgroundColor: 'var(--admin-soft)', color: 'var(--admin-text)', border: '1px solid var(--admin-border)' }}
         >
+          <RefreshCw className="h-3.5 w-3.5" />
           Refresh
         </button>
       </div>
@@ -97,7 +102,10 @@ export default function CategoriesPage() {
       {/* Create form */}
       <form onSubmit={handleCreate} className="rounded-2xl p-5 flex flex-col gap-4"
         style={{ backgroundColor: 'var(--admin-surface)', border: '1px solid var(--admin-border)', boxShadow: 'var(--admin-card-shadow)' }}>
-        <p className="text-sm font-bold" style={{ color: 'var(--admin-text)' }}>Create new category</p>
+        <p className="text-sm font-bold inline-flex items-center gap-2" style={{ color: 'var(--admin-text)' }}>
+          <Plus className="h-4 w-4" />
+          Create new category
+        </p>
         <div className="grid sm:grid-cols-3 gap-3">
           <input value={newName} onChange={(e) => setNewName(e.target.value)} placeholder="Category name *"
             className="h-10 rounded-xl px-3 text-sm outline-none focus:ring-2 focus:ring-blue-500" style={inputStyle} />
@@ -112,9 +120,10 @@ export default function CategoriesPage() {
         {error && <p className="text-xs text-red-500">{error}</p>}
         <div className="flex justify-end">
           <button type="submit" disabled={creating}
-            className="px-5 py-2 rounded-xl text-sm font-semibold text-white transition-colors disabled:opacity-50"
+            className="px-5 py-2 rounded-xl text-sm font-semibold text-white transition-colors disabled:opacity-50 inline-flex items-center gap-2"
             style={{ backgroundColor: 'var(--admin-accent-strong)' }}>
-            {creating ? 'Creating...' : '+ Create category'}
+            <Plus className="h-4 w-4" />
+            {creating ? 'Creating...' : 'Create category'}
           </button>
         </div>
       </form>
@@ -137,7 +146,9 @@ export default function CategoriesPage() {
               <div className="flex items-center justify-between px-5 py-3.5" style={{ borderBottom: cat.children.length > 0 ? '1px solid var(--admin-border)' : 'none' }}>
                 <div className="flex items-center gap-3">
                   <div className="h-8 w-8 rounded-lg flex items-center justify-center text-sm"
-                    style={{ backgroundColor: '#e0f2fe', color: '#0284c7' }}>📂</div>
+                    style={{ backgroundColor: 'color-mix(in srgb, var(--admin-accent) 14%, transparent)', color: 'var(--admin-accent)' }}>
+                    <FolderOpen className="h-4 w-4" />
+                  </div>
                   <div>
                     <p className="text-sm font-semibold" style={{ color: 'var(--admin-text)' }}>{cat.name}</p>
                     {cat.description && <p className="text-xs" style={{ color: 'var(--admin-muted)' }}>{cat.description}</p>}
@@ -146,9 +157,10 @@ export default function CategoriesPage() {
                 <div className="flex items-center gap-3">
                   <span className="text-xs" style={{ color: 'var(--admin-muted)' }}>{cat._count.resources} resources</span>
                   <button onClick={() => handleDelete(cat.id, cat.name)} disabled={acting === cat.id}
-                    className="text-xs px-2.5 py-1 rounded-lg font-medium disabled:opacity-50"
-                    style={{ backgroundColor: '#fee2e2', color: '#b91c1c' }}>
-                    {acting === cat.id ? '...' : 'Delete'}
+                    className="text-xs px-2.5 py-1 rounded-lg font-medium inline-flex items-center gap-1.5 disabled:opacity-50"
+                    style={{ backgroundColor: 'color-mix(in srgb, var(--admin-danger) 14%, transparent)', color: 'var(--admin-danger)' }}>
+                    <Trash2 className="h-3.5 w-3.5" />
+                    {acting === cat.id ? 'Deleting...' : 'Delete'}
                   </button>
                 </div>
               </div>
@@ -156,14 +168,15 @@ export default function CategoriesPage() {
               {/* Sub-categories */}
               {cat.children.map((child) => (
                 <div key={child.id} className="flex items-center justify-between px-5 py-2.5 pl-12"
-                  style={{ borderTop: '1px solid var(--admin-border)', backgroundColor: '#fafbfd' }}>
-                  <p className="text-sm" style={{ color: 'var(--admin-muted)' }}>↳ {child.name}</p>
+                  style={{ borderTop: '1px solid var(--admin-border)', backgroundColor: 'var(--admin-soft)' }}>
+                  <p className="text-sm inline-flex items-center gap-1.5" style={{ color: 'var(--admin-muted)' }}><CornerDownRight className="h-3.5 w-3.5" />{child.name}</p>
                   <div className="flex items-center gap-3">
                     <span className="text-xs" style={{ color: 'var(--admin-muted)' }}>{child._count.resources} resources</span>
                     <button onClick={() => handleDelete(child.id, child.name)} disabled={acting === child.id}
-                      className="text-xs px-2.5 py-1 rounded-lg font-medium disabled:opacity-50"
-                      style={{ backgroundColor: '#fee2e2', color: '#b91c1c' }}>
-                      {acting === child.id ? '...' : 'Delete'}
+                      className="text-xs px-2.5 py-1 rounded-lg font-medium inline-flex items-center gap-1.5 disabled:opacity-50"
+                      style={{ backgroundColor: 'color-mix(in srgb, var(--admin-danger) 14%, transparent)', color: 'var(--admin-danger)' }}>
+                      <Trash2 className="h-3.5 w-3.5" />
+                      {acting === child.id ? 'Deleting...' : 'Delete'}
                     </button>
                   </div>
                 </div>
