@@ -4,6 +4,22 @@ import { useAuthStore } from '@/store/auth.store'
 import { http } from '@/lib/api'
 import { getErrorMessage } from '@/lib/errors'
 import Link from 'next/link'
+import {
+  Users,
+  LibraryBig,
+  Hourglass,
+  Star,
+  Building2,
+  Tags,
+  BookOpen,
+  GraduationCap,
+  FileText,
+  Files,
+  Music4,
+  Clock3,
+  ArrowRight,
+  ShieldAlert,
+} from 'lucide-react'
 
 interface Stats {
   totalUsers: number
@@ -26,16 +42,20 @@ interface TypeCount { type: string; _count: number }
 interface RoleCount { role: string; _count: number }
 interface DayCount  { date: string; count: number }
 
-const TYPE_ICONS: Record<string, string> = {
-  BOOK: '📖', COURSE: '🎓', EXAM_PAPER: '📝', DOCUMENT: '📄', AUDIO: '🎵',
+const TYPE_ICONS: Record<string, typeof BookOpen> = {
+  BOOK: BookOpen,
+  COURSE: GraduationCap,
+  EXAM_PAPER: FileText,
+  DOCUMENT: Files,
+  AUDIO: Music4,
 }
 const TYPE_COLORS: Record<string, string> = {
   BOOK: '#0ea5e9', COURSE: '#14b8a6', EXAM_PAPER: '#f59e0b',
   DOCUMENT: '#22c55e', AUDIO: '#f43f5e',
 }
 
-function StatCard({ icon, label, value, sub, color, href }: {
-  icon: string; label: string; value: number; sub?: string
+function StatCard({ icon: Icon, label, value, sub, color, href }: {
+  icon: typeof Users; label: string; value: number; sub?: string
   color: string; href?: string
 }) {
   const card = (
@@ -48,10 +68,10 @@ function StatCard({ icon, label, value, sub, color, href }: {
       }}
     >
       <div
-        className="h-11 w-11 rounded-xl flex items-center justify-center text-xl shrink-0"
+        className="h-11 w-11 rounded-xl flex items-center justify-center shrink-0"
         style={{ backgroundColor: `${color}18` }}
       >
-        {icon}
+        <Icon className="h-5 w-5" style={{ color }} />
       </div>
       <div className="flex-1 min-w-0">
         <p className="text-2xl font-bold leading-tight" style={{ color }}>{value.toLocaleString()}</p>
@@ -244,7 +264,7 @@ export default function AdminPage() {
               className="h-9 w-9 rounded-xl flex items-center justify-center shrink-0"
               style={{ backgroundColor: '#fef3c7' }}
             >
-              ⏳
+              <ShieldAlert className="h-5 w-5" style={{ color: '#f59e0b' }} />
             </div>
             <div>
               <p className="text-sm font-semibold" style={{ color: '#92400e' }}>
@@ -267,14 +287,14 @@ export default function AdminPage() {
 
       {/* Stat cards */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        <StatCard icon="👥" label="Total users"     value={stats.totalUsers}          color="#2563eb" href={isAdmin ? '/admin/users' : undefined} />
-        <StatCard icon="📚" label="Resources"       value={stats.totalResources}      color="#059669" sub={`${stats.publishedResources} published`} href={isAdmin ? '/admin/resources' : undefined} />
-        <StatCard icon="⏳" label="Pending review"  value={stats.pendingResources}    color="#d97706" href="/admin/pending" />
-        <StatCard icon="⭐" label="Total reviews"   value={stats.totalReviews}        color="#06b6d4" />
+        <StatCard icon={Users} label="Total users"     value={stats.totalUsers}          color="#2563eb" href={isAdmin ? '/admin/users' : undefined} />
+        <StatCard icon={LibraryBig} label="Resources"       value={stats.totalResources}      color="#059669" sub={`${stats.publishedResources} published`} href={isAdmin ? '/admin/resources' : undefined} />
+        <StatCard icon={Hourglass} label="Pending review"  value={stats.pendingResources}    color="#d97706" href="/admin/pending" />
+        <StatCard icon={Star} label="Total reviews"   value={stats.totalReviews}        color="#06b6d4" />
         {isAdmin && (
           <>
-            <StatCard icon="🏛️" label="Reading clubs"   value={stats.totalClubs}     color="#db2777" href="/admin/clubs" />
-            <StatCard icon="🏷️" label="Tags"            value={stats.totalTags}      color="#0891b2" href="/admin/tags" />
+            <StatCard icon={Building2} label="Reading clubs"   value={stats.totalClubs}     color="#db2777" href="/admin/clubs" />
+            <StatCard icon={Tags} label="Tags"            value={stats.totalTags}      color="#0891b2" href="/admin/tags" />
           </>
         )}
       </div>
@@ -341,7 +361,10 @@ export default function AdminPage() {
                     className="h-9 w-9 rounded-lg flex items-center justify-center text-base shrink-0"
                     style={{ backgroundColor: `${TYPE_COLORS[r.type] ?? '#94a3b8'}15` }}
                   >
-                    {TYPE_ICONS[r.type] ?? '📄'}
+                    {(() => {
+                      const Icon = TYPE_ICONS[r.type] ?? FileText
+                      return <Icon className="h-4 w-4" style={{ color: TYPE_COLORS[r.type] ?? '#94a3b8' }} />
+                    })()}
                   </div>
                   <div className="flex-1 min-w-0">
                     <Link
@@ -391,7 +414,7 @@ export default function AdminPage() {
                 style={{ color: '#2563eb' }}
               >
                 <span>Manage users</span>
-                <span>→</span>
+                <ArrowRight className="h-4 w-4" />
               </Link>
             </div>
           </div>

@@ -2,6 +2,7 @@
 import { useEffect, useState, useRef } from 'react'
 import { http } from '@/lib/api'
 import Link from 'next/link'
+import { Users, MessageCircle, Trash2, RefreshCw, Search, ArrowLeft, ArrowRight } from 'lucide-react'
 
 interface Club {
   id: string; name: string; slug: string; isPublic: boolean; createdAt: string
@@ -69,8 +70,11 @@ export default function ClubsPage() {
           <h1 className="text-2xl font-bold" style={{ color: 'var(--admin-text)' }}>Reading Clubs</h1>
           <p className="text-sm" style={{ color: 'var(--admin-muted)' }}>{total} clubs</p>
         </div>
-        <input value={search} onChange={handleSearch} placeholder="Search clubs…"
-          className="h-9 rounded-xl px-3 text-sm outline-none w-52" style={inputStyle} />
+        <label className="relative">
+          <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2" style={{ color: 'var(--admin-muted)' }} />
+          <input value={search} onChange={handleSearch} placeholder="Search clubs…"
+            className="h-9 rounded-xl pl-9 pr-3 text-sm outline-none w-52" style={inputStyle} />
+        </label>
       </div>
 
       {error && (
@@ -112,23 +116,24 @@ export default function ClubsPage() {
                 </div>
                 <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full shrink-0"
                   style={club.isPublic
-                    ? { backgroundColor: '#dcfce7', color: '#166534' }
-                    : { backgroundColor: '#f1f5f9', color: '#475569' }}>
+                    ? { backgroundColor: 'color-mix(in srgb, var(--admin-success) 16%, transparent)', color: 'var(--admin-success)' }
+                    : { backgroundColor: 'var(--admin-soft)', color: 'var(--admin-muted)' }}>
                   {club.isPublic ? 'Public' : 'Private'}
                 </span>
               </div>
               <div className="flex gap-4 text-xs" style={{ color: 'var(--admin-muted)' }}>
-                <span>👥 {club._count.members} members</span>
-                <span>💬 {club._count.discussions} discussions</span>
+                <span className="inline-flex items-center gap-1.5"><Users className="h-3.5 w-3.5" /> {club._count.members} members</span>
+                <span className="inline-flex items-center gap-1.5"><MessageCircle className="h-3.5 w-3.5" /> {club._count.discussions} discussions</span>
               </div>
               <div className="flex items-center justify-between pt-2" style={{ borderTop: '1px solid var(--admin-border)' }}>
                 <span className="text-xs" style={{ color: 'var(--admin-muted)' }}>
                   {new Date(club.createdAt).toLocaleDateString()}
                 </span>
                 <button onClick={() => handleDelete(club.id, club.name)} disabled={acting === club.id}
-                  className="text-xs px-3 py-1 rounded-lg font-medium transition-colors disabled:opacity-50"
-                  style={{ backgroundColor: '#fee2e2', color: '#b91c1c' }}>
-                  {acting === club.id ? '...' : 'Delete'}
+                  className="text-xs px-3 py-1 rounded-lg font-medium transition-colors disabled:opacity-50 inline-flex items-center gap-1.5"
+                  style={{ backgroundColor: 'color-mix(in srgb, var(--admin-danger) 14%, transparent)', color: 'var(--admin-danger)' }}>
+                  <Trash2 className="h-3.5 w-3.5" />
+                  {acting === club.id ? 'Deleting...' : 'Delete'}
                 </button>
               </div>
             </div>
@@ -141,19 +146,21 @@ export default function ClubsPage() {
           <button
             onClick={() => setPage((p) => Math.max(1, p - 1))}
             disabled={page <= 1 || loading}
-            className="text-xs px-3 py-1.5 rounded-xl font-semibold disabled:opacity-50"
+            className="text-xs px-3 py-1.5 rounded-xl font-semibold disabled:opacity-50 inline-flex items-center gap-1.5"
             style={{ backgroundColor: 'var(--admin-soft)', color: 'var(--admin-text)' }}
           >
+            <ArrowLeft className="h-3.5 w-3.5" />
             Prev
           </button>
           <span className="text-xs" style={{ color: 'var(--admin-muted)' }}>Page {page} of {pages}</span>
           <button
             onClick={() => setPage((p) => Math.min(pages, p + 1))}
             disabled={page >= pages || loading}
-            className="text-xs px-3 py-1.5 rounded-xl font-semibold disabled:opacity-50"
+            className="text-xs px-3 py-1.5 rounded-xl font-semibold disabled:opacity-50 inline-flex items-center gap-1.5"
             style={{ backgroundColor: 'var(--admin-soft)', color: 'var(--admin-text)' }}
           >
             Next
+            <ArrowRight className="h-3.5 w-3.5" />
           </button>
         </div>
       )}
