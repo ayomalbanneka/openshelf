@@ -18,12 +18,21 @@ export const api = {
       http.delete(`/users/${id}/follow`).then((r) => r.data),
     updateProfile: (data: Record<string, string>) =>
       http.patch('/users/me', data).then((r) => r.data),
+    changePassword: (data: { currentPassword: string; newPassword: string }) =>
+      http.patch('/users/me/password', data).then((r) => r.data),
+    uploadAvatar: (file: File) => {
+      const form = new FormData()
+      form.append('avatar', file)
+      return http.post('/users/me/avatar', form, {
+        headers: { 'Content-Type': 'multipart/form-data' },
+      }).then((r) => r.data)
+    },
   },
 
   // Lists endpoints for managing user-created lists and their items
   lists: {
-    getMine: () =>
-      http.get('/lists/mine').then((r) => r.data),
+    getMine: (page = 1, limit = 10) =>
+      http.get(`/lists/mine?page=${page}&limit=${limit}`).then((r) => r.data),
     getOne: (id: string) =>
       http.get(`/lists/${id}`).then((r) => r.data),
     create: (data: { title: string; description?: string; isPublic?: boolean }) =>
@@ -61,7 +70,38 @@ export const api = {
     createComment: (slug: string, discussionId: string, body: string) =>
       http.post(`/clubs/${slug}/discussions/${discussionId}/comments`, { body }).then((r) => r.data),
   },
+
+  // Reading progress endpoints for tracking and updating user progress on resources
+  progress: {
+    get: (resourceId: string) =>
+      http.get(`/progress/${resourceId}`).then((r) => r.data),
+    update: (resourceId: string, data: {
+      currentPage?: number
+      totalPages?: number
+      currentTime?: number
+      totalTime?: number
+    }) =>
+      http.put(`/progress/${resourceId}`, data).then((r) => r.data),
+    getMine: () =>
+      http.get('/progress/mine').then((r) => r.data),
+    getCompleted: () =>
+      http.get('/progress/completed').then((r) => r.data),
+  },
+
+  // Comments endpoints for managing comments on resources and club discussions
+  comments: {
+    getForResource: (slug: string) =>
+      http.get(`/resources/${slug}/comments`).then((r) => r.data),
+    create: (slug: string, body: string, parentId?: string) =>
+      http.post(`/resources/${slug}/comments`, { body, parentId })
+        .then((r) => r.data),
+    update: (id: string, body: string) =>
+      http.patch(`/comments/${id}`, { body }).then((r) => r.data),
+    delete: (id: string) =>
+      http.delete(`/comments/${id}`).then((r) => r.data),
+  },
 }
+
 
 // Attach the access token to every outgoing request
 http.interceptors.request.use((config) => {

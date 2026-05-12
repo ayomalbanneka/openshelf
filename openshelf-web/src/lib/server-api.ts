@@ -95,9 +95,13 @@ export const serverApi = {
     },
   },
 
-  clubs: {// Fetch book clubs with optional search and pagination parameters
-    list: async (params?: { search?: string; page?: number }) => {
-      const url = buildUrl('/clubs', params)
+  clubs: { // Fetch clubs with optional pagination and search parameters
+    list: async (params?: {
+      search?: string
+      page?: number
+      limit?: number
+    }) => {
+      const url = buildUrl('/clubs', params as Record<string, string | number | undefined>)
       const res = await fetch(url, { cache: 'no-store' })
       if (!res.ok) throw new Error('Failed to fetch clubs')
       return res.json()
@@ -107,19 +111,12 @@ export const serverApi = {
       if (!res.ok) throw new Error('Club not found')
       return res.json()
     },
-
-    getDiscussion: async (slug: string, discussionId: string) => {
-      const res = await fetch(`${BASE_URL}/clubs/${slug}/discussions/${discussionId}`, { cache: 'no-store' })
-
-      if (!res.ok) throw new Error('Discussion not found')
-      return res.json()
-    },
   },
 
   admin: {
     getStats: async (token: string) => {
       const res = await fetch(`${BASE_URL}/admin/stats`, {
-        cache:   'no-store',
+        cache: 'no-store',
         headers: { Authorization: `Bearer ${token}` },
       })
       if (!res.ok) throw new Error('Unauthorized')
@@ -128,7 +125,7 @@ export const serverApi = {
 
     getPending: async (token: string, page = 1) => {
       const res = await fetch(`${BASE_URL}/admin/pending?page=${page}`, {
-        cache:   'no-store',
+        cache: 'no-store',
         headers: { Authorization: `Bearer ${token}` },
       })
       if (!res.ok) throw new Error('Unauthorized')

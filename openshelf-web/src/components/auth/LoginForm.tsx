@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation'
 import { useAuthStore } from '@/store/auth.store'
 import Link from 'next/link'
 import { getErrorMessage } from '@/lib/errors'
+import { toast } from '@/lib/toast'
 
 const schema = z.object({
   email: z.string().email('Enter a valid email'),
@@ -32,11 +33,14 @@ export function LoginForm() {
       await login(data.email, data.password)
       const { user } = useAuthStore.getState()
       if (user && !user.isEmailVerified) {
+        toast.success('Signed in. Please verify your email.')
         router.push('/verify-email')
       } else {
+        toast.success('Signed in successfully!')
         router.push('/browse')
       }
     } catch (err: unknown) {
+      toast.error(getErrorMessage(err, 'Something went wrong'))
       setError('root', { message: getErrorMessage(err, 'Something went wrong') })
     }
   }

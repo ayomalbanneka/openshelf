@@ -7,6 +7,7 @@ import { z } from 'zod'
 import { useRouter } from 'next/navigation'
 import { http } from '@/lib/api'
 import Image from 'next/image'
+import { toast } from '@/lib/toast'
 import {
   BookOpen,
   GraduationCap,
@@ -564,9 +565,11 @@ export function UploadForm({ categories, tags: initialTags }: Props) {
         },
       })
 
+      toast.success('Upload successful! Pending review.')
       setSuccess(true)
       setTimeout(() => router.push('/browse'), 2500)
     } catch (err: unknown) {
+      toast.error('Upload failed')
       setError('root', { message: getErrorMessage(err, 'Upload failed') })
     } finally {
       setUploading(false)
@@ -611,7 +614,10 @@ export function UploadForm({ categories, tags: initialTags }: Props) {
                   border: `2px solid ${active ? '#2563eb' : 'hsl(var(--border))'}`,
                   backgroundColor: active ? '#eff6ff' : 'hsl(var(--background))',
                 }}>
-                <t.icon className="w-6 h-6 mt-0.5" />
+                <t.icon
+                  className="w-6 h-6 mt-0.5"
+                  style={{ color: active ? '#2563eb' : 'hsl(var(--muted-foreground))' }}
+                />
                 <div>
                   <p className="font-semibold text-sm leading-tight"
                     style={{ color: active ? '#1d4ed8' : 'hsl(var(--foreground))' }}>

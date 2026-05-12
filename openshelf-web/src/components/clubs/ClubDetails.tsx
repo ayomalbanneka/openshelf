@@ -4,6 +4,7 @@ import { useAuthStore } from '@/store/auth.store'
 import { api } from '@/lib/api'
 import Link from 'next/link'
 import { getErrorMessage } from '@/lib/errors'
+import { toast } from '@/lib/toast'
 
 interface Member {
   role: string
@@ -73,12 +74,18 @@ export function ClubDetail({ club }: { club: Club }) {
     if (!user) return
     setJoining(true)
     try {
-      await api.clubs.join(club.slug)
+      await toast.promise(
+        api.clubs.join(club.slug),
+        {
+          loading: 'Joining club…',
+          success: 'Joined club!',
+          error: 'Failed to join',
+        }
+      )
       setIsMember(true)
       setMyRole('MEMBER')
       setMemberCount((c) => c + 1)
-    } catch (err: unknown) {
-      alert(getErrorMessage(err, 'Failed to join'))
+    } catch {
     } finally {
       setJoining(false)
     }
@@ -92,8 +99,9 @@ export function ClubDetail({ club }: { club: Club }) {
       setIsMember(false)
       setMyRole(null)
       setMemberCount((c) => c - 1)
+      toast.success('Left club')
     } catch (err: unknown) {
-      alert(getErrorMessage(err, 'Failed to leave'))
+      toast.error(getErrorMessage(err, 'Failed to leave'))
     } finally {
       setJoining(false)
     }
@@ -117,7 +125,7 @@ export function ClubDetail({ club }: { club: Club }) {
       setDiscBody('')
       setShowNewDisc(false)
     } catch (err: unknown) {
-      setPostError(getErrorMessage(err, 'Failed to post'))
+      toast.error(getErrorMessage(err, 'Failed to post'))
     } finally {
       setPosting(false)
     }

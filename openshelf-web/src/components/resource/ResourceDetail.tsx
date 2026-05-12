@@ -6,6 +6,9 @@ import { Resource } from '@/types'
 import Link from 'next/link'
 import { api } from '@/lib/api'
 import { getErrorMessage } from '@/lib/errors'
+import { toast } from '@/lib/toast'
+import { ReadingProgress } from './ReadingProgress'
+import { CommentsSection } from './CommentsSection'
 import {
   BookOpen,
   GraduationCap,
@@ -65,11 +68,11 @@ export function ResourceDetail({ resource }: { resource: Resource }) {
     setSavingToList(true)
     try {
       await api.lists.addItem(listId, resource.id)
-      setSavedMsg('Saved!')
+      toast.success('Saved to list!')
       setShowListPicker(false)
       setTimeout(() => setSavedMsg(''), 2000)
     } catch (err: unknown) {
-      setSavedMsg(getErrorMessage(err, 'Failed to save'))
+      toast.error(getErrorMessage(err, 'Failed to save to list'))
       setTimeout(() => setSavedMsg(''), 2000)
     } finally {
       setSavingToList(false)
@@ -82,13 +85,13 @@ export function ResourceDetail({ resource }: { resource: Resource }) {
     try {
       if (bookmarked) {
         await http.delete(`/resources/${resource.slug}/bookmark`)
-        setBookmarked(false)
       } else {
         await http.post(`/resources/${resource.slug}/bookmark`)
-        setBookmarked(true)
       }
+      setBookmarked(!bookmarked)
+      toast.success(bookmarked ? 'Bookmark removed' : 'Bookmarked!')
     } catch {
-      // silently fail — we'll add toast notifications later
+      toast.error('Failed to update bookmark')
     } finally {
       setBookmarkLoading(false)
     }
@@ -441,14 +444,25 @@ export function ResourceDetail({ resource }: { resource: Resource }) {
         </div>
       </div>
 
+      {/* Reading progress */}
+      {user && (
+        <div className="mt-10">
+          <h2 className="text-xl font-bold mb-4">Reading progress</h2>
+          <ReadingProgress resource={resource} />
+        </div>
+      )}
+
       {/* Reviews section */}
       <ReviewsSection slug={resource.slug} />
+
+      {/* Comments */}
+      <CommentsSection slug={resource.slug} />
 
     </div>
   )
 }
 
-// ── Reviews ───────────────────────────────────────────────────
+// Reviews
 
 interface Review {
   id: string

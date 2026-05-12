@@ -2,30 +2,64 @@ const prisma = require('../config/prisma');
 
 // Get all reading lists for the authenticated user
 const getMyLists = async (req, res, next) => {
-    try {
-        const lists = await prisma.readingList.findMany({
-            where: { userId: req.user.id },
-            orderBy: { createdAt: 'desc' },
-            include: { _count: { select: { items: true } } }
-        })
-        res.json(lists);
-    } catch (err) {
-        next(err);
-    }
+  try {
+    const { page = 1, limit = 10 } = req.query
+    const skip = (Number(page) - 1) * Number(limit)
+
+    const [lists, total] = await Promise.all([
+      prisma.readingList.findMany({
+        where:   { userId: req.user.id },
+        orderBy: { updatedAt: 'desc' },
+        skip,
+        take:    Number(limit),
+        include: { _count: { select: { items: true } } },
+      }),
+      prisma.readingList.count({
+        where: { userId: req.user.id },
+      }),
+    ])
+
+    res.json({
+      data: lists,
+      meta: {
+        total,
+        page:  Number(page),
+        limit: Number(limit),
+        pages: Math.ceil(total / Number(limit)),
+      },
+    })
+  } catch (err) { next(err) }
 }
 
 // Get all public reading lists for a specific user
 const getUserLists = async (req, res, next) => {
-    try {
-        const lists = await prisma.readingList.findMany({
-            where: { userId: req.params.userId, isPublic: true },
-            orderBy: { createdAt: 'desc' },
-            include: { _count: { select: { items: true } } }
-        })
-        res.json(lists);
-    } catch (err) {
-        next(err);
-    }
+  try {
+    const { page = 1, limit = 10 } = req.query
+    const skip = (Number(page) - 1) * Number(limit)
+
+    const [lists, total] = await Promise.all([
+      prisma.readingList.findMany({
+        where:   { userId: req.params.userId, isPublic: true },
+        orderBy: { updatedAt: 'desc' },
+        skip,
+        take:    Number(limit),
+        include: { _count: { select: { items: true } } },
+      }),
+      prisma.readingList.count({
+        where: { userId: req.params.userId, isPublic: true },
+      }),
+    ])
+
+    res.json({
+      data: lists,
+      meta: {
+        total,
+        page:  Number(page),
+        limit: Number(limit),
+        pages: Math.ceil(total / Number(limit)),
+      },
+    })
+  } catch (err) { next(err) }
 }
 
 // Get a single reading list by ID, including its items and the user who created it

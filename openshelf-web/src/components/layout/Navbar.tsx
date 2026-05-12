@@ -144,6 +144,13 @@ export function Navbar() {
                   >
                     My lists
                   </Link>
+                  <Link
+                    href="/settings"
+                    onClick={() => setMenuOpen(false)}
+                    className="block px-4 py-2 text-sm text-foreground hover:bg-muted transition-colors"
+                  >
+                    Settings
+                  </Link>
                   {(user.role === 'ADMIN' || user.role === 'MODERATOR') && (
                     <Link
                       href="/admin"

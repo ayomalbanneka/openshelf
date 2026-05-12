@@ -3,6 +3,7 @@ import { useEffect, useState, useRef } from 'react'
 import { http } from '@/lib/api'
 import Link from 'next/link'
 import { getErrorMessage } from '@/lib/errors'
+import { toast } from '@/lib/toast'
 
 interface AdminUser {
   id: string; name: string; email: string
@@ -67,7 +68,8 @@ export default function UsersPage() {
     try {
       const { data } = await http.patch(`/admin/users/${id}/role`, { role: newRole })
       setUsers((p) => p.map((u) => u.id === id ? { ...u, role: data.role } : u))
-    } catch (err: unknown) { alert(getErrorMessage(err, 'Failed to update role')) }
+      toast.success('Role updated')
+    } catch (err: unknown) { toast.error(getErrorMessage(err, 'Failed to update role')) }
     finally { setActing(null) }
   }
 
@@ -81,7 +83,8 @@ export default function UsersPage() {
     try {
       const { data } = await http.patch(`/admin/users/${id}/toggle`, { reason })
       setUsers((p) => p.map((u) => u.id === id ? { ...u, isActive: data.isActive } : u))
-    } catch (err: unknown) { alert(getErrorMessage(err, 'Failed')) }
+      toast.success(data.isActive ? 'User activated' : 'User deactivated')
+    } catch (err: unknown) { toast.error(getErrorMessage(err, 'Failed to update status')) }
     finally { setActing(null) }
   }
 

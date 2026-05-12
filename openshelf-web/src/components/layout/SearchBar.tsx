@@ -97,7 +97,7 @@ export function SearchBar() {
               border: '1px solid hsl(var(--border))',
             }}
           >
-            ⌘K
+            Ctrl + k / ⌘ + K
           </kbd>
         )}
 

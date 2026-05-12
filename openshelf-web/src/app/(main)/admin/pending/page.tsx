@@ -3,6 +3,7 @@ import { useEffect, useRef, useState } from 'react'
 import Link from 'next/link'
 import { http } from '@/lib/api'
 import { getErrorMessage } from '@/lib/errors'
+import { toast } from '@/lib/toast'
 
 interface PendingResource {
   id: string; title: string; slug: string; type: string; createdAt: string
@@ -66,24 +67,26 @@ export default function PendingPage() {
     setActing(id)
     try {
       await http.patch(`/admin/resources/${id}/publish`)
-      fetch_(search, page)
+      setResources((prev) => prev.filter((r) => r.id !== id))
+      setTotal((t) => t - 1)
+      toast.success('Resource published!')
     } catch (err: unknown) {
-      alert(getErrorMessage(err, 'Failed to publish resource'))
+      toast.error(getErrorMessage(err, 'Failed to publish resource'))
     } finally {
       setActing(null)
     }
   }
 
   const handleReject = async (id: string, title: string) => {
-    if (!confirm(`Reject "${title}"? This will delete the resource.`)) return
-    const reason = prompt('Reason for rejection (optional):')
-    if (reason === null) return
+    if (!confirm(`Reject and delete "${title}"? This cannot be undone.`)) return
     setActing(id)
     try {
-      await http.delete(`/admin/resources/${id}/reject`, { data: { reason } })
-      fetch_(search, page)
-    } catch (err: unknown) {
-      alert(getErrorMessage(err, 'Failed to reject resource'))
+      await http.delete(`/admin/resources/${id}`)
+      setResources((prev) => prev.filter((r) => r.id !== id))
+      setTotal((t) => t - 1)
+      toast.success('Resource rejected and deleted')
+    } catch {
+      toast.error('Failed to reject resource')
     } finally {
       setActing(null)
     }
@@ -143,7 +146,7 @@ export default function PendingPage() {
 
         {loading ? (
           <div className="flex flex-col gap-0">
-            {[1,2,3,4,5].map((i) => (
+            {[1, 2, 3, 4, 5].map((i) => (
               <div key={i} className="h-16 mx-4 my-2 rounded-xl animate-pulse" style={{ backgroundColor: 'var(--admin-soft)' }} />
             ))}
           </div>

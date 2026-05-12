@@ -2,6 +2,7 @@ import { Suspense } from 'react'
 import { ResourceGrid } from '@/components/resource/ResourceGrid'
 import { BrowseFilters } from '@/components/resource/BrowseFilters'
 import { CategoryChips } from '@/components/resource/CategoryChips'
+import { ContinueReading } from '@/components/resource/ContinueReading'
 import { serverApi } from '@/lib/server-api'
 import type { Metadata } from 'next'
 
@@ -46,6 +47,9 @@ export default async function BrowsePage({ searchParams }: Props) {
           Discover books, courses, exam papers and documents from around the world.
         </p>
       </div>
+
+      {/* Continue reading — only shows if user has in-progress items */}
+      <ContinueReading />
 
       {/* Category chips row */}
       {categories.length > 0 && (
