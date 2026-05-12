@@ -1,5 +1,24 @@
 # Changelog
 
+## [0.9.0](https://github.com/ayomalbanneka/openshelf/compare/v0.8.1...v0.9.0) (2026-05-12)
+
+
+### Features
+
+* add reading progress tracking and UI components for user progress management ([b054c77](https://github.com/ayomalbanneka/openshelf/commit/b054c775d6ae2fbd97f44ce25579953f74872439))
+* add user settings page with profile and password management, including avatar upload ([8349250](https://github.com/ayomalbanneka/openshelf/commit/8349250341576baca0b889e7ffad06b1bd233640))
+* implement comments feature with API integration and UI components ([6faf9ab](https://github.com/ayomalbanneka/openshelf/commit/6faf9ab80966775a2b2caedd1c68c2380ee0962c))
+* implement pagination for reading lists and clubs, enhance search functionality, and improve UI components ([42bd489](https://github.com/ayomalbanneka/openshelf/commit/42bd48927f9caeeb3ae680e3ed1b96471dd2e6af))
+* integrate gooey-toast for notifications and update various components ([419f1f4](https://github.com/ayomalbanneka/openshelf/commit/419f1f4f9c17453a43cd3d02d58c4ae4b476fd2d))
+* **metrics:** add Prometheus metrics and dashboard metrics endpoint ([06d9815](https://github.com/ayomalbanneka/openshelf/commit/06d9815dcce75155e72a07eadad26c0660ab88c3))
+* **tags:** enhance UI with icons, improve styling, and add refresh button ([e51db68](https://github.com/ayomalbanneka/openshelf/commit/e51db685fa31b75e58287a4e7eb0a677e681c510))
+
+
+### Bug Fixes
+
+* **admin-sidebar:** update sidebar styles with new color variables and improved hover effects ([6fba193](https://github.com/ayomalbanneka/openshelf/commit/6fba1936e34332bebeb3bb373512b4c88d3d4bfe))
+* update icon color in UploadForm based on active state ([362e01c](https://github.com/ayomalbanneka/openshelf/commit/362e01c0df0bb59a8ee501eb2f60bcc5278c81f2))
+
 ## [0.8.1](https://github.com/ayomalbanneka/openshelf/compare/v0.8.0...v0.8.1) (2026-05-06)
 
 
