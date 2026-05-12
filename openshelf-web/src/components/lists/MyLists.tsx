@@ -1,9 +1,9 @@
 'use client'
 import { useState, useEffect } from 'react'
 import { api } from '@/lib/api'
-import Link from 'next/link'
-import { LibraryBig, List } from 'lucide-react'
 import { toast } from '@/lib/toast'
+import Link from 'next/link'
+import { Pagination } from '@/components/ui/Pagination'
 
 interface ReadingList {
   id: string
@@ -11,34 +11,56 @@ interface ReadingList {
   description?: string
   isPublic: boolean
   createdAt: string
+  updatedAt: string
   _count: { items: number }
 }
 
-export function MyLists() {
-  const [lists, setLists]           = useState<ReadingList[]>([])
-  const [loading, setLoading]       = useState(true)
-  const [showForm, setShowForm]     = useState(false)
-  const [title, setTitle]           = useState('')
-  const [description, setDescription] = useState('')
-  const [isPublic, setIsPublic]     = useState(true)
-  const [creating, setCreating]     = useState(false)
-  const [error, setError]           = useState('')
+const LIMIT = 10
 
-  useEffect(() => {
-    api.lists.getMine()
-      .then(setLists)
-      .catch(() => {})
-      .finally(() => setLoading(false))
-  }, [])
+export function MyLists() {
+  const [lists, setLists] = useState<ReadingList[]>([])
+  const [total, setTotal] = useState(0)
+  const [totalPages, setTotalPages] = useState(1)
+  const [page, setPage] = useState(1)
+  const [loading, setLoading] = useState(true)
+  const [showForm, setShowForm] = useState(false)
+  const [title, setTitle] = useState('')
+  const [description, setDescription] = useState('')
+  const [isPublic, setIsPublic] = useState(true)
+  const [creating, setCreating] = useState(false)
+  const [formError, setFormError] = useState('')
+
+  const fetchLists = async (p: number) => {
+    setLoading(true)
+    try {
+      const result = await api.lists.getMine(p, LIMIT)
+      setLists(result.data)
+      setTotal(result.meta.total)
+      setTotalPages(result.meta.pages)
+    } catch {
+      toast.error('Failed to load lists')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  useEffect(() => { fetchLists(page) }, [page])
 
   const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault()
-    if (!title.trim()) { setError('Title is required'); return }
-    setCreating(true); setError('')
+    if (!title.trim()) { setFormError('Title is required'); return }
+    setCreating(true)
+    setFormError('')
     try {
-      const newList = await api.lists.create({ title, description, isPublic })
-      setLists((prev) => [newList, ...prev])
-      setTitle(''); setDescription(''); setIsPublic(true); setShowForm(false)
+      await api.lists.create({ title, description, isPublic })
+      toast.success('List created')
+      setTitle('')
+      setDescription('')
+      setIsPublic(true)
+      setShowForm(false)
+      // Refresh back to page 1
+      setPage(1)
+      fetchLists(1)
     } catch {
       toast.error('Failed to create list')
     } finally {
@@ -50,8 +72,12 @@ export function MyLists() {
     if (!confirm('Delete this list?')) return
     try {
       await api.lists.remove(id)
-      setLists((prev) => prev.filter((l) => l.id !== id))
       toast.success('List deleted')
+      // If deleting the last item on a page, go back
+      const newTotal = total - 1
+      const newPage = Math.min(page, Math.ceil(newTotal / LIMIT)) || 1
+      setPage(newPage)
+      fetchLists(newPage)
     } catch {
       toast.error('Failed to delete list')
     }
@@ -66,19 +92,16 @@ export function MyLists() {
   return (
     <div className="flex flex-col gap-6">
 
-      {/* Top bar */}
+      {/* Header row */}
       <div className="flex items-center justify-between">
         <p className="text-sm" style={{ color: 'hsl(var(--muted-foreground))' }}>
-          {loading ? '' : `${lists.length} ${lists.length === 1 ? 'list' : 'lists'}`}
+          {total} list{total !== 1 ? 's' : ''}
         </p>
         <button
           onClick={() => setShowForm(!showForm)}
-          className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-blue-600 text-white text-sm font-medium hover:bg-blue-700 transition-colors"
+          className="px-4 py-2 rounded-xl bg-blue-600 text-white text-sm font-medium hover:bg-blue-700 transition-colors"
         >
-          <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
-            <path d="M12 5v14M5 12h14" strokeLinecap="round"/>
-          </svg>
-          New list
+          {showForm ? 'Cancel' : '+ New list'}
         </button>
       </div>
 
@@ -102,7 +125,7 @@ export function MyLists() {
               value={title}
               onChange={(e) => setTitle(e.target.value)}
               placeholder="e.g. Books to read in 2025"
-              className="h-10 rounded-xl px-3 text-sm outline-none focus:ring-2 focus:ring-blue-500"
+              className="h-10 rounded-lg px-3 text-sm outline-none focus:ring-2 focus:ring-blue-500"
               style={inputStyle}
             />
           </div>
@@ -114,41 +137,41 @@ export function MyLists() {
               onChange={(e) => setDescription(e.target.value)}
               placeholder="Optional description…"
               rows={2}
-              className="rounded-xl px-3 py-2 text-sm outline-none resize-none focus:ring-2 focus:ring-blue-500"
+              className="rounded-lg px-3 py-2 text-sm outline-none resize-none focus:ring-2 focus:ring-blue-500"
               style={inputStyle}
             />
           </div>
 
-          <label className="flex items-center gap-2 cursor-pointer text-sm select-none">
-            <div
-              className="relative w-9 h-5 rounded-full transition-colors"
-              style={{ backgroundColor: isPublic ? '#2563eb' : 'hsl(var(--muted))' }}
-              onClick={() => setIsPublic(!isPublic)}
-            >
-              <div
-                className="absolute top-0.5 w-4 h-4 rounded-full bg-white transition-transform shadow-sm"
-                style={{ transform: isPublic ? 'translateX(18px)' : 'translateX(2px)' }}
-              />
-            </div>
-            <input type="checkbox" checked={isPublic} onChange={(e) => setIsPublic(e.target.checked)} className="hidden" />
+          <label className="flex items-center gap-2 cursor-pointer text-sm">
+            <input
+              type="checkbox"
+              checked={isPublic}
+              onChange={(e) => setIsPublic(e.target.checked)}
+              className="rounded"
+            />
             Make this list public
           </label>
 
-          {error && <p className="text-xs text-red-500">{error}</p>}
+          {formError && (
+            <p className="text-xs text-red-500">{formError}</p>
+          )}
 
           <div className="flex gap-2 justify-end">
             <button
               type="button"
               onClick={() => setShowForm(false)}
-              className="px-4 py-2 rounded-xl text-sm transition-colors"
-              style={{ border: '1px solid hsl(var(--border))', color: 'hsl(var(--foreground))' }}
+              className="px-4 py-2 rounded-lg text-sm transition-colors"
+              style={{
+                border: '1px solid hsl(var(--border))',
+                color: 'hsl(var(--foreground))',
+              }}
             >
               Cancel
             </button>
             <button
               type="submit"
               disabled={creating}
-              className="px-4 py-2 rounded-xl bg-blue-600 text-white text-sm font-medium hover:bg-blue-700 transition-colors disabled:opacity-50"
+              className="px-4 py-2 rounded-lg bg-blue-600 text-white text-sm font-medium hover:bg-blue-700 transition-colors disabled:opacity-50"
             >
               {creating ? 'Creating…' : 'Create list'}
             </button>
@@ -159,96 +182,179 @@ export function MyLists() {
       {/* Lists */}
       {loading ? (
         <div className="flex flex-col gap-3">
-          {[1, 2, 3].map((i) => (
-            <div key={i} className="h-20 rounded-xl animate-pulse" style={{ backgroundColor: 'hsl(var(--muted))' }} />
+          {Array.from({ length: 5 }).map((_, i) => (
+            <div
+              key={i}
+              className="h-20 rounded-xl animate-pulse"
+              style={{ backgroundColor: 'hsl(var(--muted))' }}
+            />
           ))}
         </div>
       ) : lists.length === 0 ? (
         <div
-          className="text-center py-20 rounded-2xl"
-          style={{ border: '2px dashed hsl(var(--border))', color: 'hsl(var(--muted-foreground))' }}
+          className="text-center py-16 rounded-2xl"
+          style={{
+            border: '2px dashed hsl(var(--border))',
+            color: 'hsl(var(--muted-foreground))',
+          }}
         >
-          <LibraryBig className="w-10 h-10 mb-3" />
-          <p className="font-medium mb-1">No lists yet</p>
+          <p className="text-lg font-medium mb-1">No lists yet</p>
           <p className="text-sm">Create your first reading list above.</p>
         </div>
       ) : (
-        <div className="flex flex-col gap-3">
-          {lists.map((list) => (
-            <div
-              key={list.id}
-              className="group flex items-center gap-4 p-4 rounded-xl transition-all hover:-translate-y-0.5"
-              style={{
-                border: '1px solid hsl(var(--border))',
-                backgroundColor: 'hsl(var(--background))',
-                boxShadow: '0 1px 3px rgba(0,0,0,0.04)',
-              }}
-            >
-              {/* Icon */}
+        <>
+          <div className="flex flex-col gap-3">
+            {lists.map((list) => (
               <div
-                className="h-10 w-10 rounded-lg flex items-center justify-center text-lg shrink-0"
-                style={{ backgroundColor: 'hsl(var(--muted))' }}
+                key={list.id}
+                className="flex items-center justify-between gap-4 p-4 rounded-xl"
+                style={{
+                  border: '1px solid hsl(var(--border))',
+                  backgroundColor: 'hsl(var(--background))',
+                }}
               >
-                <List className="w-5 h-5" style={{ color: 'hsl(var(--muted-foreground))' }} />
-              </div>
-
-              {/* Info */}
-              <div className="flex-1 min-w-0">
-                <div className="flex items-center gap-2">
-                  <Link
-                    href={`/lists/${list.id}`}
-                    className="font-medium text-sm hover:text-blue-600 transition-colors truncate"
-                  >
-                    {list.title}
-                  </Link>
-                  {!list.isPublic && (
-                    <span
-                      className="text-[10px] px-1.5 py-0.5 rounded-full font-medium shrink-0"
-                      style={{
-                        backgroundColor: 'hsl(var(--muted))',
-                        color: 'hsl(var(--muted-foreground))',
-                      }}
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2">
+                    <Link
+                      href={`/lists/${list.id}`}
+                      className="font-medium hover:text-blue-600 transition-colors truncate"
                     >
-                      Private
-                    </span>
+                      {list.title}
+                    </Link>
+                    {!list.isPublic && (
+                      <span
+                        className="text-xs px-2 py-0.5 rounded-full shrink-0"
+                        style={{
+                          backgroundColor: 'hsl(var(--muted))',
+                          color: 'hsl(var(--muted-foreground))',
+                        }}
+                      >
+                        Private
+                      </span>
+                    )}
+                  </div>
+                  {list.description && (
+                    <p
+                      className="text-sm mt-0.5 truncate"
+                      style={{ color: 'hsl(var(--muted-foreground))' }}
+                    >
+                      {list.description}
+                    </p>
                   )}
-                </div>
-                {list.description && (
-                  <p className="text-xs mt-0.5 truncate" style={{ color: 'hsl(var(--muted-foreground))' }}>
-                    {list.description}
+                  <p
+                    className="text-xs mt-1"
+                    style={{ color: 'hsl(var(--muted-foreground))' }}
+                  >
+                    {list._count.items}{' '}
+                    {list._count.items === 1 ? 'item' : 'items'} ·{' '}
+                    Updated{' '}
+                    {new Date(list.updatedAt).toLocaleDateString('en-US', {
+                      month: 'short', day: 'numeric',
+                    })}
                   </p>
-                )}
-                <p className="text-xs mt-0.5" style={{ color: 'hsl(var(--muted-foreground))' }}>
-                  {list._count.items} {list._count.items === 1 ? 'item' : 'items'}
-                </p>
-              </div>
+                </div>
 
-              {/* Actions */}
-              <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity shrink-0">
-                <Link
-                  href={`/lists/${list.id}`}
-                  className="p-2 rounded-lg text-xs font-medium transition-colors"
-                  style={{ color: 'hsl(var(--muted-foreground))' }}
-                >
-                  <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                    <path d="M5 12h14M12 5l7 7-7 7" strokeLinecap="round" strokeLinejoin="round"/>
-                  </svg>
-                </Link>
                 <button
                   onClick={() => handleDelete(list.id)}
-                  className="p-2 rounded-lg transition-colors hover:bg-red-50 hover:text-red-500"
+                  className="text-xs px-3 py-1.5 rounded-lg transition-colors shrink-0 hover:bg-red-50 hover:text-red-600"
                   style={{ color: 'hsl(var(--muted-foreground))' }}
-                  title="Delete list"
                 >
-                  <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                    <path d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6" strokeLinecap="round" strokeLinejoin="round"/>
-                  </svg>
+                  Delete
                 </button>
               </div>
-            </div>
-          ))}
-        </div>
+            ))}
+          </div>
+
+          {/* Pagination */}
+          {totalPages > 1 && (
+            <Pagination
+              currentPage={page}
+              totalPages={totalPages}
+              onPageChange={(p) => setPage(p)}
+            />
+          )}
+        </>
       )}
+    </div>
+  )
+}
+
+// ── Pagination component ──────────────────────────────────────
+function ListsPagination({
+  currentPage,
+  totalPages,
+  onPageChange,
+}: {
+  currentPage: number
+  totalPages: number
+  onPageChange: (page: number) => void
+}) {
+  const pages: (number | '...')[] = []
+  for (let i = 1; i <= totalPages; i++) {
+    if (
+      i === 1 ||
+      i === totalPages ||
+      (i >= currentPage - 1 && i <= currentPage + 1)
+    ) {
+      pages.push(i)
+    } else if (i === currentPage - 2 || i === currentPage + 2) {
+      pages.push('...')
+    }
+  }
+
+  return (
+    <div className="flex items-center justify-center gap-1.5 pt-2">
+      <button
+        onClick={() => onPageChange(currentPage - 1)}
+        disabled={currentPage === 1}
+        className="px-3 py-2 rounded-lg text-sm font-medium transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+        style={{
+          border: '1px solid hsl(var(--border))',
+          color: 'hsl(var(--foreground))',
+        }}
+      >
+        ← Prev
+      </button>
+
+      {pages.map((p, i) =>
+        p === '...' ? (
+          <span
+            key={`dots-${i}`}
+            className="px-2 text-sm"
+            style={{ color: 'hsl(var(--muted-foreground))' }}
+          >
+            …
+          </span>
+        ) : (
+          <button
+            key={p}
+            onClick={() => onPageChange(p)}
+            className="h-9 w-9 flex items-center justify-center rounded-lg text-sm font-medium transition-colors"
+            style={
+              p === currentPage
+                ? { backgroundColor: '#2563eb', color: '#fff' }
+                : {
+                  border: '1px solid hsl(var(--border))',
+                  color: 'hsl(var(--foreground))',
+                }
+            }
+          >
+            {p}
+          </button>
+        )
+      )}
+
+      <button
+        onClick={() => onPageChange(currentPage + 1)}
+        disabled={currentPage === totalPages}
+        className="px-3 py-2 rounded-lg text-sm font-medium transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+        style={{
+          border: '1px solid hsl(var(--border))',
+          color: 'hsl(var(--foreground))',
+        }}
+      >
+        Next →
+      </button>
     </div>
   )
 }

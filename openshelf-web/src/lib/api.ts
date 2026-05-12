@@ -31,8 +31,8 @@ export const api = {
 
   // Lists endpoints for managing user-created lists and their items
   lists: {
-    getMine: () =>
-      http.get('/lists/mine').then((r) => r.data),
+    getMine: (page = 1, limit = 10) =>
+      http.get(`/lists/mine?page=${page}&limit=${limit}`).then((r) => r.data),
     getOne: (id: string) =>
       http.get(`/lists/${id}`).then((r) => r.data),
     create: (data: { title: string; description?: string; isPublic?: boolean }) =>
