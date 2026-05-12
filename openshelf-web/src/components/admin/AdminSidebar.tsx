@@ -50,20 +50,22 @@ export function AdminSidebar({ pendingCount = 0 }: { pendingCount?: number }) {
       style={{
         background: 'var(--admin-sidebar-bg)',
         minHeight: '100vh',
+        color: 'var(--admin-sidebar-text)',
+        boxShadow: 'var(--admin-shadow)',
       }}
     >
       {/* Logo */}
-      <div className="px-5 py-6 border-b border-white/10">
+      <div className="px-5 py-6" style={{ borderBottom: '1px solid var(--admin-sidebar-divider)' }}>
         <div className="flex items-center gap-3">
           <div
             className="h-9 w-9 rounded-xl flex items-center justify-center shrink-0"
             style={{ background: 'var(--admin-sidebar-accent)' }}
           >
-            <BookOpen className="w-4 h-4 text-white" />
+            <BookOpen className="w-4 h-4" style={{ color: 'white' }} />
           </div>
           <div>
-            <p className="text-sm font-bold text-white leading-tight">OpenShelf</p>
-            <p className="text-[10px] font-medium uppercase tracking-wider" style={{ color: '#94a3b8' }}>
+            <p className="text-sm font-bold leading-tight" style={{ color: 'var(--admin-sidebar-text)' }}>OpenShelf</p>
+            <p className="text-[10px] font-medium uppercase tracking-wider" style={{ color: 'var(--admin-sidebar-muted)' }}>
               {isAdmin ? 'Admin Panel' : 'Moderator Panel'}
             </p>
           </div>
@@ -74,7 +76,7 @@ export function AdminSidebar({ pendingCount = 0 }: { pendingCount?: number }) {
       <nav className="flex-1 px-3 py-4 overflow-y-auto flex flex-col gap-5">
         {links.map(({ section, items }) => (
           <div key={section}>
-            <p className="text-[10px] font-bold uppercase tracking-widest px-2 mb-1.5" style={{ color: '#475569' }}>
+            <p className="text-[10px] font-bold uppercase tracking-widest px-2 mb-1.5" style={{ color: 'var(--admin-sidebar-muted)' }}>
               {section}
             </p>
             <div className="flex flex-col gap-0.5">
@@ -88,8 +90,8 @@ export function AdminSidebar({ pendingCount = 0 }: { pendingCount?: number }) {
                     className="flex items-center gap-3 px-3 py-2 rounded-xl text-sm font-medium transition-all"
                     style={
                       active
-                        ? { background: 'var(--admin-sidebar-active)', color: '#bae6fd', borderLeft: '3px solid var(--admin-sidebar-active-border)' }
-                        : { color: '#94a3b8', paddingLeft: active ? undefined : '15px' }
+                          ? { background: 'var(--admin-sidebar-active)', color: 'var(--admin-sidebar-text)', borderLeft: '3px solid var(--admin-sidebar-active-border)' }
+                          : { color: 'var(--admin-sidebar-muted)', paddingLeft: active ? undefined : '15px' }
                     }
                   >
                     <Icon className="w-4 h-4 shrink-0" />
@@ -111,7 +113,7 @@ export function AdminSidebar({ pendingCount = 0 }: { pendingCount?: number }) {
       </nav>
 
       {/* User + logout */}
-      <div className="px-3 py-4 border-t border-white/10">
+      <div className="px-3 py-4" style={{ borderTop: '1px solid var(--admin-sidebar-divider)' }}>
         <div className="flex items-center gap-3 px-2 mb-3">
           <div
             className="h-8 w-8 rounded-full flex items-center justify-center text-xs font-bold text-white shrink-0"
@@ -120,14 +122,14 @@ export function AdminSidebar({ pendingCount = 0 }: { pendingCount?: number }) {
             {user?.name?.charAt(0).toUpperCase()}
           </div>
           <div className="flex-1 min-w-0">
-            <p className="text-sm font-medium text-white truncate">{user?.name}</p>
-            <p className="text-[10px]" style={{ color: '#64748b' }}>{user?.role}</p>
+            <p className="text-sm font-medium truncate" style={{ color: 'var(--admin-sidebar-text)' }}>{user?.name}</p>
+            <p className="text-[10px]" style={{ color: 'var(--admin-sidebar-muted)' }}>{user?.role}</p>
           </div>
         </div>
         <button
           onClick={logout}
-          className="flex items-center gap-2 w-full px-3 py-2 rounded-xl text-sm transition-all hover:bg-white/5"
-          style={{ color: '#64748b' }}
+          className="flex items-center gap-2 w-full px-3 py-2 rounded-xl text-sm transition-all"
+          style={{ color: 'var(--admin-sidebar-muted)' }}
         >
           <LogOut className="w-4 h-4" />
           Sign out
