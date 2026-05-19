@@ -1,7 +1,7 @@
-const bcrypt    = require('bcryptjs')
-const jwt       = require('jsonwebtoken')
-const prisma    = require('../config/prisma')
-const emailSvc  = require('./email.service')
+const bcrypt = require('bcryptjs')
+const jwt = require('jsonwebtoken')
+const prisma = require('../config/prisma')
+const emailSvc = require('./email.service')
 const { generateCode, codeExpiresAt } = require('../utils/generateCode')
 
 // Token helpers
@@ -42,7 +42,7 @@ const register = async ({ name, email, password }) => {
   const code = generateCode()
   await prisma.emailVerification.create({
     data: {
-      userId:    user.id,
+      userId: user.id,
       code,
       expiresAt: codeExpiresAt(),
     },
@@ -60,7 +60,7 @@ const verifyEmail = async ({ userId, code }) => {
     where: {
       userId,
       code,
-      usedAt:    null,
+      usedAt: null,
       expiresAt: { gt: new Date() },
     },
   })
@@ -75,11 +75,11 @@ const verifyEmail = async ({ userId, code }) => {
   await prisma.$transaction([
     prisma.emailVerification.update({
       where: { id: verification.id },
-      data:  { usedAt: new Date() },
+      data: { usedAt: new Date() },
     }),
     prisma.user.update({
       where: { id: userId },
-      data:  { isEmailVerified: true },
+      data: { isEmailVerified: true },
     }),
   ])
 
@@ -104,8 +104,8 @@ const resendVerificationCode = async (userId) => {
 
   // Invalidate old codes
   await prisma.emailVerification.updateMany({
-    where:  { userId, usedAt: null },
-    data:   { usedAt: new Date() },
+    where: { userId, usedAt: null },
+    data: { usedAt: new Date() },
   })
 
   const code = generateCode()
@@ -114,7 +114,7 @@ const resendVerificationCode = async (userId) => {
   })
 
   await emailSvc.sendVerificationCode({
-    to:   user.email,
+    to: user.email,
     name: user.name,
     code,
   })
@@ -136,6 +136,12 @@ const login = async ({ email, password }) => {
   if (!valid) {
     const err = new Error('Invalid credentials')
     err.status = 401
+    throw err
+  }
+
+  if (['ADMIN', 'MODERATOR'].includes(user.role)) {
+    const err = new Error('Admin and moderator accounts must sign in through the admin portal.')
+    err.status = 403
     throw err
   }
 
@@ -171,7 +177,7 @@ const adminLoginStep1 = async ({ email, password }) => {
   // Invalidate previous codes first
   await prisma.emailVerification.updateMany({
     where: { userId: user.id, usedAt: null },
-    data:  { usedAt: new Date() },
+    data: { usedAt: new Date() },
   })
 
   const code = generateCode()
@@ -180,7 +186,7 @@ const adminLoginStep1 = async ({ email, password }) => {
   })
 
   await emailSvc.sendAdminLoginCode({
-    to:   user.email,
+    to: user.email,
     name: user.name,
     code,
   })
@@ -195,7 +201,7 @@ const adminLoginStep2 = async ({ userId, code }) => {
     where: {
       userId,
       code,
-      usedAt:    null,
+      usedAt: null,
       expiresAt: { gt: new Date() },
     },
   })
@@ -208,7 +214,7 @@ const adminLoginStep2 = async ({ userId, code }) => {
 
   await prisma.emailVerification.update({
     where: { id: verification.id },
-    data:  { usedAt: new Date() },
+    data: { usedAt: new Date() },
   })
 
   const user = await prisma.user.findUnique({
@@ -232,7 +238,7 @@ const forgotPassword = async (email) => {
   // Invalidate old reset codes
   await prisma.passwordReset.updateMany({
     where: { userId: user.id, usedAt: null },
-    data:  { usedAt: new Date() },
+    data: { usedAt: new Date() },
   })
 
   const code = generateCode()
@@ -241,7 +247,7 @@ const forgotPassword = async (email) => {
   })
 
   await emailSvc.sendPasswordResetCode({
-    to:   user.email,
+    to: user.email,
     name: user.name,
     code,
   })
@@ -261,9 +267,9 @@ const resetPassword = async ({ email, code, newPassword }) => {
 
   const reset = await prisma.passwordReset.findFirst({
     where: {
-      userId:    user.id,
+      userId: user.id,
       code,
-      usedAt:    null,
+      usedAt: null,
       expiresAt: { gt: new Date() },
     },
   })
@@ -279,11 +285,11 @@ const resetPassword = async ({ email, code, newPassword }) => {
   await prisma.$transaction([
     prisma.passwordReset.update({
       where: { id: reset.id },
-      data:  { usedAt: new Date() },
+      data: { usedAt: new Date() },
     }),
     prisma.user.update({
       where: { id: user.id },
-      data:  { passwordHash },
+      data: { passwordHash },
     }),
   ])
 
@@ -293,7 +299,7 @@ const resetPassword = async ({ email, code, newPassword }) => {
 // Refresh token
 const refreshAccessToken = (refreshToken) => {
   try {
-    const decoded    = jwt.verify(refreshToken, process.env.JWT_REFRESH_SECRET)
+    const decoded = jwt.verify(refreshToken, process.env.JWT_REFRESH_SECRET)
     const accessToken = jwt.sign(
       { userId: decoded.userId },
       process.env.JWT_SECRET,
