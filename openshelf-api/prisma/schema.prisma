@@ -35,6 +35,7 @@ model User {
   followers          UserFollow[]        @relation("Following")
   emailVerifications EmailVerification[]
   passwordResets     PasswordReset[]
+  refreshTokens      RefreshToken[]
 
   @@index([email])
   @@map("users")
@@ -66,6 +67,19 @@ model PasswordReset {
   @@index([userId])
   @@index([code])
   @@map("password_resets")
+}
+model RefreshToken {
+  id        String    @id @default(cuid())
+  userId    String
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  tokenHash String    @unique
+  expiresAt DateTime
+  revokedAt DateTime?
+  createdAt DateTime  @default(now())
+
+  @@index([userId])
+  @@index([tokenHash])
+  @@map("refresh_tokens")
 }
 
 model UserFollow {
