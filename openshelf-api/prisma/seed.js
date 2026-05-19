@@ -4,31 +4,40 @@ const bcrypt = require('bcryptjs')
 const { PrismaPg } = require('@prisma/adapter-pg')
 
 const adapter = new PrismaPg({ connectionString: process.env.DATABASE_URL })
-const prisma = new PrismaClient({adapter})
+const prisma = new PrismaClient({ adapter })
 
 async function main() {
   console.log('Seeding...')
 
+  const adminPassword = process.env.SEED_ADMIN_PASSWORD
+  const demoPassword = process.env.SEED_DEMO_PASSWORD
+
+  if (!adminPassword || !demoPassword) {
+    throw new Error(
+      'SEED_ADMIN_PASSWORD and SEED_DEMO_PASSWORD must be set in your .env before seeding.'
+    )
+  }
+
   // Users
   const admin = await prisma.user.upsert({
-    where: { email: 'admin@openself.dev' },
+    where: { email: 'admin@openshelf.dev' },
     update: {},
     create: {
       name: 'Admin',
       email: 'admin@openself.dev',
-      passwordHash: await bcrypt.hash('admin1234', 12),
+      passwordHash: await bcrypt.hash(adminPassword, 12),
       role: 'ADMIN',
       country: 'LK',
     },
   })
 
   const user = await prisma.user.upsert({
-    where: { email: 'demo@openself.dev' },
+    where: { email: 'demo@openshelf.dev' },
     update: {},
     create: {
       name: 'Demo User',
       email: 'demo@openself.dev',
-      passwordHash: await bcrypt.hash('demo1234', 12),
+      passwordHash: await bcrypt.hash(demoPassword, 12),
       role: 'USER',
       bio: 'A curious reader from Sri Lanka.',
       country: 'LK',

@@ -1,11 +1,13 @@
 const router = require('express').Router()
 const { body } = require('express-validator')
 const controller = require('../controllers/auth.controller')
-const validate   = require('../middleware/validate')
+const validate = require('../middleware/validate')
 const { authenticate } = require('../middleware/auth')
+const { authLimiter, adminAuthLimiter, otpLimiter } = require('../middleware/rateLimiter')
 
 // Register
 router.post('/register',
+  authLimiter,
   [
     body('name').trim().notEmpty().withMessage('Name is required')
       .isLength({ min: 2 }).withMessage('Name must be at least 2 characters'),
@@ -28,6 +30,7 @@ router.post('/resend-code', authenticate, controller.resendCode)
 
 // Standard login
 router.post('/login',
+  authLimiter,
   [
     body('email').isEmail().normalizeEmail(),
     body('password').notEmpty().withMessage('Password is required'),
@@ -38,6 +41,7 @@ router.post('/login',
 
 // Admin login — two steps
 router.post('/admin/login',
+  adminAuthLimiter,
   [
     body('email').isEmail().normalizeEmail(),
     body('password').notEmpty().withMessage('Password is required'),
@@ -47,6 +51,7 @@ router.post('/admin/login',
 )
 
 router.post('/admin/verify',
+  otpLimiter,
   [
     body('userId').notEmpty().withMessage('User ID is required'),
     body('code').isLength({ min: 6, max: 6 }).withMessage('Enter a valid 6-digit code'),
@@ -57,12 +62,14 @@ router.post('/admin/verify',
 
 // Forgot / reset password
 router.post('/forgot-password',
+  authLimiter,
   body('email').isEmail().normalizeEmail(),
   validate,
   controller.forgotPassword
 )
 
 router.post('/reset-password',
+  otpLimiter,
   [
     body('email').isEmail().normalizeEmail(),
     body('code').isLength({ min: 6, max: 6 }).withMessage('Enter a valid 6-digit code'),
