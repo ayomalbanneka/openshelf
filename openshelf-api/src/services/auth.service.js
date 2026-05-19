@@ -1,22 +1,30 @@
 const bcrypt = require('bcryptjs')
 const jwt = require('jsonwebtoken')
+const crypto = require('crypto')
 const prisma = require('../config/prisma')
 const emailSvc = require('./email.service')
 const { generateCode, codeExpiresAt } = require('../utils/generateCode')
 
 // Token helpers
-const generateTokens = (userId) => {
+const generateTokens = async (userId) => {
+  // Access token — short lived, stateless
   const accessToken = jwt.sign(
     { userId },
     process.env.JWT_SECRET,
-    { expiresIn: process.env.JWT_EXPIRES_IN || '7d' }
+    { expiresIn: process.env.JWT_EXPIRES_IN || '15m' }
   )
-  const refreshToken = jwt.sign(
-    { userId },
-    process.env.JWT_REFRESH_SECRET,
-    { expiresIn: process.env.JWT_REFRESH_EXPIRES_IN || '30d' }
-  )
-  return { accessToken, refreshToken }
+
+  // Refresh token — random bytes, never a JWT
+  // We store a SHA-256 hash in the DB; the raw token goes to the client only
+  const rawRefreshToken = crypto.randomBytes(48).toString('hex')
+  const tokenHash = crypto.createHash('sha256').update(rawRefreshToken).digest('hex')
+  const expiresAt = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000) // 30 days
+
+  await prisma.refreshToken.create({
+    data: { userId, tokenHash, expiresAt },
+  })
+
+  return { accessToken, refreshToken: rawRefreshToken }
 }
 
 // Register
@@ -297,20 +305,42 @@ const resetPassword = async ({ email, code, newPassword }) => {
 }
 
 // Refresh token
-const refreshAccessToken = (refreshToken) => {
-  try {
-    const decoded = jwt.verify(refreshToken, process.env.JWT_REFRESH_SECRET)
-    const accessToken = jwt.sign(
-      { userId: decoded.userId },
-      process.env.JWT_SECRET,
-      { expiresIn: process.env.JWT_EXPIRES_IN || '7d' }
-    )
-    return { accessToken }
-  } catch {
-    const err = new Error('Invalid refresh token')
+const refreshAccessToken = async (rawToken) => {
+  if (!rawToken) {
+    const err = new Error('Refresh token required')
+    err.status = 400
+    throw err
+  }
+
+  const tokenHash = crypto.createHash('sha256').update(rawToken).digest('hex')
+
+  const record = await prisma.refreshToken.findUnique({ where: { tokenHash } })
+
+  if (!record || record.revokedAt || record.expiresAt < new Date()) {
+    const err = new Error('Invalid or expired refresh token')
     err.status = 401
     throw err
   }
+
+  // Verify the user still exists and is active
+  const user = await prisma.user.findUnique({
+    where: { id: record.userId },
+    select: { id: true, isActive: true },
+  })
+
+  if (!user || !user.isActive) {
+    const err = new Error('User not found or deactivated')
+    err.status = 401
+    throw err
+  }
+
+  // Rotate: revoke the used token, issue a fresh pair
+  await prisma.refreshToken.update({
+    where: { id: record.id },
+    data: { revokedAt: new Date() },
+  })
+
+  return generateTokens(record.userId)
 }
 
 module.exports = {

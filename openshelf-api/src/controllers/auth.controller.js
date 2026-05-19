@@ -69,7 +69,7 @@ const refresh = async (req, res, next) => {
     if (!refreshToken) {
       return res.status(400).json({ message: 'Refresh token required' })
     }
-    const result = authService.refreshAccessToken(refreshToken)
+    const result = await authService.refreshAccessToken(refreshToken)
     res.json(result)
   } catch (err) { next(err) }
 }
