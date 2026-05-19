@@ -42,17 +42,23 @@ model User {
 }
 
 model EmailVerification {
-  id        String   @id @default(cuid())
+  id        String                  @id @default(cuid())
   userId    String
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  code      String   // 6-digit code
+  user      User                    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  code      String
+  type      EmailVerificationType   @default(EMAIL_VERIFICATION)
   expiresAt DateTime
   usedAt    DateTime?
-  createdAt DateTime @default(now())
+  createdAt DateTime                @default(now())
 
   @@index([userId])
-  @@index([code])
+  @@index([userId, type])
   @@map("email_verifications")
+}
+
+enum EmailVerificationType {
+  EMAIL_VERIFICATION
+  ADMIN_2FA
 }
 
 model PasswordReset {

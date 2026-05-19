@@ -52,6 +52,7 @@ const register = async ({ name, email, password }) => {
     data: {
       userId: user.id,
       code,
+      type: 'EMAIL_VERIFICATION',
       expiresAt: codeExpiresAt(),
     },
   })
@@ -68,6 +69,7 @@ const verifyEmail = async ({ userId, code }) => {
     where: {
       userId,
       code,
+      type: 'EMAIL_VERIFICATION',
       usedAt: null,
       expiresAt: { gt: new Date() },
     },
@@ -112,13 +114,18 @@ const resendVerificationCode = async (userId) => {
 
   // Invalidate old codes
   await prisma.emailVerification.updateMany({
-    where: { userId, usedAt: null },
+    where: { userId, type: 'EMAIL_VERIFICATION', usedAt: null },
     data: { usedAt: new Date() },
   })
 
   const code = generateCode()
   await prisma.emailVerification.create({
-    data: { userId, code, expiresAt: codeExpiresAt() },
+    data: {
+      userId,
+      code,
+      type: 'EMAIL_VERIFICATION',
+      expiresAt: codeExpiresAt()
+    },
   })
 
   await emailSvc.sendVerificationCode({
@@ -184,13 +191,18 @@ const adminLoginStep1 = async ({ email, password }) => {
   // Generate and send admin login code
   // Invalidate previous codes first
   await prisma.emailVerification.updateMany({
-    where: { userId: user.id, usedAt: null },
+    where: { userId: user.id, type: 'ADMIN_2FA', usedAt: null },
     data: { usedAt: new Date() },
   })
 
   const code = generateCode()
   await prisma.emailVerification.create({
-    data: { userId: user.id, code, expiresAt: codeExpiresAt() },
+    data: {
+      userId: user.id,
+      code,
+      type: 'ADMIN_2FA',
+      expiresAt: codeExpiresAt()
+    },
   })
 
   await emailSvc.sendAdminLoginCode({
@@ -209,6 +221,7 @@ const adminLoginStep2 = async ({ userId, code }) => {
     where: {
       userId,
       code,
+      type: 'ADMIN_2FA',
       usedAt: null,
       expiresAt: { gt: new Date() },
     },
@@ -351,13 +364,13 @@ const logout = async (rawToken) => {
 
   await prisma.refreshToken.updateMany({
     where: { tokenHash, revokedAt: null },
-    data:  { revokedAt: new Date() },
+    data: { revokedAt: new Date() },
   })
 }
 
 module.exports = {
   register, verifyEmail, resendVerificationCode,
-  login, logout ,adminLoginStep1, adminLoginStep2,
+  login, logout, adminLoginStep1, adminLoginStep2,
   forgotPassword, resetPassword,
   refreshAccessToken,
 }
