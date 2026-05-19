@@ -3,6 +3,7 @@ const { PrismaClient, Prisma } = require('@prisma/client')
 const slugify = require('../utils/slugify')
 const { uploadFile, deleteFile } = require('./storage.service')
 const searchService = require('./search.service')
+const { validateFileBytes } = require('../utils/validateFileBytes')
 
 // List
 const list = async ({ type, category, language, search, page = 1, limit = 20 }) => {
@@ -199,6 +200,22 @@ const create = async (data, files, userId) => {
     const err = new Error('File is required')
     err.status = 400
     throw err
+  }
+
+  // Validate actual file content against magic bytes — not just the client-reported MIME type
+  if (mainFile) {
+    await validateFileBytes(mainFile.buffer, 'file')
+  }
+  if (thumbnailFile) {
+    await validateFileBytes(thumbnailFile.buffer, 'thumbnail')
+  }
+
+  // Validate lesson files for courses
+  if (isCourse && lessons) {
+    const lessonFiles = uploadedFiles.filter((f) => f.fieldname.startsWith('lessonFile_'))
+    await Promise.all(
+      lessonFiles.map((f) => validateFileBytes(f.buffer, f.fieldname))
+    )
   }
 
   if (isCourse && !lessons) {
