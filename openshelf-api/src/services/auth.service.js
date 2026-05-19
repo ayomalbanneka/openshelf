@@ -58,7 +58,7 @@ const register = async ({ name, email, password }) => {
 
   await emailSvc.sendVerificationCode({ to: email, name, code })
 
-  const tokens = generateTokens(user.id)
+  const tokens = await generateTokens(user.id)
   return { user, ...tokens }
 }
 
@@ -154,7 +154,7 @@ const login = async ({ email, password }) => {
   }
 
   const { passwordHash, ...safeUser } = user
-  const tokens = generateTokens(user.id)
+  const tokens = await generateTokens(user.id)
   return { user: safeUser, ...tokens }
 }
 
@@ -230,7 +230,7 @@ const adminLoginStep2 = async ({ userId, code }) => {
   })
 
   const { passwordHash, ...safeUser } = user
-  const tokens = generateTokens(user.id)
+  const tokens = await generateTokens(user.id)
   return { user: safeUser, ...tokens }
 }
 
@@ -340,7 +340,7 @@ const refreshAccessToken = async (rawToken) => {
     data: { revokedAt: new Date() },
   })
 
-  return generateTokens(record.userId)
+  return await generateTokens(record.userId)
 }
 
 // Logout - revoke the refresh token
