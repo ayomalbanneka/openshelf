@@ -83,4 +83,7 @@ router.post('/reset-password',
 router.post('/refresh', controller.refresh)
 router.get('/me', authenticate, controller.me)
 
+// Logout — revokes the refresh token
+router.post('/logout', authenticate, controller.logout)
+
 module.exports = router

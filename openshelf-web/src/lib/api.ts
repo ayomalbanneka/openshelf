@@ -114,39 +114,45 @@ http.interceptors.request.use((config) => {
   return config
 })
 
-// If a request returns 401, try refreshing the token automatically
+// If a request returns 401, try refreshing the token once
 http.interceptors.response.use(
   (response) => response,
   async (error) => {
     const original = error.config
+
+    // Don't retry on auth endpoints or if already retried
     const isAuthEndpoint =
       typeof original?.url === 'string' &&
-      (original.url.includes('/auth/login') || original.url.includes('/auth/register'))
-    const isAuthPage =
-      typeof window !== 'undefined' &&
-      (window.location.pathname === '/login' || window.location.pathname === '/register')
+      (original.url.includes('/auth/login') ||
+       original.url.includes('/auth/register') ||
+       original.url.includes('/auth/refresh') ||
+       original.url.includes('/auth/logout'))
 
-    if (error.response?.status === 401 && !original._retry) {
-      if (isAuthEndpoint || isAuthPage) {
-        return Promise.reject(error)
-      }
+    if (error.response?.status === 401 && !original._retry && !isAuthEndpoint) {
       original._retry = true
 
       try {
         const refreshToken = localStorage.getItem('refreshToken')
         if (!refreshToken) throw new Error('No refresh token')
 
-        const { data } = await axios.post(`${BASE_URL}/auth/refresh`, {
-          refreshToken,
-        })
+        // Use a plain axios call — not the http instance — to avoid interceptor loops
+        const { data } = await axios.post(`${BASE_URL}/auth/refresh`, { refreshToken })
 
-        localStorage.setItem('accessToken', data.accessToken)
+        // Store the rotated token pair (server now returns both on refresh)
+        localStorage.setItem('accessToken',  data.accessToken)
+        localStorage.setItem('refreshToken', data.refreshToken)
+
+        // Retry the original request with the new access token
         original.headers.Authorization = `Bearer ${data.accessToken}`
         return http(original)
       } catch {
+        // Refresh failed — clear everything and redirect to login
         localStorage.removeItem('accessToken')
         localStorage.removeItem('refreshToken')
-        window.location.href = '/login'
+
+        // Redirect to the right login page based on current path
+        const isAdminPath = window.location.pathname.startsWith('/admin')
+        window.location.href = isAdminPath ? '/admin/login' : '/login'
       }
     }
 

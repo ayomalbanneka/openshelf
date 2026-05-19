@@ -343,9 +343,21 @@ const refreshAccessToken = async (rawToken) => {
   return generateTokens(record.userId)
 }
 
+// Logout - revoke the refresh token
+const logout = async (rawToken) => {
+  if (!rawToken) return
+
+  const tokenHash = crypto.createHash('sha256').update(rawToken).digest('hex')
+
+  await prisma.refreshToken.updateMany({
+    where: { tokenHash, revokedAt: null },
+    data:  { revokedAt: new Date() },
+  })
+}
+
 module.exports = {
   register, verifyEmail, resendVerificationCode,
-  login, adminLoginStep1, adminLoginStep2,
+  login, logout ,adminLoginStep1, adminLoginStep2,
   forgotPassword, resetPassword,
   refreshAccessToken,
 }
