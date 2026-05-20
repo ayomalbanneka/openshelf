@@ -4,7 +4,7 @@ import { usePathname } from 'next/navigation'
 
 export default function AuthLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname()
-  const isAdminLogin = pathname.startsWith('/admin/login')
+  const isAdminLogin = pathname.startsWith('/admin/login') || pathname.startsWith('/admin/accept-invite')
 
   if (isAdminLogin) {
     return <>{children}</>

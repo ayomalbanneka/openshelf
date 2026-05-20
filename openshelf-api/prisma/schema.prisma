@@ -35,6 +35,7 @@ model User {
   followers          UserFollow[]        @relation("Following")
   emailVerifications EmailVerification[]
   passwordResets     PasswordReset[]
+  sentInvites        StaffInvite[]
   refreshTokens      RefreshToken[]
 
   @@index([email])
@@ -42,14 +43,14 @@ model User {
 }
 
 model EmailVerification {
-  id        String                  @id @default(cuid())
+  id        String                @id @default(cuid())
   userId    String
-  user      User                    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user      User                  @relation(fields: [userId], references: [id], onDelete: Cascade)
   code      String
-  type      EmailVerificationType   @default(EMAIL_VERIFICATION)
+  type      EmailVerificationType @default(EMAIL_VERIFICATION)
   expiresAt DateTime
   usedAt    DateTime?
-  createdAt DateTime                @default(now())
+  createdAt DateTime              @default(now())
 
   @@index([userId])
   @@index([userId, type])
@@ -62,18 +63,19 @@ enum EmailVerificationType {
 }
 
 model PasswordReset {
-  id        String   @id @default(cuid())
+  id        String    @id @default(cuid())
   userId    String
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  code      String   // 6-digit code
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  code      String // 6-digit code
   expiresAt DateTime
   usedAt    DateTime?
-  createdAt DateTime @default(now())
+  createdAt DateTime  @default(now())
 
   @@index([userId])
   @@index([code])
   @@map("password_resets")
 }
+
 model RefreshToken {
   id        String    @id @default(cuid())
   userId    String
@@ -86,6 +88,22 @@ model RefreshToken {
   @@index([userId])
   @@index([tokenHash])
   @@map("refresh_tokens")
+}
+
+model StaffInvite {
+  id          String    @id @default(cuid())
+  email       String
+  role        Role
+  tokenHash   String    @unique
+  expiresAt   DateTime
+  usedAt      DateTime?
+  invitedById String
+  invitedBy   User      @relation(fields: [invitedById], references: [id])
+  createdAt   DateTime  @default(now())
+
+  @@index([email])
+  @@index([tokenHash])
+  @@map("staff_invites")
 }
 
 model UserFollow {

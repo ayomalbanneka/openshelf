@@ -2,6 +2,7 @@ const prisma = require('../config/prisma')
 const resourceService = require('../services/resource.service')
 const emailSvc = require('../services/email.service')
 const { deleteFile } = require('../services/storage.service')
+const staffService = require('../services/staff.service')
 
 const sanitizeBigInt = (value) => {
   if (typeof value === 'bigint') return Number(value)
@@ -429,6 +430,54 @@ const deleteTag = async (req, res, next) => {
   }
 }
 
+// ── Staff Management ─────────────────────────────────────────
+const inviteStaff = async (req, res, next) => {
+  try {
+    const { email, role } = req.body
+    if (!email || !role) {
+      return res.status(400).json({ message: 'Email and role are required' })
+    }
+    const result = await staffService.inviteStaff({
+      email,
+      role,
+      invitedById: req.user.id,
+    })
+    res.status(201).json(result)
+  } catch (err) { next(err) }
+}
+
+const acceptInvite = async (req, res, next) => {
+  try {
+    const { token, name, password } = req.body
+    const result = await staffService.acceptInvite({ token, name, password })
+    res.json(result)
+  } catch (err) { next(err) }
+}
+
+const listStaff = async (req, res, next) => {
+  try {
+    const result = await staffService.listStaff()
+    res.json(result)
+  } catch (err) { next(err) }
+}
+
+const revokeStaff = async (req, res, next) => {
+  try {
+    const result = await staffService.revokeStaff({
+      targetId: req.params.id,
+      requestingUserId: req.user.id,
+    })
+    res.json(result)
+  } catch (err) { next(err) }
+}
+
+const cancelInvite = async (req, res, next) => {
+  try {
+    const result = await staffService.cancelInvite(req.params.id)
+    res.json(result)
+  } catch (err) { next(err) }
+}
+
 module.exports = {
   getStats,
   getPending, publishResource, rejectResource,
@@ -436,5 +485,6 @@ module.exports = {
   getUsers, updateUserRole, toggleUserActive,
   getClubs, deleteClub,
   getCategories, createCategory, deleteCategory,
-  getTags, deleteTag,
+  getTags, deleteTag, inviteStaff, acceptInvite,
+  listStaff, revokeStaff, cancelInvite,
 }

@@ -1,6 +1,7 @@
 const router = require('express').Router()
 const { body } = require('express-validator')
 const controller = require('../controllers/auth.controller')
+const adminController = require('../controllers/admin.controller')
 const validate = require('../middleware/validate')
 const { authenticate } = require('../middleware/auth')
 const { authLimiter, adminAuthLimiter, otpLimiter } = require('../middleware/rateLimiter')
@@ -78,6 +79,9 @@ router.post('/reset-password',
   validate,
   controller.resetPassword
 )
+
+// Staff invite acceptance — public, token-based
+router.post('/accept-invite', adminController.acceptInvite)
 
 // Refresh + me
 router.post('/refresh', controller.refresh)

@@ -35,4 +35,10 @@ router.delete('/categories/:id',          authorize('ADMIN'), controller.deleteC
 router.get('/tags',                       authorize('ADMIN'), controller.getTags)
 router.delete('/tags/:id',                authorize('ADMIN'), controller.deleteTag)
 
+// Staff management — ADMIN only
+router.get('/staff',                authorize('ADMIN'), controller.listStaff)
+router.post('/staff/invite',        authorize('ADMIN'), controller.inviteStaff)
+router.delete('/staff/:id/revoke',  authorize('ADMIN'), controller.revokeStaff)
+router.delete('/staff/invites/:id', authorize('ADMIN'), controller.cancelInvite)
+
 module.exports = router

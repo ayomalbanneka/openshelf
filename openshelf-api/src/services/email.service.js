@@ -142,9 +142,62 @@ const sendAdminLoginCode = async ({ to, name, code }) => {
   })
 }
 
+// Send staff invite email
+const sendStaffInvite = async ({ to, role, token, inviterName }) => {
+  const inviteUrl  = `${process.env.WEB_URL}/admin/accept-invite?token=${token}`
+  const roleLabel  = role === 'ADMIN' ? 'Administrator' : 'Moderator'
+  const roleColor  = role === 'ADMIN' ? '#991b1b' : '#92400e'
+  const roleBg     = role === 'ADMIN' ? '#fee2e2' : '#fef3c7'
+
+  await sendEmail({
+    to,
+    subject: `You've been invited to join OpenShelf as a ${roleLabel}`,
+    html: `
+      <div style="font-family:sans-serif;max-width:480px;margin:0 auto;padding:24px">
+        <h2 style="color:#1e40af;margin-bottom:8px">You're invited to OpenShelf</h2>
+        <p style="color:#374151;margin-bottom:8px">
+          <strong>${inviterName}</strong> has invited you to join the OpenShelf team.
+        </p>
+
+        <div style="display:inline-block;padding:4px 12px;border-radius:999px;margin-bottom:24px;
+                    background:${roleBg};color:${roleColor};font-weight:600;font-size:14px">
+          ${roleLabel}
+        </div>
+
+        <p style="color:#374151;margin-bottom:24px">
+          Click the button below to set up your account. This invite expires in
+          <strong>48 hours</strong>.
+        </p>
+
+        <a href="${inviteUrl}"
+          style="display:block;text-align:center;background:#1e40af;color:#ffffff;
+                 padding:14px 24px;border-radius:12px;text-decoration:none;
+                 font-weight:600;font-size:16px;margin-bottom:24px">
+          Accept Invite
+        </a>
+
+        <p style="color:#6b7280;font-size:13px;margin-bottom:8px">
+          Or copy this link into your browser:
+        </p>
+        <p style="color:#1e40af;font-size:12px;word-break:break-all;margin-bottom:24px">
+          ${inviteUrl}
+        </p>
+
+        <hr style="border:none;border-top:1px solid #e5e7eb;margin-bottom:24px" />
+
+        <p style="color:#6b7280;font-size:12px">
+          If you weren't expecting this invite, you can safely ignore this email.
+          The link will expire automatically.
+        </p>
+      </div>
+    `,
+  })
+}
+
 module.exports = {
   sendVerificationCode,
   sendPasswordResetCode,
   sendAccountBlockedEmail,
   sendAdminLoginCode,
+  sendStaffInvite,
 }
