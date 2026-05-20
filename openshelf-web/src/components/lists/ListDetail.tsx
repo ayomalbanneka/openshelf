@@ -154,7 +154,7 @@ export function ListDetail({ listId }: { listId: string }) {
           className="text-center py-20 rounded-2xl"
           style={{ border: '2px dashed hsl(var(--border))', color: 'hsl(var(--muted-foreground))' }}
         >
-          <LibraryBig className="w-10 h-10 mb-3" />
+          <LibraryBig className="w-8 h-8 sm:w-10 sm:h-10 md:w-12 md:h-12 mb-3 mx-auto" />
           <p className="font-medium mb-1">This list is empty</p>
           {isOwner && (
             <p className="text-sm">
