@@ -318,6 +318,7 @@ model ReadingList {
   updatedAt   DateTime          @updatedAt
   items       ReadingListItem[]
   user        User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  isDefault  Boolean   @default(false)
 
   @@index([userId])
   @@index([isPublic])

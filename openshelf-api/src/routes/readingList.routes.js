@@ -20,4 +20,7 @@ router.delete('/:id', authenticate, controller.remove)
 router.post('/:id/items', authenticate, controller.addItem)
 router.delete('/:id/items/:itemId', authenticate, controller.removeItem)
 
+// Quick-save toggle — adds/removes from user's default Saved list
+router.post('/quick-save', authenticate, controller.quickSave)
+
 module.exports = router

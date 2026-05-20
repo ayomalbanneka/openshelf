@@ -54,6 +54,27 @@ export function ResourceDetail({ resource }: { resource: Resource }) {
   const isVerified = user?.isEmailVerified ?? false
   const TypeIcon = TYPE_ICONS[resource.type] || FileText
 
+  useEffect(() => {
+    let isActive = true
+
+    const loadBookmark = async () => {
+      if (!user) {
+        if (isActive) setBookmarked(false)
+        return
+      }
+
+      try {
+        const { data } = await http.get(`/resources/${resource.slug}/bookmark`)
+        if (isActive) setBookmarked(Boolean(data.bookmarked))
+      } catch {
+        // Leave the current state if the status call fails.
+      }
+    }
+
+    loadBookmark()
+    return () => { isActive = false }
+  }, [user?.id, resource.slug])
+
   // Load lists when picker opens
   const openListPicker = async () => {
     if (!user) return

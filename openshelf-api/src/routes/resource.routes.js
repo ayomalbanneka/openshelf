@@ -83,6 +83,7 @@ router.post('/:slug/reviews', authenticate, reviewController.createReview)
 // Bookmarks
 router.post('/:slug/bookmark', authenticate, reviewController.addBookmark)
 router.delete('/:slug/bookmark', authenticate, reviewController.removeBookmark)
+router.get('/:slug/bookmark', authenticate, reviewController.getBookmarkStatus)
 
 router.delete(
   '/:slug',
