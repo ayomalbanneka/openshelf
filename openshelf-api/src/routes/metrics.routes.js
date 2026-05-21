@@ -20,4 +20,20 @@ router.get(
   controller.getDashboardMetrics
 )
 
+// Historical trend data for the dashboard chart
+router.get(
+  '/history',
+  authenticate,
+  authorize('ADMIN', 'MODERATOR'),
+  controller.getMetricHistory
+)
+
+// Storage usage — MinIO/R2 bucket stats
+router.get(
+  '/storage',
+  authenticate,
+  authorize('ADMIN', 'MODERATOR'),
+  controller.getStorageMetrics
+)
+
 module.exports = router

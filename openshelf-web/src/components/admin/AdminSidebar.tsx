@@ -3,7 +3,7 @@ import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { useAuthStore } from '@/store/auth.store'
 import {
-  LayoutDashboard, Hourglass, Users, BookOpen, Activity,
+  LayoutDashboard, Hourglass, Users, UsersRound, BookOpen, Activity, Newspaper,
   Library, Tags, FolderOpen, Users2, LogOut, type LucideIcon,
 } from 'lucide-react'
 
@@ -11,31 +11,45 @@ type NavItem = { href: string; label: string; icon: LucideIcon; badge?: 'pending
 type NavSection = { section: string; items: NavItem[] }
 
 const ADMIN_LINKS: NavSection[] = [
-  { section: 'Overview', items: [
-    { href: '/admin',            label: 'Dashboard',  icon: LayoutDashboard },
-  ]},
-  { section: 'Content', items: [
-    { href: '/admin/pending',    label: 'Pending',    icon: Hourglass, badge: 'pending' },
-    { href: '/admin/monitoring', label: 'Monitoring',  icon: Activity },
-    { href: '/admin/resources',  label: 'Resources',  icon: Library },
-    { href: '/admin/categories', label: 'Categories', icon: FolderOpen },
-    { href: '/admin/tags',       label: 'Tags',       icon: Tags },
-  ]},
-  { section: 'Community', items: [
-    { href: '/admin/clubs',      label: 'Clubs',      icon: Users2 },
-  ]},
-  { section: 'Access', items: [
-    { href: '/admin/users',      label: 'Users',      icon: Users },
-  ]},
+  {
+    section: 'Overview', items: [
+      { href: '/admin', label: 'Dashboard', icon: LayoutDashboard },
+    ]
+  },
+  {
+    section: 'Content', items: [
+      { href: '/admin/pending', label: 'Pending', icon: Hourglass, badge: 'pending' },
+      { href: '/admin/monitoring', label: 'Monitoring', icon: Activity },
+      { href: '/admin/resources', label: 'Resources', icon: Library },
+      { href: '/admin/categories', label: 'Categories', icon: FolderOpen },
+      { href: '/admin/tags', label: 'Tags', icon: Tags },
+    ]
+  },
+  {
+    section: 'Community', items: [
+      { href: '/admin/clubs', label: 'Clubs', icon: Users2 },
+      { href: '/admin/reports', label: 'Reports', icon: Newspaper },
+    ]
+  },
+  {
+    section: 'Access', items: [
+      { href: '/admin/users', label: 'Users', icon: Users },
+      { href: '/admin/staff', label: 'Staff', icon: UsersRound },
+    ]
+  },
 ]
 
 const MOD_LINKS: NavSection[] = [
-  { section: 'Overview', items: [
-    { href: '/admin',            label: 'Dashboard',  icon: LayoutDashboard },
-  ]},
-  { section: 'Content', items: [
-    { href: '/admin/pending',    label: 'Pending',    icon: Hourglass, badge: 'pending' },
-  ]},
+  {
+    section: 'Overview', items: [
+      { href: '/admin', label: 'Dashboard', icon: LayoutDashboard },
+    ]
+  },
+  {
+    section: 'Content', items: [
+      { href: '/admin/pending', label: 'Pending', icon: Hourglass, badge: 'pending' },
+    ]
+  },
 ]
 
 export function AdminSidebar({ pendingCount = 0 }: { pendingCount?: number }) {
@@ -90,8 +104,8 @@ export function AdminSidebar({ pendingCount = 0 }: { pendingCount?: number }) {
                     className="flex items-center gap-3 px-3 py-2 rounded-xl text-sm font-medium transition-all"
                     style={
                       active
-                          ? { background: 'var(--admin-sidebar-active)', color: 'var(--admin-sidebar-text)', borderLeft: '3px solid var(--admin-sidebar-active-border)' }
-                          : { color: 'var(--admin-sidebar-muted)', paddingLeft: active ? undefined : '15px' }
+                        ? { background: 'var(--admin-sidebar-active)', color: 'var(--admin-sidebar-text)', borderLeft: '3px solid var(--admin-sidebar-active-border)' }
+                        : { color: 'var(--admin-sidebar-muted)', paddingLeft: active ? undefined : '15px' }
                     }
                   >
                     <Icon className="w-4 h-4 shrink-0" />

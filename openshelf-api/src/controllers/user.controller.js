@@ -36,8 +36,20 @@ const updateProfile = async (req, res, next) => {
     try {
         const {
             name, bio, website, country,
-            preferredLanguage, avatarUrl,
+            preferredLanguage,
         } = req.body
+
+        // Validate website URL if provided
+        if (website !== undefined && website !== '') {
+            try {
+                const parsed = new URL(website)
+                if (!['http:', 'https:'].includes(parsed.protocol)) {
+                    return res.status(400).json({ message: 'Website must be a valid http or https URL' })
+                }
+            } catch {
+                return res.status(400).json({ message: 'Invalid website URL' })
+            }
+        }
 
         const user = await prisma.user.update({
             where: { id: req.user.id },
@@ -47,7 +59,7 @@ const updateProfile = async (req, res, next) => {
                 ...(website !== undefined && { website }),
                 ...(country !== undefined && { country }),
                 ...(preferredLanguage !== undefined && { preferredLanguage }),
-                ...(avatarUrl !== undefined && { avatarUrl }),
+                // avatarUrl is never accepted here
             },
             select: {
                 id: true, name: true, email: true, bio: true,

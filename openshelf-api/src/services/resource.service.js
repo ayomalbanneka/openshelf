@@ -3,6 +3,8 @@ const { PrismaClient, Prisma } = require('@prisma/client')
 const slugify = require('../utils/slugify')
 const { uploadFile, deleteFile } = require('./storage.service')
 const searchService = require('./search.service')
+const { validateFileBytes } = require('../utils/validateFileBytes')
+const emailSvc = require('./email.service')
 
 // List
 const list = async ({ type, category, language, search, page = 1, limit = 20 }) => {
@@ -201,6 +203,22 @@ const create = async (data, files, userId) => {
     throw err
   }
 
+  // Validate actual file content against magic bytes — not just the client-reported MIME type
+  if (mainFile) {
+    await validateFileBytes(mainFile.buffer, 'file')
+  }
+  if (thumbnailFile) {
+    await validateFileBytes(thumbnailFile.buffer, 'thumbnail')
+  }
+
+  // Validate lesson files for courses
+  if (isCourse && lessons) {
+    const lessonFiles = uploadedFiles.filter((f) => f.fieldname.startsWith('lessonFile_'))
+    await Promise.all(
+      lessonFiles.map((f) => validateFileBytes(f.buffer, f.fieldname))
+    )
+  }
+
   if (isCourse && !lessons) {
     const err = new Error('Course must have at least one lesson')
     err.status = 400
@@ -372,11 +390,20 @@ const publishById = async (id) => {
     include: {
       category: { select: { id: true, name: true, slug: true } },
       tags: { include: { tag: true } },
+      uploadedBy: { select: { email: true, name: true } },
     },
   })
 
   // Now it's published — add to search index
   await searchService.updateResourceIndex(updated)
+
+  // Notify the uploader — fire and forget, don't block the response
+  if (updated.uploadedBy?.email) {
+    emailSvc.sendResourcePublished({
+      to: updated.uploadedBy.email,
+      title: updated.title,
+    }).catch((err) => console.error('Failed to send publish notification:', err))
+  }
 
   return updated
 }

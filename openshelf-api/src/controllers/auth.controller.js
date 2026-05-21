@@ -69,7 +69,7 @@ const refresh = async (req, res, next) => {
     if (!refreshToken) {
       return res.status(400).json({ message: 'Refresh token required' })
     }
-    const result = authService.refreshAccessToken(refreshToken)
+    const result = await authService.refreshAccessToken(refreshToken)
     res.json(result)
   } catch (err) { next(err) }
 }
@@ -78,9 +78,17 @@ const me = (req, res) => {
   res.json({ user: req.user })
 }
 
+const logout = async (req, res, next) => {
+  try {
+    const { refreshToken } = req.body
+    await authService.logout(refreshToken)
+    res.json({ message: 'Logged out successfully' })
+  } catch (err) { next(err) }
+}
+
 module.exports = {
   register, verifyEmail, resendCode,
   login, adminLoginStep1, adminLoginStep2,
   forgotPassword, resetPassword,
-  refresh, me,
+  refresh, me, logout,
 }

@@ -5,20 +5,23 @@ const cookieParser = require('cookie-parser')
 const cors = require('cors')
 const helmet = require('helmet')
 const morgan = require('morgan')
-const metricsMiddleware = require('./middleware/metrics'); // Middleware for collecting Prometheus metrics
+const metricsMiddleware = require('./middleware/metrics');
 
-const authRoutes = require('./routes/auth.routes'); // Authentication routes (register, login, logout)
-const resourceRoutes = require('./routes/resource.routes'); // Routes for managing resources (books, articles, etc.)
-const errorHandler = require('./middleware/errorHandler'); // Global error handling middleware
-const categoryRoutes = require('./routes/category.routes'); // Routes for managing categories (genres, topics, etc.)
-const userRoutes = require('./routes/user.routes'); // Routes for user profiles, following, etc.
-const readingListRoutes = require('./routes/readingList.routes'); // Routes for managing reading lists (create, update, delete, add/remove resources)
-const clubRoutes = require('./routes/club.routes'); // Routes for book clubs (create club, join/leave club, discussions, comments)
-const tagRoutes = require('./routes/tag.routes'); // Routes for managing tags (create, list)
-const adminRoutes = require('./routes/admin.routes'); // Routes for admin dashboard and content moderation
-const progressRoutes = require('./routes/progress.routes'); // Routes for tracking reading progress
-const commentRoutes = require('./routes/comment.routes'); // Routes for comments on resources and club discussions
-const metricsRoutes   = require('./routes/metrics.routes')
+const authRoutes = require('./routes/auth.routes');
+const resourceRoutes = require('./routes/resource.routes');
+const errorHandler = require('./middleware/errorHandler'); 
+const categoryRoutes = require('./routes/category.routes');
+const userRoutes = require('./routes/user.routes');
+const readingListRoutes = require('./routes/readingList.routes');
+const clubRoutes = require('./routes/club.routes');
+const tagRoutes = require('./routes/tag.routes');
+const adminRoutes = require('./routes/admin.routes');
+const progressRoutes = require('./routes/progress.routes');
+const commentRoutes = require('./routes/comment.routes');
+const metricsRoutes   = require('./routes/metrics.routes');
+const reportRoutes = require('./routes/report.routes');
+const snapshotJob = require('./jobs/snapshotMetrics.job');
+
 let configureIndex
 if (process.env.NODE_ENV !== 'test') {
   ; ({ configureIndex } = require('./config/meilisearch'))
@@ -26,6 +29,7 @@ if (process.env.NODE_ENV !== 'test') {
 
 const app = express()
 
+app.set('trust proxy', 1)
 app.use(helmet())
 app.use(morgan('dev'))
 app.use(cors({
@@ -58,6 +62,7 @@ app.use('/api/admin', adminRoutes)
 app.use('/api/progress', progressRoutes)
 app.use('/api', commentRoutes)
 app.use('/metrics', metricsRoutes)
+app.use('/api', reportRoutes)
 
 // 404 handler
 app.use((req, res) => {
@@ -66,6 +71,10 @@ app.use((req, res) => {
 
 // Global error handler — must be last
 app.use(errorHandler)
+
+if (process.env.NODE_ENV !== 'test') {
+  snapshotJob.start()
+}
 
 module.exports = app
 

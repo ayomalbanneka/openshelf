@@ -77,4 +77,23 @@ const removeBookmark = async (req, res, next) => {
   } catch (err) { next(err) }
 }
 
-module.exports = { getReviews, createReview, addBookmark, removeBookmark }
+const getBookmarkStatus = async (req, res, next) => {
+  try {
+    const resource = await prisma.resource.findUnique({
+      where: { slug: req.params.slug },
+      select: { id: true },
+    })
+    if (!resource) return res.status(404).json({ message: 'Resource not found' })
+
+    const bookmark = await prisma.bookmark.findUnique({
+      where: {
+        userId_resourceId: { userId: req.user.id, resourceId: resource.id },
+      },
+      select: { id: true },
+    })
+
+    res.json({ bookmarked: Boolean(bookmark) })
+  } catch (err) { next(err) }
+}
+
+module.exports = { getReviews, createReview, addBookmark, removeBookmark, getBookmarkStatus }

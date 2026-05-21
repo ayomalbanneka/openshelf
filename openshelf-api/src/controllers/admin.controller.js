@@ -1,6 +1,8 @@
 const prisma = require('../config/prisma')
 const resourceService = require('../services/resource.service')
 const emailSvc = require('../services/email.service')
+const { deleteFile } = require('../services/storage.service')
+const staffService = require('../services/staff.service')
 
 const sanitizeBigInt = (value) => {
   if (typeof value === 'bigint') return Number(value)
@@ -41,7 +43,7 @@ const getStats = async (req, res, next) => {
         orderBy: { createdAt: 'desc' },
         include: {
           uploadedBy: { select: { id: true, name: true } },
-          category:   { select: { name: true } },
+          category: { select: { name: true } },
         },
       }),
       prisma.user.groupBy({ by: ['role'], _count: true }),
@@ -88,7 +90,7 @@ const getPending = async (req, res, next) => {
       isPublished: false,
       ...(search ? {
         OR: [
-          { title:  { contains: search, mode: 'insensitive' } },
+          { title: { contains: search, mode: 'insensitive' } },
           { author: { contains: search, mode: 'insensitive' } },
           { uploadedBy: { name: { contains: search, mode: 'insensitive' } } },
           { uploadedBy: { email: { contains: search, mode: 'insensitive' } } },
@@ -105,9 +107,9 @@ const getPending = async (req, res, next) => {
         orderBy: { createdAt: 'asc' },
         include: {
           uploadedBy: { select: { id: true, name: true, email: true } },
-          category:   { select: { id: true, name: true } },
-          tags:       { include: { tag: true } },
-          _count:     { select: { reviews: true } },
+          category: { select: { id: true, name: true } },
+          tags: { include: { tag: true } },
+          _count: { select: { reviews: true } },
         },
       }),
       prisma.resource.count({ where }),
@@ -135,9 +137,41 @@ const publishResource = async (req, res, next) => {
 // ── Reject Resource ──────────────────────────────────────────
 const rejectResource = async (req, res, next) => {
   try {
-    const { reason } = req.body
-    const resource = await prisma.resource.findUnique({ where: { id: req.params.id } })
+    const { reason } = req.body || {}
+    const resource = await prisma.resource.findUnique({
+      where: { id: req.params.id },
+      include: {
+        lessons: true,
+        uploadedBy: { select: { email: true } },
+      },
+    })
     if (!resource) return res.status(404).json({ message: 'Resource not found' })
+
+    // Delete main file and thumbnail from storage before removing the DB record
+    if (resource.fileUrl && resource.fileUrl !== 'course-content') {
+      await deleteFile(resource.fileUrl)
+    }
+    if (resource.thumbnailUrl) {
+      await deleteFile(resource.thumbnailUrl).catch(() => { })
+    }
+
+    // For courses: delete each lesson's file too
+    if (resource.type === 'COURSE' && resource.lessons?.length) {
+      await Promise.allSettled(
+        resource.lessons
+          .filter((l) => l.fileUrl && l.fileUrl !== 'pending')
+          .map((l) => deleteFile(l.fileUrl))
+      )
+    }
+
+    if (resource.uploadedBy?.email) {
+      emailSvc.sendResourceRejected({
+        to: resource.uploadedBy.email,
+        title: resource.title,
+        reason: reason || null,
+      }).catch((err) => console.error('Failed to send reject notification:', err))
+    }
+
     await prisma.resource.delete({ where: { id: req.params.id } })
     res.json({ message: 'Resource rejected and deleted', reason })
   } catch (err) {
@@ -156,7 +190,7 @@ const getResources = async (req, res, next) => {
       ...(type && { type }),
       ...(search && {
         OR: [
-          { title:  { contains: search, mode: 'insensitive' } },
+          { title: { contains: search, mode: 'insensitive' } },
           { author: { contains: search, mode: 'insensitive' } },
         ],
       }),
@@ -168,8 +202,8 @@ const getResources = async (req, res, next) => {
         orderBy: { createdAt: 'desc' },
         include: {
           uploadedBy: { select: { id: true, name: true } },
-          category:   { select: { name: true } },
-          _count:     { select: { reviews: true, bookmarks: true } },
+          category: { select: { name: true } },
+          _count: { select: { reviews: true, bookmarks: true } },
         },
       }),
       prisma.resource.count({ where }),
@@ -184,8 +218,29 @@ const getResources = async (req, res, next) => {
 // ── Delete Published Resource ────────────────────────────────
 const deleteResource = async (req, res, next) => {
   try {
-    const resource = await prisma.resource.findUnique({ where: { id: req.params.id } })
+    const resource = await prisma.resource.findUnique({
+      where: { id: req.params.id },
+      include: { lessons: true },
+    })
     if (!resource) return res.status(404).json({ message: 'Resource not found' })
+
+    // Delete main file and thumbnail from storage
+    if (resource.fileUrl && resource.fileUrl !== 'course-content') {
+      await deleteFile(resource.fileUrl)
+    }
+    if (resource.thumbnailUrl) {
+      await deleteFile(resource.thumbnailUrl).catch(() => { })
+    }
+
+    // For courses: delete lesson files
+    if (resource.type === 'COURSE' && resource.lessons?.length) {
+      await Promise.allSettled(
+        resource.lessons
+          .filter((l) => l.fileUrl && l.fileUrl !== 'pending')
+          .map((l) => deleteFile(l.fileUrl))
+      )
+    }
+
     await prisma.resource.delete({ where: { id: req.params.id } })
     res.json({ message: 'Resource deleted' })
   } catch (err) {
@@ -203,7 +258,7 @@ const getUsers = async (req, res, next) => {
       ...(role && { role }),
       ...(search && {
         OR: [
-          { name:  { contains: search, mode: 'insensitive' } },
+          { name: { contains: search, mode: 'insensitive' } },
           { email: { contains: search, mode: 'insensitive' } },
         ],
       }),
@@ -269,7 +324,7 @@ const toggleUserActive = async (req, res, next) => {
       emailSvc.sendAccountBlockedEmail({
         to: user.email, name: user.name,
         reason: reason || 'Violation of community guidelines',
-      }).catch(() => {})
+      }).catch(() => { })
     }
 
     res.json(updated)
@@ -294,7 +349,7 @@ const getClubs = async (req, res, next) => {
         orderBy: { createdAt: 'desc' },
         include: {
           createdBy: { select: { id: true, name: true, email: true } },
-          _count:    { select: { members: true, discussions: true } },
+          _count: { select: { members: true, discussions: true } },
         },
       }),
       prisma.club.count({ where }),
@@ -386,6 +441,54 @@ const deleteTag = async (req, res, next) => {
   }
 }
 
+// ── Staff Management ─────────────────────────────────────────
+const inviteStaff = async (req, res, next) => {
+  try {
+    const { email, role } = req.body
+    if (!email || !role) {
+      return res.status(400).json({ message: 'Email and role are required' })
+    }
+    const result = await staffService.inviteStaff({
+      email,
+      role,
+      invitedById: req.user.id,
+    })
+    res.status(201).json(result)
+  } catch (err) { next(err) }
+}
+
+const acceptInvite = async (req, res, next) => {
+  try {
+    const { token, name, password } = req.body
+    const result = await staffService.acceptInvite({ token, name, password })
+    res.json(result)
+  } catch (err) { next(err) }
+}
+
+const listStaff = async (req, res, next) => {
+  try {
+    const result = await staffService.listStaff()
+    res.json(result)
+  } catch (err) { next(err) }
+}
+
+const revokeStaff = async (req, res, next) => {
+  try {
+    const result = await staffService.revokeStaff({
+      targetId: req.params.id,
+      requestingUserId: req.user.id,
+    })
+    res.json(result)
+  } catch (err) { next(err) }
+}
+
+const cancelInvite = async (req, res, next) => {
+  try {
+    const result = await staffService.cancelInvite(req.params.id)
+    res.json(result)
+  } catch (err) { next(err) }
+}
+
 module.exports = {
   getStats,
   getPending, publishResource, rejectResource,
@@ -393,5 +496,6 @@ module.exports = {
   getUsers, updateUserRole, toggleUserActive,
   getClubs, deleteClub,
   getCategories, createCategory, deleteCategory,
-  getTags, deleteTag,
+  getTags, deleteTag, inviteStaff, acceptInvite,
+  listStaff, revokeStaff, cancelInvite,
 }

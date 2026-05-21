@@ -1,6 +1,7 @@
 const router     = require('express').Router()
 const controller = require('../controllers/admin.controller')
 const { authenticate, authorize } = require('../middleware/auth')
+const reportController = require('../controllers/report.controller')
 
 router.use(authenticate)
 router.use(authorize('ADMIN', 'MODERATOR'))
@@ -34,5 +35,15 @@ router.delete('/categories/:id',          authorize('ADMIN'), controller.deleteC
 // Tags — ADMIN only
 router.get('/tags',                       authorize('ADMIN'), controller.getTags)
 router.delete('/tags/:id',                authorize('ADMIN'), controller.deleteTag)
+
+// Staff management — ADMIN only
+router.get('/staff',                authorize('ADMIN'), controller.listStaff)
+router.post('/staff/invite',        authorize('ADMIN'), controller.inviteStaff)
+router.delete('/staff/:id/revoke',  authorize('ADMIN'), controller.revokeStaff)
+router.delete('/staff/invites/:id', authorize('ADMIN'), controller.cancelInvite)
+
+// Reports
+router.get('/reports',     authorize('ADMIN', 'MODERATOR'), reportController.getReports)
+router.patch('/reports/:id', authorize('ADMIN', 'MODERATOR'), reportController.updateReport)
 
 module.exports = router

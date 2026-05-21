@@ -68,6 +68,31 @@ interface TrendPoint {
   memoryPct: number
 }
 
+interface StorageSnapshot {
+  capturedAt: string
+  rpm: number
+  p95Ms: number
+  errorRate: number
+  memoryPct: number
+  dbLatencyMs: number
+}
+
+interface StoragePrefix {
+  objects: number
+  bytes: number
+  formatted: string
+}
+
+interface StorageMetrics {
+  totalObjects: number | null
+  totalBytes: number | null
+  totalFormatted: string
+  byPrefix: Record<string, StoragePrefix>
+  bucket: string
+  queriedAt: string
+  error?: string
+}
+
 const MAX_POINTS = 24
 
 const cardStyle = {
@@ -177,6 +202,8 @@ function Section({ title, children }: { title: string; children: React.ReactNode
 export default function MonitoringPage() {
   const [metrics, setMetrics] = useState<Metrics | null>(null)
   const [history, setHistory] = useState<TrendPoint[]>([])
+  const [storage, setStorage] = useState<StorageMetrics | null>(null)
+  const [storageLoading, setStorageLoading] = useState(true)
   const [loading, setLoading] = useState(true)
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null)
   const [autoRefresh, setAutoRefresh] = useState(true)
@@ -192,22 +219,6 @@ export default function MonitoringPage() {
       const { data } = await http.get<Metrics>(metricsUrl)
       setMetrics(data)
       setLastUpdated(new Date())
-
-      const errorRate = parseFloat(data.requests.errorRate.replace('%', '')) || 0
-      const p95 = data.requests.latency?.p95Ms ?? data.requests.avgResponseMs
-      const rpm = data.requests.throughput?.rpm ?? 0
-      const memoryPct = Number(data.memory.systemUsedPct) || 0
-
-      setHistory((prev) => {
-        const next = [...prev, {
-          time: new Date().toLocaleTimeString(),
-          rpm,
-          p95,
-          errorRate,
-          memoryPct,
-        }]
-        return next.slice(-MAX_POINTS)
-      })
     } catch {
       toast.error('Failed to fetch monitoring metrics')
     } finally {
@@ -215,15 +226,69 @@ export default function MonitoringPage() {
     }
   }, [metricsUrl])
 
+  // Fetch real historical snapshots from DB — separate from live metrics
+  const fetchHistory = useCallback(async () => {
+    try {
+      const base = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000/api'
+      const historyUrl = `${base.replace(/\/api\/?$/, '')}/metrics/history?points=24`
+      const { data } = await http.get<{ data: StorageSnapshot[] }>(historyUrl)
+
+      setHistory(
+        data.data.map((s) => ({
+          time: new Date(s.capturedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+          rpm: s.rpm,
+          p95: s.p95Ms,
+          errorRate: s.errorRate,
+          memoryPct: s.memoryPct,
+        }))
+      )
+    } catch {
+      // History is non-critical — fail silently
+    }
+  }, [])
+
+  // Fetch storage metrics — only once on mount, they're slow to query
+  const fetchStorage = useCallback(async () => {
+    setStorageLoading(true)
+    try {
+      const base = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000/api'
+      const storageUrl = `${base.replace(/\/api\/?$/, '')}/metrics/storage`
+      const { data } = await http.get<StorageMetrics>(storageUrl)
+      setStorage(data)
+    } catch {
+      setStorage({
+        totalObjects: null,
+        totalBytes: null,
+        totalFormatted: 'Unavailable',
+        byPrefix: {},
+        bucket: '',
+        queriedAt: new Date().toISOString(),
+        error: 'Failed to fetch storage metrics. Check credentials and permissions.',
+      })
+    } finally {
+      setStorageLoading(false)
+    }
+  }, [])
+
+  // Load live metrics + history on mount
   useEffect(() => {
     fetchMetrics()
-  }, [fetchMetrics])
+    fetchHistory()
+    fetchStorage()
+  }, [fetchMetrics, fetchHistory, fetchStorage])
 
+  // Auto-refresh live metrics only — history refreshes every 5 min via the DB job
   useEffect(() => {
     if (!autoRefresh) return
     const id = setInterval(fetchMetrics, refreshInterval * 1000)
     return () => clearInterval(id)
   }, [autoRefresh, refreshInterval, fetchMetrics])
+
+  // Refresh history every 5 minutes to pick up new DB snapshots
+  useEffect(() => {
+    const id = setInterval(fetchHistory, 5 * 60 * 1000)
+    return () => clearInterval(id)
+  }, [fetchHistory])
 
   const exportJson = () => {
     if (!metrics) return
@@ -531,6 +596,90 @@ export default function MonitoringPage() {
               ))
             )}
           </div>
+        </div>
+      </Section>
+
+      <Section title="Storage">
+        <div className="p-5 rounded-2xl flex flex-col gap-4" style={cardStyle}>
+
+          {storageLoading ? (
+            <div className="h-20 rounded-xl animate-pulse" style={{ backgroundColor: 'var(--admin-soft)' }} />
+          ) : storage?.error ? (
+            <p className="text-sm" style={{ color: 'var(--admin-danger)' }}>
+              {storage.error}
+            </p>
+          ) : storage ? (
+            <>
+              {/* Total row */}
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-xs font-semibold uppercase tracking-wider mb-1"
+                    style={{ color: 'var(--admin-muted)' }}>
+                    Total storage used
+                  </p>
+                  <p className="text-2xl font-bold" style={{ color: 'var(--admin-text)' }}>
+                    {storage.totalFormatted}
+                  </p>
+                  <p className="text-xs mt-0.5" style={{ color: 'var(--admin-muted)' }}>
+                    {storage.totalObjects?.toLocaleString() ?? '—'} objects · bucket: {storage.bucket}
+                  </p>
+                </div>
+                <button
+                  onClick={fetchStorage}
+                  className="text-xs px-3 py-1.5 rounded-xl font-semibold"
+                  style={{ backgroundColor: 'var(--admin-soft)', color: 'var(--admin-text)' }}
+                >
+                  Refresh
+                </button>
+              </div>
+
+              {/* Per-prefix breakdown */}
+              {Object.keys(storage.byPrefix).length > 0 && (
+                <div className="flex flex-col gap-2.5">
+                  {Object.entries(storage.byPrefix).map(([prefix, info]) => {
+                    const pct = storage.totalBytes
+                      ? Math.round((info.bytes / storage.totalBytes) * 100)
+                      : 0
+                    return (
+                      <div key={prefix} className="flex flex-col gap-1">
+                        <div className="flex items-center justify-between text-sm">
+                          <span className="capitalize font-medium"
+                            style={{ color: 'var(--admin-text)' }}>
+                            {prefix}
+                          </span>
+                          <span style={{ color: 'var(--admin-muted)' }}>
+                            {info.formatted} · {info.objects.toLocaleString()} files
+                          </span>
+                        </div>
+                        <div className="h-1.5 rounded-full overflow-hidden"
+                          style={{ backgroundColor: 'var(--admin-soft)' }}>
+                          <div
+                            className="h-1.5 rounded-full transition-all duration-500"
+                            style={{
+                              width: `${pct}%`,
+                              backgroundColor: prefix === 'resources'
+                                ? 'var(--admin-accent)'
+                                : prefix === 'thumbnails'
+                                  ? 'var(--admin-warn)'
+                                  : 'var(--admin-success)',
+                            }}
+                          />
+                        </div>
+                      </div>
+                    )
+                  })}
+                </div>
+              )}
+
+              <p className="text-xs" style={{ color: 'var(--admin-muted)' }}>
+                Last queried {new Date(storage.queriedAt).toLocaleTimeString()}
+              </p>
+            </>
+          ) : (
+            <p className="text-sm" style={{ color: 'var(--admin-muted)' }}>
+              Storage data unavailable.
+            </p>
+          )}
         </div>
       </Section>
     </div>

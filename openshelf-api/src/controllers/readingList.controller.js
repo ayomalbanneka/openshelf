@@ -230,8 +230,50 @@ const removeItem = async (req, res, next) => {
     }
 }
 
+// Quick-save: toggle a resource in/out of the user's default "Saved" list
+const quickSave = async (req, res, next) => {
+  try {
+    const { resourceId } = req.body
+    if (!resourceId) {
+      return res.status(400).json({ message: 'resourceId is required' })
+    }
+
+    // Find or create the user's default "Saved" list
+    let list = await prisma.readingList.findFirst({
+      where: { userId: req.user.id, isDefault: true },
+    })
+
+    if (!list) {
+      list = await prisma.readingList.create({
+        data: {
+          title:     'Saved',
+          userId:    req.user.id,
+          isPublic:  false,
+          isDefault: true,
+        },
+      })
+    }
+
+    // Check if already saved
+    const existing = await prisma.readingListItem.findFirst({
+      where: { listId: list.id, resourceId },
+    })
+
+    if (existing) {
+      await prisma.readingListItem.delete({ where: { id: existing.id } })
+      return res.json({ saved: false })
+    }
+
+    await prisma.readingListItem.create({
+      data: { listId: list.id, resourceId },
+    })
+
+    res.json({ saved: true })
+  } catch (err) { next(err) }
+}
+
 module.exports = {
     getMyLists, getUserLists, getOne,
     create, update, remove,
-    addItem, removeItem,
+    addItem, removeItem, quickSave,
 }

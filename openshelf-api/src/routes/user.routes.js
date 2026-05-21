@@ -1,20 +1,22 @@
 const router = require('express').Router();
 const controller = require('../controllers/user.controller');
-const {authenticate} = require('../middleware/auth');
+const { authenticate } = require('../middleware/auth');
 const upload = require('../middleware/upload')
+const { validateFileBytes } = require('../utils/validateFileBytes')
 
 // Public
-router.get('/:id',           controller.getProfile)
+router.get('/:id', controller.getProfile)
 router.get('/:id/followers', controller.getFollowers)
 router.get('/:id/following', controller.getFollowing)
-router.get('/:id/uploads',   controller.getUploads)
+router.get('/:id/uploads', controller.getUploads)
 
 // Authenticated
-router.patch('/me',              authenticate, controller.updateProfile)
-router.patch('/me/password',     authenticate, controller.changePassword)
-router.get('/:id/is-following',  authenticate, controller.isFollowing)
-router.post('/:id/follow',       authenticate, controller.follow)
-router.delete('/:id/follow',     authenticate, controller.unfollow)
+router.patch('/me', authenticate, controller.updateProfile)
+router.patch('/me/password', authenticate, controller.changePassword)
+router.get('/:id/is-following', authenticate, controller.isFollowing)
+router.post('/:id/follow', authenticate, controller.follow)
+router.delete('/:id/follow', authenticate, controller.unfollow)
+
 router.post(
   '/me/avatar',
   authenticate,
@@ -30,12 +32,14 @@ router.post(
         return res.status(400).json({ message: 'Only image files are allowed' })
       }
 
+      await validateFileBytes(req.file.buffer, 'avatar')
+
       const { uploadFile } = require('../services/storage.service')
       const avatarUrl = await uploadFile(req.file, 'avatars')
 
       const user = await require('../config/prisma').user.update({
         where: { id: req.user.id },
-        data:  { avatarUrl },
+        data: { avatarUrl },
         select: { id: true, avatarUrl: true },
       })
 

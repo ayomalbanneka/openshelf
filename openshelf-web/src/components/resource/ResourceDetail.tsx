@@ -9,6 +9,7 @@ import { getErrorMessage } from '@/lib/errors'
 import { toast } from '@/lib/toast'
 import { ReadingProgress } from './ReadingProgress'
 import { CommentsSection } from './CommentsSection'
+import { ReportButton } from '@/components/resource/ReportButton'
 import {
   BookOpen,
   GraduationCap,
@@ -53,6 +54,27 @@ export function ResourceDetail({ resource }: { resource: Resource }) {
   const [savedMsg, setSavedMsg] = useState('')
   const isVerified = user?.isEmailVerified ?? false
   const TypeIcon = TYPE_ICONS[resource.type] || FileText
+
+  useEffect(() => {
+    let isActive = true
+
+    const loadBookmark = async () => {
+      if (!user) {
+        if (isActive) setBookmarked(false)
+        return
+      }
+
+      try {
+        const { data } = await http.get(`/resources/${resource.slug}/bookmark`)
+        if (isActive) setBookmarked(Boolean(data.bookmarked))
+      } catch {
+        // Leave the current state if the status call fails.
+      }
+    }
+
+    loadBookmark()
+    return () => { isActive = false }
+  }, [user?.id, resource.slug])
 
   // Load lists when picker opens
   const openListPicker = async () => {
@@ -418,6 +440,11 @@ export function ResourceDetail({ resource }: { resource: Resource }) {
                 )}
               </div>
             )}
+
+            <ReportButton
+              slug={resource.slug}
+              buttonClassName="rounded-lg px-3 py-1.5 text-red-600 border border-red-200 bg-red-100 hover:bg-red-600 hover:text-white hover:border-red-600 dark:text-red-400 dark:border-red-900/60 dark:bg-red-950/40 dark:hover:bg-red-950/70"
+            />
 
             {!user && (
               <Link
