@@ -37,6 +37,7 @@ model User {
   passwordResets     PasswordReset[]
   sentInvites        StaffInvite[]
   refreshTokens      RefreshToken[]
+  reports            Report[]             @relation("UserReports")
 
   @@index([email])
   @@map("users")
@@ -174,6 +175,7 @@ model Resource {
   category         Category                 @relation(fields: [categoryId], references: [id])
   uploadedBy       User                     @relation(fields: [uploadedById], references: [id])
   reviews          Review[]
+  reports          Report[]
 
   @@index([slug])
   @@index([type])
@@ -318,7 +320,7 @@ model ReadingList {
   updatedAt   DateTime          @updatedAt
   items       ReadingListItem[]
   user        User              @relation(fields: [userId], references: [id], onDelete: Cascade)
-  isDefault  Boolean   @default(false)
+  isDefault   Boolean           @default(false)
 
   @@index([userId])
   @@index([isPublic])
@@ -410,6 +412,39 @@ model Comment {
   @@index([discussionId])
   @@index([parentId])
   @@map("comments")
+}
+
+model Report {
+  id           String       @id @default(cuid())
+  resourceId   String
+  resource     Resource     @relation(fields: [resourceId], references: [id], onDelete: Cascade)
+  reportedById String
+  reportedBy   User         @relation("UserReports", fields: [reportedById], references: [id], onDelete: Cascade)
+  reason       ReportReason
+  details      String?
+  status       ReportStatus @default(OPEN)
+  resolvedAt   DateTime?
+  createdAt    DateTime     @default(now())
+
+  @@unique([resourceId, reportedById]) // one report per user per resource
+  @@index([resourceId])
+  @@index([status])
+  @@map("reports")
+}
+
+enum ReportReason {
+  SPAM
+  COPYRIGHT
+  INAPPROPRIATE
+  MISINFORMATION
+  BROKEN_FILE
+  OTHER
+}
+
+enum ReportStatus {
+  OPEN
+  RESOLVED
+  DISMISSED
 }
 
 enum Role {

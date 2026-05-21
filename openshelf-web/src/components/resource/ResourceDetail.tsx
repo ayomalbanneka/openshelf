@@ -9,6 +9,7 @@ import { getErrorMessage } from '@/lib/errors'
 import { toast } from '@/lib/toast'
 import { ReadingProgress } from './ReadingProgress'
 import { CommentsSection } from './CommentsSection'
+import { ReportButton } from '@/components/resource/ReportButton'
 import {
   BookOpen,
   GraduationCap,
@@ -439,6 +440,11 @@ export function ResourceDetail({ resource }: { resource: Resource }) {
                 )}
               </div>
             )}
+
+            <ReportButton
+              slug={resource.slug}
+              buttonClassName="rounded-lg px-3 py-1.5 text-red-600 border border-red-200 bg-red-100 hover:bg-red-600 hover:text-white hover:border-red-600 dark:text-red-400 dark:border-red-900/60 dark:bg-red-950/40 dark:hover:bg-red-950/70"
+            />
 
             {!user && (
               <Link

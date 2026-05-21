@@ -3,7 +3,7 @@ import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { useAuthStore } from '@/store/auth.store'
 import {
-  LayoutDashboard, Hourglass, Users, UsersRound, BookOpen, Activity,
+  LayoutDashboard, Hourglass, Users, UsersRound, BookOpen, Activity, Newspaper,
   Library, Tags, FolderOpen, Users2, LogOut, type LucideIcon,
 } from 'lucide-react'
 
@@ -28,6 +28,7 @@ const ADMIN_LINKS: NavSection[] = [
   {
     section: 'Community', items: [
       { href: '/admin/clubs', label: 'Clubs', icon: Users2 },
+      { href: '/admin/reports', label: 'Reports', icon: Newspaper },
     ]
   },
   {
