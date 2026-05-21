@@ -20,6 +20,7 @@ const progressRoutes = require('./routes/progress.routes');
 const commentRoutes = require('./routes/comment.routes');
 const metricsRoutes   = require('./routes/metrics.routes');
 const reportRoutes = require('./routes/report.routes');
+const snapshotJob = require('./jobs/snapshotMetrics.job');
 
 let configureIndex
 if (process.env.NODE_ENV !== 'test') {
@@ -70,6 +71,10 @@ app.use((req, res) => {
 
 // Global error handler — must be last
 app.use(errorHandler)
+
+if (process.env.NODE_ENV !== 'test') {
+  snapshotJob.start()
+}
 
 module.exports = app
 

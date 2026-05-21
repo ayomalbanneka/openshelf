@@ -1,6 +1,7 @@
 const prisma   = require('../config/prisma')
 const os       = require('os')
 const { register, errorsTotal } = require('../config/metrics')
+const { getStorageMetrics } = require('../utils/storageMetrics')
 
 const processStartedAt = new Date()
 let requestSnapshot = {
@@ -326,4 +327,48 @@ const formatUptime = (seconds) => {
   return `${m}m ${s}s`
 }
 
-module.exports = { getPrometheusMetrics, getDashboardMetrics }
+// GET /metrics/history — returns last N snapshots for trend chart
+const getMetricHistory = async (req, res, next) => {
+  try {
+    // Default: last 2 hours (24 × 5-min intervals)
+    const points = Math.min(Math.max(parseInt(req.query.points ?? '24', 10), 6), 288)
+
+    const snapshots = await prisma.metricSnapshot.findMany({
+      orderBy: { capturedAt: 'desc' },
+      take:    points,
+      select: {
+        capturedAt:  true,
+        rpm:         true,
+        errorRate:   true,
+        p95Ms:       true,
+        memoryPct:   true,
+        dbLatencyMs: true,
+      },
+    })
+
+    // Return in ascending time order for chart rendering
+    res.json({ data: snapshots.reverse() })
+  } catch (err) { next(err) }
+}
+
+// GET /metrics/storage — MinIO/R2 bucket usage
+const getStorageMetrics_ = async (req, res, next) => {
+  try {
+    const data = await getStorageMetrics()
+    res.json(data)
+  } catch (err) {
+    // Storage metrics are non-critical — return a degraded response
+    // rather than a 500 so the dashboard doesn't crash
+    console.error('[metrics/storage] Failed to query storage:', err.message)
+    res.json({
+      totalObjects:   null,
+      totalBytes:     null,
+      totalFormatted: 'Unavailable',
+      byPrefix:       {},
+      error:          'Could not connect to storage. Check STORAGE_* environment variables.',
+      queriedAt:      new Date().toISOString(),
+    })
+  }
+}
+
+module.exports = { getPrometheusMetrics, getDashboardMetrics, getMetricHistory, getStorageMetrics: getStorageMetrics_ }

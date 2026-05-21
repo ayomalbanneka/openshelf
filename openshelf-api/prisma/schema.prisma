@@ -432,6 +432,20 @@ model Report {
   @@map("reports")
 }
 
+model MetricSnapshot {
+  id          String   @id @default(cuid())
+  capturedAt  DateTime @default(now())
+  rpm         Float
+  errorRate   Float    // stored as percentage e.g. 1.45
+  p95Ms       Float
+  memoryPct   Float    // system memory used percentage
+  dbLatencyMs Float
+  createdAt   DateTime @default(now())
+
+  @@index([capturedAt])
+  @@map("metric_snapshots")
+}
+
 enum ReportReason {
   SPAM
   COPYRIGHT
