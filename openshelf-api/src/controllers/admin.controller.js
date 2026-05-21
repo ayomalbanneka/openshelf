@@ -137,10 +137,13 @@ const publishResource = async (req, res, next) => {
 // ── Reject Resource ──────────────────────────────────────────
 const rejectResource = async (req, res, next) => {
   try {
-    const { reason } = req.body
+    const { reason } = req.body || {}
     const resource = await prisma.resource.findUnique({
       where: { id: req.params.id },
-      include: { lessons: true },
+      include: {
+        lessons: true,
+        uploadedBy: { select: { email: true } },
+      },
     })
     if (!resource) return res.status(404).json({ message: 'Resource not found' })
 
@@ -159,6 +162,14 @@ const rejectResource = async (req, res, next) => {
           .filter((l) => l.fileUrl && l.fileUrl !== 'pending')
           .map((l) => deleteFile(l.fileUrl))
       )
+    }
+
+    if (resource.uploadedBy?.email) {
+      emailSvc.sendResourceRejected({
+        to: resource.uploadedBy.email,
+        title: resource.title,
+        reason: reason || null,
+      }).catch((err) => console.error('Failed to send reject notification:', err))
     }
 
     await prisma.resource.delete({ where: { id: req.params.id } })

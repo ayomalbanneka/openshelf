@@ -4,6 +4,7 @@ const slugify = require('../utils/slugify')
 const { uploadFile, deleteFile } = require('./storage.service')
 const searchService = require('./search.service')
 const { validateFileBytes } = require('../utils/validateFileBytes')
+const emailSvc = require('./email.service')
 
 // List
 const list = async ({ type, category, language, search, page = 1, limit = 20 }) => {
@@ -389,11 +390,20 @@ const publishById = async (id) => {
     include: {
       category: { select: { id: true, name: true, slug: true } },
       tags: { include: { tag: true } },
+      uploadedBy: { select: { email: true, name: true } },
     },
   })
 
   // Now it's published — add to search index
   await searchService.updateResourceIndex(updated)
+
+  // Notify the uploader — fire and forget, don't block the response
+  if (updated.uploadedBy?.email) {
+    emailSvc.sendResourcePublished({
+      to: updated.uploadedBy.email,
+      title: updated.title,
+    }).catch((err) => console.error('Failed to send publish notification:', err))
+  }
 
   return updated
 }

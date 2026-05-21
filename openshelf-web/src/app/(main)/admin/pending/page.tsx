@@ -28,6 +28,10 @@ export default function PendingPage() {
   const [acting, setActing] = useState<string | null>(null)
   const [error, setError] = useState('')
   const [search, setSearch] = useState('')
+  const [modalOpen, setModalOpen] = useState(false)
+  const [modalMode, setModalMode] = useState<'publish' | 'reject'>('publish')
+  const [modalResource, setModalResource] = useState<PendingResource | null>(null)
+  const [rejectReason, setRejectReason] = useState('')
   const timer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined)
   const limit = 15
 
@@ -62,31 +66,51 @@ export default function PendingPage() {
     }, 350)
   }
 
-  const handlePublish = async (id: string, title: string) => {
-    if (!confirm(`Publish "${title}"?`)) return
-    setActing(id)
-    try {
-      await http.patch(`/admin/resources/${id}/publish`)
-      setResources((prev) => prev.filter((r) => r.id !== id))
-      setTotal((t) => t - 1)
-      toast.success('Resource published!')
-    } catch (err: unknown) {
-      toast.error(getErrorMessage(err, 'Failed to publish resource'))
-    } finally {
-      setActing(null)
-    }
+  const openPublishModal = (resource: PendingResource) => {
+    setModalMode('publish')
+    setModalResource(resource)
+    setRejectReason('')
+    setModalOpen(true)
   }
 
-  const handleReject = async (id: string, title: string) => {
-    if (!confirm(`Reject and delete "${title}"? This cannot be undone.`)) return
-    setActing(id)
+  const openRejectModal = (resource: PendingResource) => {
+    setModalMode('reject')
+    setModalResource(resource)
+    setRejectReason('')
+    setModalOpen(true)
+  }
+
+  const closeModal = () => {
+    if (acting) return
+    setModalOpen(false)
+  }
+
+  const handleModalConfirm = async () => {
+    if (!modalResource) return
+    setActing(modalResource.id)
+
     try {
-      await http.delete(`/admin/resources/${id}`)
-      setResources((prev) => prev.filter((r) => r.id !== id))
+      if (modalMode === 'publish') {
+        await http.patch(`/admin/resources/${modalResource.id}/publish`)
+        setResources((prev) => prev.filter((r) => r.id !== modalResource.id))
+        setTotal((t) => t - 1)
+        toast.success('Resource published!')
+        setModalOpen(false)
+        return
+      }
+
+      await http.delete(`/admin/resources/${modalResource.id}/reject`, {
+        data: { reason: rejectReason.trim() || null },
+      })
+      setResources((prev) => prev.filter((r) => r.id !== modalResource.id))
       setTotal((t) => t - 1)
       toast.success('Resource rejected and deleted')
-    } catch {
-      toast.error('Failed to reject resource')
+      setModalOpen(false)
+    } catch (err: unknown) {
+      const message = modalMode === 'publish'
+        ? 'Failed to publish resource'
+        : 'Failed to reject resource'
+      toast.error(getErrorMessage(err, message))
     } finally {
       setActing(null)
     }
@@ -183,7 +207,7 @@ export default function PendingPage() {
               <div className="col-span-1 text-center text-sm" style={{ color: 'var(--admin-muted)' }}>{r._count.reviews}</div>
               <div className="col-span-2 flex items-center justify-center gap-2">
                 <button
-                  onClick={() => handlePublish(r.id, r.title)}
+                  onClick={() => openPublishModal(r)}
                   disabled={acting === r.id}
                   className="text-xs px-3 py-1.5 rounded-lg font-medium transition-colors disabled:opacity-50"
                   style={{ backgroundColor: '#dcfce7', color: '#166534' }}
@@ -191,7 +215,7 @@ export default function PendingPage() {
                   {acting === r.id ? '...' : 'Publish'}
                 </button>
                 <button
-                  onClick={() => handleReject(r.id, r.title)}
+                  onClick={() => openRejectModal(r)}
                   disabled={acting === r.id}
                   className="text-xs px-3 py-1.5 rounded-lg font-medium transition-colors disabled:opacity-50"
                   style={{ backgroundColor: '#fee2e2', color: '#b91c1c' }}
@@ -223,6 +247,147 @@ export default function PendingPage() {
           >
             Next
           </button>
+        </div>
+      )}
+
+      {modalOpen && modalResource && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center p-4 modal-overlay"
+          style={{ backgroundColor: 'rgba(15, 23, 42, 0.55)' }}
+          onClick={(e) => { if (e.target === e.currentTarget) closeModal() }}
+        >
+          <div
+            className="w-full max-w-lg rounded-2xl overflow-hidden modal-panel"
+            style={{ backgroundColor: 'var(--admin-surface)', border: '1px solid var(--admin-border)', boxShadow: 'var(--admin-shadow)' }}
+          >
+            <div
+              className="px-6 py-5"
+              style={{
+                background: modalMode === 'publish'
+                  ? 'linear-gradient(135deg, rgba(34, 197, 94, 0.15), rgba(16, 185, 129, 0.05))'
+                  : 'linear-gradient(135deg, rgba(248, 113, 113, 0.16), rgba(251, 191, 36, 0.06))',
+                borderBottom: '1px solid var(--admin-border)',
+              }}
+            >
+              <div className="flex items-start justify-between gap-4">
+                <div className="flex items-start gap-3">
+                  <div
+                    className="h-11 w-11 rounded-2xl flex items-center justify-center shrink-0"
+                    style={{
+                      background: modalMode === 'publish'
+                        ? 'linear-gradient(135deg, rgba(34, 197, 94, 0.9), rgba(16, 185, 129, 0.75))'
+                        : 'linear-gradient(135deg, rgba(248, 113, 113, 0.9), rgba(244, 63, 94, 0.75))',
+                      boxShadow: '0 12px 24px rgba(15, 23, 42, 0.12)',
+                    }}
+                  >
+                    {modalMode === 'publish' ? (
+                      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                        <path d="M20 6L9 17l-5-5" stroke="#ffffff" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" />
+                      </svg>
+                    ) : (
+                      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                        <path d="M6 6l12 12M18 6l-12 12" stroke="#ffffff" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" />
+                      </svg>
+                    )}
+                  </div>
+                  <div>
+                  <p className="text-xs font-semibold uppercase tracking-wider" style={{ color: 'var(--admin-muted)' }}>
+                    {modalMode === 'publish' ? 'Approve submission' : 'Reject submission'}
+                  </p>
+                  <h2 className="text-lg font-bold" style={{ color: 'var(--admin-text)' }}>
+                    {modalMode === 'publish' ? 'Publish this resource?' : 'Reject and delete this resource?'}
+                  </h2>
+                  </div>
+                </div>
+                <button
+                  onClick={closeModal}
+                  className="text-sm px-2 py-1 rounded-lg"
+                  style={{ color: 'var(--admin-muted)' }}
+                >
+                  ✕
+                </button>
+              </div>
+              <p className="mt-2 text-sm" style={{ color: 'var(--admin-muted)' }}>
+                {modalMode === 'publish'
+                  ? 'Publishing makes the resource visible to everyone and sends a confirmation email to the uploader.'
+                  : 'Rejection deletes the submission and notifies the uploader by email.'}
+              </p>
+            </div>
+
+            <div className="px-6 py-5 flex flex-col gap-4">
+              <div className="rounded-xl px-4 py-3" style={{ backgroundColor: 'var(--admin-soft)' }}>
+                <p className="text-sm font-semibold" style={{ color: 'var(--admin-text)' }}>
+                  {modalResource.title}
+                </p>
+                <p className="text-xs" style={{ color: 'var(--admin-muted)' }}>
+                  {modalResource.category.name} - {modalResource.uploadedBy.name}
+                </p>
+              </div>
+
+              <div className="flex flex-wrap items-center gap-2">
+                <span
+                  className="text-[11px] font-semibold uppercase tracking-wider px-2.5 py-1 rounded-full"
+                  style={{
+                    backgroundColor: modalMode === 'publish' ? 'rgba(34, 197, 94, 0.14)' : 'rgba(248, 113, 113, 0.14)',
+                    color: modalMode === 'publish' ? '#15803d' : '#b91c1c',
+                  }}
+                >
+                  {modalMode === 'publish' ? 'Ready to publish' : 'Will remove from queue'}
+                </span>
+                <span className="text-[11px] uppercase tracking-wider px-2.5 py-1 rounded-full"
+                  style={{ backgroundColor: 'rgba(59, 130, 246, 0.12)', color: '#1d4ed8' }}>
+                  Email notification
+                </span>
+              </div>
+
+              {modalMode === 'reject' && (
+                <div className="flex flex-col gap-2">
+                  <label className="text-xs font-semibold uppercase tracking-wider" style={{ color: 'var(--admin-muted)' }}>
+                    Rejection reason (optional)
+                  </label>
+                  <textarea
+                    value={rejectReason}
+                    onChange={(e) => setRejectReason(e.target.value)}
+                    rows={4}
+                    maxLength={500}
+                    placeholder="Share a helpful reason so the uploader can improve their submission."
+                    className="rounded-xl px-3 py-2 text-sm outline-none"
+                    style={{ border: '1px solid var(--admin-border)', backgroundColor: 'var(--admin-surface)', color: 'var(--admin-text)', resize: 'none' }}
+                  />
+                  <p className="text-xs" style={{ color: 'var(--admin-muted)' }}>
+                    This message is sent in the rejection email.
+                  </p>
+                </div>
+              )}
+            </div>
+
+            <div className="px-6 py-5 flex flex-col sm:flex-row gap-2" style={{ borderTop: '1px solid var(--admin-border)' }}>
+              <button
+                onClick={closeModal}
+                className="flex-1 h-10 rounded-xl text-sm font-semibold"
+                style={{ backgroundColor: 'var(--admin-soft)', color: 'var(--admin-text)' }}
+                disabled={acting === modalResource.id}
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleModalConfirm}
+                disabled={acting === modalResource.id}
+                className="flex-1 h-10 rounded-xl text-sm font-semibold disabled:opacity-50"
+                style={{
+                  backgroundColor: modalMode === 'publish' ? '#22c55e' : '#ef4444',
+                  color: '#ffffff',
+                  boxShadow: modalMode === 'publish'
+                    ? '0 12px 24px rgba(34, 197, 94, 0.25)'
+                    : '0 12px 24px rgba(239, 68, 68, 0.25)',
+                }}
+              >
+                {acting === modalResource.id
+                  ? 'Working...'
+                  : (modalMode === 'publish' ? 'Publish resource' : 'Reject resource')}
+              </button>
+            </div>
+          </div>
         </div>
       )}
     </div>

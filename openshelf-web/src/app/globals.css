@@ -147,6 +147,26 @@ mark.search-highlight {
   }
 }
 
+@keyframes modal-fade {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes modal-pop {
+  from {
+    opacity: 0;
+    transform: translateY(16px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
 .animate-pulse-glow {
   animation: pulse-glow 6s ease-in-out infinite;
 }
@@ -155,13 +175,23 @@ mark.search-highlight {
   animation: shimmer 2.8s linear infinite;
 }
 
+.modal-overlay {
+  animation: modal-fade 160ms ease-out;
+}
+
+.modal-panel {
+  animation: modal-pop 200ms ease-out;
+}
+
 @media (prefers-reduced-motion: reduce) {
   html {
     scroll-behavior: auto;
   }
 
   .animate-pulse-glow,
-  .animate-shimmer {
+  .animate-shimmer,
+  .modal-overlay,
+  .modal-panel {
     animation: none;
   }
 }

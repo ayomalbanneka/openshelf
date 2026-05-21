@@ -194,10 +194,91 @@ const sendStaffInvite = async ({ to, role, token, inviterName }) => {
   })
 }
 
+// Notify uploader when their resource is published
+const sendResourcePublished = async ({ to, title }) => {
+  await sendEmail({
+    to,
+    subject: `Your submission "${title}" has been published on OpenShelf`,
+    html: `
+      <div style="font-family:sans-serif;max-width:480px;margin:0 auto;padding:24px">
+        <h2 style="color:#1e40af;margin-bottom:8px">Great news! 🎉</h2>
+        <p style="color:#374151;margin-bottom:16px">
+          Your submission <strong>"${title}"</strong> has been reviewed and
+          is now live on OpenShelf. Readers around the world can access it.
+        </p>
+
+        <a href="${process.env.WEB_URL}/resources"
+          style="display:block;text-align:center;background:#1e40af;color:#ffffff;
+                 padding:14px 24px;border-radius:12px;text-decoration:none;
+                 font-weight:600;font-size:15px;margin-bottom:24px">
+          View on OpenShelf
+        </a>
+
+        <p style="color:#6b7280;font-size:13px">
+          Thank you for contributing to OpenShelf's mission of freely accessible knowledge.
+        </p>
+
+        <hr style="border:none;border-top:1px solid #e5e7eb;margin:24px 0" />
+
+        <p style="color:#9ca3af;font-size:12px">
+          You're receiving this because you submitted a resource to OpenShelf.
+        </p>
+      </div>
+    `,
+  })
+}
+
+// Notify uploader when their resource is rejected
+const sendResourceRejected = async ({ to, title, reason }) => {
+  await sendEmail({
+    to,
+    subject: `Update on your OpenShelf submission: "${title}"`,
+    html: `
+      <div style="font-family:sans-serif;max-width:480px;margin:0 auto;padding:24px">
+        <h2 style="color:#374151;margin-bottom:8px">Submission update</h2>
+        <p style="color:#374151;margin-bottom:16px">
+          Thank you for submitting <strong>"${title}"</strong> to OpenShelf.
+          After review, our team was unable to publish this submission at this time.
+        </p>
+
+        ${reason ? `
+        <div style="background:#fef3c7;border:1px solid #fcd34d;border-radius:12px;
+                    padding:14px 16px;margin-bottom:20px">
+          <p style="color:#92400e;font-size:13px;font-weight:600;margin-bottom:4px">
+            Reason from our team:
+          </p>
+          <p style="color:#92400e;font-size:14px;margin:0">${reason}</p>
+        </div>
+        ` : ''}
+
+        <p style="color:#374151;font-size:14px;margin-bottom:20px">
+          You're welcome to make changes and resubmit. If you have questions,
+          please reach out to our moderation team.
+        </p>
+
+        <a href="${process.env.WEB_URL}/upload"
+          style="display:block;text-align:center;background:#374151;color:#ffffff;
+                 padding:14px 24px;border-radius:12px;text-decoration:none;
+                 font-weight:600;font-size:15px;margin-bottom:24px">
+          Submit a new resource
+        </a>
+
+        <hr style="border:none;border-top:1px solid #e5e7eb;margin:24px 0" />
+
+        <p style="color:#9ca3af;font-size:12px">
+          You're receiving this because you submitted a resource to OpenShelf.
+        </p>
+      </div>
+    `,
+  })
+}
+
 module.exports = {
   sendVerificationCode,
   sendPasswordResetCode,
   sendAccountBlockedEmail,
   sendAdminLoginCode,
   sendStaffInvite,
+  sendResourcePublished,
+  sendResourceRejected,
 }
