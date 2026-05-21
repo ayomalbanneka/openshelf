@@ -1,5 +1,29 @@
 # Changelog
 
+## [0.10.0](https://github.com/ayomalbanneka/openshelf/compare/v0.9.0...v0.10.0) (2026-05-21)
+
+
+### Features
+
+* add email notifications for resource publish and reject actions; enhance admin modal functionality ([78847d3](https://github.com/ayomalbanneka/openshelf/commit/78847d37fc659877033394e13315fa788350d0d4))
+* add quick-save functionality for user's default reading list and bookmark status retrieval ([4bdc03a](https://github.com/ayomalbanneka/openshelf/commit/4bdc03aa0687540b35e392fa7d116a160741f9ee))
+* add staff management features including invite, revoke, and list staff ([2a93720](https://github.com/ayomalbanneka/openshelf/commit/2a937201c7621fce94c77a778de3140a437062d7))
+* implement reporting system for resources; add report submission and admin management features ([1151a60](https://github.com/ayomalbanneka/openshelf/commit/1151a60826e4f14d5b143c00dc64a4ebfaaf1bc3))
+* **metrics:** add metric snapshotting and storage insights ([30c68a2](https://github.com/ayomalbanneka/openshelf/commit/30c68a280954023cf7d669ff40d4dde810701727))
+* **rate-limiter:** implement rate limiting for authentication routes and add seed data passwords ([15761db](https://github.com/ayomalbanneka/openshelf/commit/15761db3ccf5cfbda75dc0dc9d14a83e5f0f99f4))
+* **refresh-token:** add RefreshToken model and migration for managing user refresh tokens ([631d4b5](https://github.com/ayomalbanneka/openshelf/commit/631d4b5f94bc6d4b304a6251809d45df15948bf1))
+
+
+### Bug Fixes
+
+* **admin.controller:** improve formatting and add file deletion logic for resource rejection and deletion ([21e2b13](https://github.com/ayomalbanneka/openshelf/commit/21e2b13f0ff6a11faf0903f4fee09b5a4c3ff2c7))
+* **api:** update deps and fix user upload, routes, and resource; add file validation util ([c62e450](https://github.com/ayomalbanneka/openshelf/commit/c62e450586f1b0665cea14ccf56f25a486467b59))
+* **api:** validate uploads by magic bytes ([02652b7](https://github.com/ayomalbanneka/openshelf/commit/02652b7d1e946ff79d7e3eae13b92685aca84dd9))
+* apply ipKeyGenerator for rate limits and await token generation ([ffb3c85](https://github.com/ayomalbanneka/openshelf/commit/ffb3c85c3448eca9ad04a350da4ee3d9a0b42be7))
+* **auth.service:** update refreshAccessToken to handle async operations and improve token management ([516b52f](https://github.com/ayomalbanneka/openshelf/commit/516b52f4a256aac2b73ad88582e17aa9db1ef2fc))
+* **auth:** add server-side logout and client token rotation ([dcee137](https://github.com/ayomalbanneka/openshelf/commit/dcee137e9f204a635e4e199e0249959f1723e91c))
+* **ListDetail:** adjust icon size for empty list message ([37d2691](https://github.com/ayomalbanneka/openshelf/commit/37d269120a39eb5a3d7a4554a239c2aa7b16dda0))
+
 ## [0.9.0](https://github.com/ayomalbanneka/openshelf/compare/v0.8.1...v0.9.0) (2026-05-12)
 
 
