@@ -233,13 +233,26 @@ const adminLoginStep2 = async ({ userId, code }) => {
     throw err
   }
 
+  // Re-fetch user and re-verify role — the userId came from the client
+  // and the user's role may have changed between step 1 and step 2
+  const user = await prisma.user.findUnique({ where: { id: userId } })
+
+  if (!user || !user.isActive) {
+    const err = new Error('Account not found or deactivated')
+    err.status = 403
+    throw err
+  }
+
+  if (!['ADMIN', 'MODERATOR'].includes(user.role)) {
+    const err = new Error('Access denied')
+    err.status = 403
+    throw err
+  }
+
+  // Only mark the code as used after all checks pass
   await prisma.emailVerification.update({
     where: { id: verification.id },
     data: { usedAt: new Date() },
-  })
-
-  const user = await prisma.user.findUnique({
-    where: { id: userId },
   })
 
   const { passwordHash, ...safeUser } = user
