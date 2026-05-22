@@ -3,6 +3,7 @@ const resourceService = require('../services/resource.service')
 const emailSvc = require('../services/email.service')
 const { deleteFile } = require('../services/storage.service')
 const staffService = require('../services/staff.service')
+const { paginate, paginateMeta } = require('../utils/pagination')
 
 const sanitizeBigInt = (value) => {
   if (typeof value === 'bigint') return Number(value)
@@ -83,8 +84,8 @@ const getStats = async (req, res, next) => {
 // ── Pending Resources ────────────────────────────────────────
 const getPending = async (req, res, next) => {
   try {
-    const { page = 1, limit = 20, search } = req.query
-    const skip = (Number(page) - 1) * Number(limit)
+    const { search } = req.query
+    const { page, limit, skip, take } = paginate(req.query)
 
     const where = {
       isPublished: false,
@@ -103,7 +104,7 @@ const getPending = async (req, res, next) => {
       prisma.resource.findMany({
         where,
         skip,
-        take: Number(limit),
+        take,
         orderBy: { createdAt: 'asc' },
         include: {
           uploadedBy: { select: { id: true, name: true, email: true } },
@@ -117,7 +118,7 @@ const getPending = async (req, res, next) => {
 
     res.json({
       data: resources,
-      meta: { total, page: Number(page), limit: Number(limit), pages: Math.ceil(total / Number(limit)) },
+      meta: paginateMeta(total, page, limit),
     })
   } catch (err) {
     next(err)
@@ -182,8 +183,8 @@ const rejectResource = async (req, res, next) => {
 // ── All Resources (published) ────────────────────────────────
 const getResources = async (req, res, next) => {
   try {
-    const { page = 1, limit = 20, search, type } = req.query
-    const skip = (Number(page) - 1) * Number(limit)
+    const { search, type } = req.query
+    const { page, limit, skip, take } = paginate(req.query)
 
     const where = {
       isPublished: true,
@@ -198,7 +199,7 @@ const getResources = async (req, res, next) => {
 
     const [resources, total] = await Promise.all([
       prisma.resource.findMany({
-        where, skip, take: Number(limit),
+        where, skip, take,
         orderBy: { createdAt: 'desc' },
         include: {
           uploadedBy: { select: { id: true, name: true } },
@@ -209,7 +210,7 @@ const getResources = async (req, res, next) => {
       prisma.resource.count({ where }),
     ])
 
-    res.json({ data: resources, meta: { total, page: Number(page), limit: Number(limit), pages: Math.ceil(total / Number(limit)) } })
+    res.json({ data: resources, meta: paginateMeta(total, page, limit) })
   } catch (err) {
     next(err)
   }
@@ -251,8 +252,8 @@ const deleteResource = async (req, res, next) => {
 // ── Users ────────────────────────────────────────────────────
 const getUsers = async (req, res, next) => {
   try {
-    const { page = 1, limit = 20, search, role } = req.query
-    const skip = (Number(page) - 1) * Number(limit)
+    const { search, role } = req.query
+    const { page, limit, skip, take } = paginate(req.query)
 
     const where = {
       ...(role && { role }),
@@ -266,7 +267,7 @@ const getUsers = async (req, res, next) => {
 
     const [users, total] = await Promise.all([
       prisma.user.findMany({
-        where, skip, take: Number(limit),
+        where, skip, take,
         orderBy: { createdAt: 'desc' },
         select: {
           id: true, name: true, email: true, role: true,
@@ -278,7 +279,7 @@ const getUsers = async (req, res, next) => {
       prisma.user.count({ where }),
     ])
 
-    res.json({ data: users, meta: { page: Number(page), limit: Number(limit), total, pages: Math.ceil(total / Number(limit)) } })
+    res.json({ data: users, meta: paginateMeta(total, page, limit) })
   } catch (err) {
     next(err)
   }
@@ -336,8 +337,8 @@ const toggleUserActive = async (req, res, next) => {
 // ── Clubs ────────────────────────────────────────────────────
 const getClubs = async (req, res, next) => {
   try {
-    const { page = 1, limit = 20, search } = req.query
-    const skip = (Number(page) - 1) * Number(limit)
+    const { search } = req.query
+    const { page, limit, skip, take } = paginate(req.query)
 
     const where = search
       ? { name: { contains: search, mode: 'insensitive' } }
@@ -345,7 +346,7 @@ const getClubs = async (req, res, next) => {
 
     const [clubs, total] = await Promise.all([
       prisma.club.findMany({
-        where, skip, take: Number(limit),
+        where, skip, take,
         orderBy: { createdAt: 'desc' },
         include: {
           createdBy: { select: { id: true, name: true, email: true } },
@@ -355,7 +356,7 @@ const getClubs = async (req, res, next) => {
       prisma.club.count({ where }),
     ])
 
-    res.json({ data: clubs, meta: { total, page: Number(page), limit: Number(limit), pages: Math.ceil(total / Number(limit)) } })
+    res.json({ data: clubs, meta: paginateMeta(total, page, limit) })
   } catch (err) {
     next(err)
   }

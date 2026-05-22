@@ -1,4 +1,5 @@
 const { getIndex, client, PRIMARY_KEY } = require('../config/meilisearch');
+const { paginate, paginateMeta } = require('../utils/pagination')
 
 const TASK_WAIT_OPTIONS = { timeout: 20000, interval: 100 };
 
@@ -61,14 +62,14 @@ const deleteResourceFromIndex = async (resourceId) => {
 // Search using Meilisearch
 const search = async ({ q, type, language, page = 1, limit = 20 }) => {
     const index = getIndex()
-    const offset = (Number(page) - 1) * Number(limit)
+    const { page: safePage, limit: safeLimit, skip: offset, take } = paginate({ page, limit })
 
     const filters = ['isPublished = true']
     if (type) filters.push(`type = "${type}"`)
     if (language) filters.push(`language = "${language}"`)
 
     const result = await index.search(q, {
-        limit: Number(limit),
+        limit: take,
         offset,
         filter: filters.join(' AND '),
         attributesToHighlight: ['title', 'author', 'description'],
@@ -91,10 +92,7 @@ const search = async ({ q, type, language, page = 1, limit = 20 }) => {
     return {
         data: hits,
         meta: {
-            total: result.estimatedTotalHits,
-            page: Number(page),
-            limit: Number(limit),
-            pages: Math.ceil(result.estimatedTotalHits / Number(limit)),
+            ...paginateMeta(result.estimatedTotalHits, safePage, safeLimit),
             processingMs: result.processingTimeMs,
         },
     }

@@ -1,17 +1,17 @@
 const prisma = require('../config/prisma');
+const { paginate, paginateMeta } = require('../utils/pagination')
 
 // Get all reading lists for the authenticated user
 const getMyLists = async (req, res, next) => {
   try {
-    const { page = 1, limit = 10 } = req.query
-    const skip = (Number(page) - 1) * Number(limit)
+    const { page, limit, skip, take } = paginate(req.query)
 
     const [lists, total] = await Promise.all([
       prisma.readingList.findMany({
         where:   { userId: req.user.id },
         orderBy: { updatedAt: 'desc' },
         skip,
-        take:    Number(limit),
+        take,
         include: { _count: { select: { items: true } } },
       }),
       prisma.readingList.count({
@@ -21,12 +21,7 @@ const getMyLists = async (req, res, next) => {
 
     res.json({
       data: lists,
-      meta: {
-        total,
-        page:  Number(page),
-        limit: Number(limit),
-        pages: Math.ceil(total / Number(limit)),
-      },
+      meta: paginateMeta(total, page, limit),
     })
   } catch (err) { next(err) }
 }
@@ -34,15 +29,14 @@ const getMyLists = async (req, res, next) => {
 // Get all public reading lists for a specific user
 const getUserLists = async (req, res, next) => {
   try {
-    const { page = 1, limit = 10 } = req.query
-    const skip = (Number(page) - 1) * Number(limit)
+    const { page, limit, skip, take } = paginate(req.query)
 
     const [lists, total] = await Promise.all([
       prisma.readingList.findMany({
         where:   { userId: req.params.userId, isPublic: true },
         orderBy: { updatedAt: 'desc' },
         skip,
-        take:    Number(limit),
+        take,
         include: { _count: { select: { items: true } } },
       }),
       prisma.readingList.count({
@@ -52,12 +46,7 @@ const getUserLists = async (req, res, next) => {
 
     res.json({
       data: lists,
-      meta: {
-        total,
-        page:  Number(page),
-        limit: Number(limit),
-        pages: Math.ceil(total / Number(limit)),
-      },
+      meta: paginateMeta(total, page, limit),
     })
   } catch (err) { next(err) }
 }
