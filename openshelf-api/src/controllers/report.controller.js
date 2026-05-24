@@ -1,5 +1,6 @@
 const prisma = require('../config/prisma')
 const { paginate, paginateMeta } = require('../utils/pagination')
+const { audit } = require('../utils/audit')
 
 const VALID_REASONS = ['SPAM', 'COPYRIGHT', 'INAPPROPRIATE', 'MISINFORMATION', 'BROKEN_FILE', 'OTHER']
 
@@ -13,7 +14,7 @@ const createReport = async (req, res, next) => {
     }
 
     const resource = await prisma.resource.findUnique({
-      where:  { slug: req.params.slug },
+      where: { slug: req.params.slug },
       select: { id: true, uploadedById: true },
     })
 
@@ -30,7 +31,7 @@ const createReport = async (req, res, next) => {
     const existing = await prisma.report.findUnique({
       where: {
         resourceId_reportedById: {
-          resourceId:   resource.id,
+          resourceId: resource.id,
           reportedById: req.user.id,
         },
       },
@@ -42,10 +43,10 @@ const createReport = async (req, res, next) => {
 
     await prisma.report.create({
       data: {
-        resourceId:   resource.id,
+        resourceId: resource.id,
         reportedById: req.user.id,
         reason,
-        details:      details?.trim() || null,
+        details: details?.trim() || null,
       },
     })
 
@@ -68,7 +69,7 @@ const getReports = async (req, res, next) => {
         take,
         orderBy: { createdAt: 'desc' },
         include: {
-          resource:   { select: { id: true, title: true, slug: true, type: true } },
+          resource: { select: { id: true, title: true, slug: true, type: true } },
           reportedBy: { select: { id: true, name: true, email: true } },
         },
       }),
@@ -96,7 +97,16 @@ const updateReport = async (req, res, next) => {
 
     const updated = await prisma.report.update({
       where: { id: req.params.id },
-      data:  { status, resolvedAt: new Date() },
+      data: { status, resolvedAt: new Date() },
+    })
+
+    await audit({
+      actorId: req.user.id,
+      action: status === 'RESOLVED' ? 'REPORT_RESOLVED' : 'REPORT_DISMISSED',
+      targetType: 'Report',
+      targetId: report.id,
+      targetName: `Report on resource ${report.resourceId}`,
+      metadata: { status },
     })
 
     res.json(updated)

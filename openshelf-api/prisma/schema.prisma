@@ -38,6 +38,7 @@ model User {
   sentInvites        StaffInvite[]
   refreshTokens      RefreshToken[]
   reports            Report[]             @relation("UserReports")
+  auditLogs          AuditLog[]
 
   @@index([email])
   @@map("users")
@@ -446,6 +447,23 @@ model MetricSnapshot {
   @@map("metric_snapshots")
 }
 
+model AuditLog {
+  id         String      @id @default(cuid())
+  actorId    String
+  actor      User        @relation(fields: [actorId], references: [id])
+  action     AuditAction
+  targetType String      // e.g. "Resource", "User", "Report"
+  targetId   String      // the ID of the affected record
+  targetName String?     // human-readable label for the UI e.g. resource title
+  metadata   Json?       // any extra context e.g. { reason, oldRole, newRole }
+  createdAt  DateTime    @default(now())
+
+  @@index([actorId])
+  @@index([action])
+  @@index([createdAt])
+  @@map("audit_logs")
+}
+
 enum ReportReason {
   SPAM
   COPYRIGHT
@@ -493,4 +511,35 @@ enum ClubRole {
   OWNER
   MODERATOR
   MEMBER
+}
+
+
+enum AuditAction {
+  // Resource actions
+  RESOURCE_PUBLISHED
+  RESOURCE_REJECTED
+  RESOURCE_DELETED
+
+  // User actions
+  USER_ROLE_CHANGED
+  USER_ACTIVATED
+  USER_DEACTIVATED
+
+  // Staff actions
+  STAFF_INVITED
+  STAFF_PROMOTED
+  STAFF_REVOKED
+  STAFF_INVITE_CANCELLED
+
+  // Report actions
+  REPORT_RESOLVED
+  REPORT_DISMISSED
+
+  // Club actions
+  CLUB_DELETED
+
+  // Category / tag actions
+  CATEGORY_CREATED
+  CATEGORY_DELETED
+  TAG_DELETED
 }

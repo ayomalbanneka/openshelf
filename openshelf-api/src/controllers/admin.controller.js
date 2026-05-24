@@ -4,6 +4,7 @@ const emailSvc = require('../services/email.service')
 const { deleteFile } = require('../services/storage.service')
 const staffService = require('../services/staff.service')
 const { paginate, paginateMeta } = require('../utils/pagination')
+const { audit } = require('../utils/audit')
 
 const sanitizeBigInt = (value) => {
   if (typeof value === 'bigint') return Number(value)
@@ -129,6 +130,15 @@ const getPending = async (req, res, next) => {
 const publishResource = async (req, res, next) => {
   try {
     const resource = await resourceService.publishById(req.params.id)
+
+    await audit({
+      actorId: req.user.id,
+      action: 'RESOURCE_PUBLISHED',
+      targetType: 'Resource',
+      targetId: resource.id,
+      targetName: resource.title,
+    })
+
     res.json(resource)
   } catch (err) {
     next(err)
@@ -174,6 +184,16 @@ const rejectResource = async (req, res, next) => {
     }
 
     await prisma.resource.delete({ where: { id: req.params.id } })
+
+    await audit({
+      actorId: req.user.id,
+      action: 'RESOURCE_REJECTED',
+      targetType: 'Resource',
+      targetId: resource.id,
+      targetName: resource.title,
+      metadata: { reason: reason ?? null },
+    })
+
     res.json({ message: 'Resource rejected and deleted', reason })
   } catch (err) {
     next(err)
@@ -243,6 +263,15 @@ const deleteResource = async (req, res, next) => {
     }
 
     await prisma.resource.delete({ where: { id: req.params.id } })
+
+    await audit({
+      actorId: req.user.id,
+      action: 'RESOURCE_DELETED',
+      targetType: 'Resource',
+      targetId: resource.id,
+      targetName: resource.title,
+    })
+
     res.json({ message: 'Resource deleted' })
   } catch (err) {
     next(err)
@@ -289,49 +318,54 @@ const getUsers = async (req, res, next) => {
 const updateUserRole = async (req, res, next) => {
   try {
     const { role } = req.body
-    if (!['ADMIN', 'MODERATOR', 'USER'].includes(role))
-      return res.status(400).json({ message: 'Invalid role' })
-    if (req.user.id === req.params.id)
-      return res.status(400).json({ message: 'Cannot change your own role' })
+    const existing = await prisma.user.findUnique({
+      where: { id: req.params.id },
+      select: { id: true, name: true, role: true },
+    })
+    if (!existing) return res.status(404).json({ message: 'User not found' })
 
-    const user = await prisma.user.update({
+    const updated = await prisma.user.update({
       where: { id: req.params.id },
       data: { role },
-      select: { id: true, name: true, email: true, role: true },
     })
-    res.json(user)
-  } catch (err) {
-    next(err)
-  }
+
+    await audit({
+      actorId: req.user.id,
+      action: 'USER_ROLE_CHANGED',
+      targetType: 'User',
+      targetId: existing.id,
+      targetName: existing.name,
+      metadata: { oldRole: existing.role, newRole: role },
+    })
+
+    res.json(updated)
+  } catch (err) { next(err) }
 }
 
 // ── Toggle User Active ───────────────────────────────────────
 const toggleUserActive = async (req, res, next) => {
   try {
-    if (req.params.id === req.user.id)
-      return res.status(400).json({ message: 'Cannot deactivate yourself' })
-
-    const user = await prisma.user.findUnique({ where: { id: req.params.id } })
-    if (!user) return res.status(404).json({ message: 'User not found' })
+    const existing = await prisma.user.findUnique({
+      where: { id: req.params.id },
+      select: { id: true, name: true, isActive: true },
+    })
+    if (!existing) return res.status(404).json({ message: 'User not found' })
 
     const updated = await prisma.user.update({
       where: { id: req.params.id },
-      data: { isActive: !user.isActive },
-      select: { id: true, name: true, email: true, isActive: true },
+      data: { isActive: !existing.isActive },
     })
 
-    if (!updated.isActive) {
-      const { reason } = req.body
-      emailSvc.sendAccountBlockedEmail({
-        to: user.email, name: user.name,
-        reason: reason || 'Violation of community guidelines',
-      }).catch(() => { })
-    }
+    await audit({
+      actorId: req.user.id,
+      action: existing.isActive ? 'USER_DEACTIVATED' : 'USER_ACTIVATED',
+      targetType: 'User',
+      targetId: existing.id,
+      targetName: existing.name,
+    })
 
     res.json(updated)
-  } catch (err) {
-    next(err)
-  }
+  } catch (err) { next(err) }
 }
 
 // ── Clubs ────────────────────────────────────────────────────
@@ -368,6 +402,15 @@ const deleteClub = async (req, res, next) => {
     const club = await prisma.club.findUnique({ where: { id: req.params.id } })
     if (!club) return res.status(404).json({ message: 'Club not found' })
     await prisma.club.delete({ where: { id: req.params.id } })
+
+    await audit({
+      actorId: req.user.id,
+      action: 'CLUB_DELETED',
+      targetType: 'Club',
+      targetId: req.params.id,
+      targetName: club.name,
+    })
+
     res.json({ message: 'Club deleted' })
   } catch (err) {
     next(err)
@@ -403,6 +446,15 @@ const createCategory = async (req, res, next) => {
     const category = await prisma.category.create({
       data: { name: name.trim(), slug, description, parentId: parentId || null },
     })
+
+    await audit({
+      actorId: req.user.id,
+      action: 'CATEGORY_CREATED',
+      targetType: 'Category',
+      targetId: category.id,
+      targetName: category.name,
+    })
+
     res.status(201).json(category)
   } catch (err) {
     next(err)
@@ -414,6 +466,15 @@ const deleteCategory = async (req, res, next) => {
     const category = await prisma.category.findUnique({ where: { id: req.params.id } })
     if (!category) return res.status(404).json({ message: 'Category not found' })
     await prisma.category.delete({ where: { id: req.params.id } })
+
+    await audit({
+      actorId: req.user.id,
+      action: 'CATEGORY_DELETED',
+      targetType: 'Category',
+      targetId: req.params.id,
+      targetName: category.name,
+    })
+
     res.json({ message: 'Category deleted' })
   } catch (err) {
     next(err)
@@ -436,6 +497,15 @@ const getTags = async (req, res, next) => {
 const deleteTag = async (req, res, next) => {
   try {
     await prisma.tag.delete({ where: { id: req.params.id } })
+
+    await audit({
+      actorId: req.user.id,
+      action: 'TAG_DELETED',
+      targetType: 'Tag',
+      targetId: req.params.id,
+      targetName: tag.name,
+    })
+
     res.json({ message: 'Tag deleted' })
   } catch (err) {
     next(err)
@@ -485,7 +555,7 @@ const revokeStaff = async (req, res, next) => {
 
 const cancelInvite = async (req, res, next) => {
   try {
-    const result = await staffService.cancelInvite(req.params.id)
+    const result = await staffService.cancelInvite(req.params.id, req.user.id)
     res.json(result)
   } catch (err) { next(err) }
 }
