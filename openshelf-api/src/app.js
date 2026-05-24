@@ -9,7 +9,7 @@ const metricsMiddleware = require('./middleware/metrics');
 
 const authRoutes = require('./routes/auth.routes');
 const resourceRoutes = require('./routes/resource.routes');
-const errorHandler = require('./middleware/errorHandler'); 
+const errorHandler = require('./middleware/errorHandler');
 const categoryRoutes = require('./routes/category.routes');
 const userRoutes = require('./routes/user.routes');
 const readingListRoutes = require('./routes/readingList.routes');
@@ -18,9 +18,10 @@ const tagRoutes = require('./routes/tag.routes');
 const adminRoutes = require('./routes/admin.routes');
 const progressRoutes = require('./routes/progress.routes');
 const commentRoutes = require('./routes/comment.routes');
-const metricsRoutes   = require('./routes/metrics.routes');
+const metricsRoutes = require('./routes/metrics.routes');
 const reportRoutes = require('./routes/report.routes');
 const snapshotJob = require('./jobs/snapshotMetrics.job');
+const { doubleCsrf } = require('csrf-csrf')
 
 let configureIndex
 if (process.env.NODE_ENV !== 'test') {
@@ -30,14 +31,40 @@ if (process.env.NODE_ENV !== 'test') {
 const app = express()
 
 app.set('trust proxy', 1)
+
 app.use(helmet())
 app.use(morgan('dev'))
 app.use(cors({
   origin: process.env.CLIENT_URL,
-  credentials: true,
+  credentials: true,               // required for cookies to flow cross-origin
+  methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'x-csrf-token'],  // allow CSRF header
 }))
 app.use(express.json())
-app.use(cookieParser())
+app.use(cookieParser(process.env.COOKIE_SECRET))   // signed cookies
+
+// CSRF protection using the Double Submit Cookie pattern
+const { doubleCsrfProtection, generateCsrfToken } = doubleCsrf({
+  getSecret:  () => process.env.COOKIE_SECRET,
+  getSessionIdentifier: (req) => (
+    req.cookies?.access_token
+    || req.cookies?.refresh_token
+    || `${req.ip || ''}:${req.headers['user-agent'] || ''}`
+  ),
+  cookieName: 'csrf_token',
+  cookieOptions: {
+    httpOnly: false,    // must be readable by JS so Axios can send it as a header
+    secure:   process.env.NODE_ENV === 'production',
+    sameSite: process.env.NODE_ENV === 'production' ? 'strict' : 'lax',
+  },
+  size:       64,
+  getTokenFromRequest: (req) => req.headers['x-csrf-token'],
+})
+
+// Expose generateCsrfToken for the /csrf-token endpoint
+app.set('generateCsrfToken', generateCsrfToken)
+app.set('csrfProtection',    doubleCsrfProtection)
+
 app.use(metricsMiddleware)
 
 // Health check
@@ -50,19 +77,26 @@ if (configureIndex) {
   configureIndex()
 }
 
+app.get('/api/csrf-token', (req, res) => {
+  const generateCsrfToken = app.get('generateCsrfToken')
+  const token = generateCsrfToken(req, res)
+  res.json({ csrfToken: token })
+})
+
 // API routes
-app.use('/api/auth', authRoutes)
-app.use('/api/resources', resourceRoutes)
+app.use('/api/auth',      doubleCsrfProtection, authRoutes)
+app.use('/api/resources', doubleCsrfProtection, resourceRoutes)
+app.use('/api/users',     doubleCsrfProtection, userRoutes)
+app.use('/api/lists',     doubleCsrfProtection, readingListRoutes)
+app.use('/api/clubs',     doubleCsrfProtection, clubRoutes)
+app.use('/api/tags',      doubleCsrfProtection, tagRoutes)
+app.use('/api/admin',     doubleCsrfProtection, adminRoutes)
+app.use('/api/progress',  doubleCsrfProtection, progressRoutes)
+app.use('/api',           doubleCsrfProtection, commentRoutes)
+
+app.use('/api',            doubleCsrfProtection, reportRoutes)
 app.use('/api/categories', categoryRoutes)
-app.use('/api/users', userRoutes)
-app.use('/api/lists', readingListRoutes)
-app.use('/api/clubs', clubRoutes)
-app.use('/api/tags', tagRoutes)
-app.use('/api/admin', adminRoutes)
-app.use('/api/progress', progressRoutes)
-app.use('/api', commentRoutes)
-app.use('/metrics', metricsRoutes)
-app.use('/api', reportRoutes)
+app.use('/metrics',        metricsRoutes)
 
 // 404 handler
 app.use((req, res) => {

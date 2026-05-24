@@ -3,48 +3,47 @@ const prisma = require('../config/prisma')
 
 const authenticate = async (req, res, next) => {
   try {
-    // 1. Check the Authorization header exists
-    const authHeader = req.headers.authorization
-    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+    // Read from cookie first, fall back to Authorization header
+    // (header fallback supports API clients, Postman, mobile apps)
+    const cookieToken = req.cookies?.access_token
+    const headerToken = req.headers.authorization?.startsWith('Bearer ')
+      ? req.headers.authorization.split(' ')[1]
+      : null
+
+    const token = cookieToken || headerToken
+
+    if (!token) {
       return res.status(401).json({ message: 'No token provided' })
     }
 
-    // 2. Extract the token
-    const token = authHeader.split(' ')[1]
-
-    // 3. Verify the token signature and expiry
     const decoded = jwt.verify(token, process.env.JWT_SECRET)
 
-    // 4. Load the user from the database
     const user = await prisma.user.findUnique({
-      where: { id: decoded.userId },
+      where:  { id: decoded.userId },
       select: {
-        id: true,
-        name: true,
-        email: true,
-        role: true,
+        id:       true,
+        name:     true,
+        email:    true,
+        role:     true,
         isActive: true,
       },
     })
 
-    // 5. Make sure the user still exists and is active
     if (!user || !user.isActive) {
       return res.status(401).json({ message: 'User not found or deactivated' })
     }
 
-    // 6. Attach the user to the request so controllers can access it
     req.user = user
     next()
   } catch (err) {
-    // jwt.verify throws if token is invalid or expired
     return res.status(401).json({ message: 'Invalid or expired token' })
   }
 }
 
 const optionalAuthenticate = (req, res, next) => {
   const header = req.headers.authorization
-  if (!header) return next()          // no token → just skip, don't error
-  authenticate(req, res, next)        // token present → verify it normally
+  if (!header) return next()
+  authenticate(req, res, next)
 }
 
 const authorize = (...roles) => {

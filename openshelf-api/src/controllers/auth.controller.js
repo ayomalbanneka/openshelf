@@ -1,10 +1,14 @@
 const authService = require('../services/auth.service')
+const { setTokenCookies, clearTokenCookies } = require('../utils/cookies')
 
 const register = async (req, res, next) => {
   try {
     const { name, email, password } = req.body
     const result = await authService.register({ name, email, password })
-    res.status(201).json(result)
+
+    setTokenCookies(res, result)
+
+    res.json({ user: result.user, message: result.message })
   } catch (err) { next(err) }
 }
 
@@ -27,7 +31,10 @@ const login = async (req, res, next) => {
   try {
     const { email, password } = req.body
     const result = await authService.login({ email, password })
-    res.json(result)
+
+    setTokenCookies(res, result)
+
+    res.json({ user: result.user })
   } catch (err) { next(err) }
 }
 
@@ -43,7 +50,10 @@ const adminLoginStep2 = async (req, res, next) => {
   try {
     const { userId, code } = req.body
     const result = await authService.adminLoginStep2({ userId, code })
-    res.json(result)
+
+    setTokenCookies(res, result)
+
+    res.json({ user: result.user })
   } catch (err) { next(err) }
 }
 
@@ -65,12 +75,13 @@ const resetPassword = async (req, res, next) => {
 
 const refresh = async (req, res, next) => {
   try {
-    const { refreshToken } = req.body
-    if (!refreshToken) {
-      return res.status(400).json({ message: 'Refresh token required' })
-    }
-    const result = await authService.refreshAccessToken(refreshToken)
-    res.json(result)
+    // Token now comes from cookie, not request body
+    const rawToken = req.cookies.refresh_token
+    const result = await authService.refreshAccessToken(rawToken)
+
+    setTokenCookies(res, result)
+
+    res.json({ message: 'Token refreshed' })
   } catch (err) { next(err) }
 }
 
@@ -80,8 +91,11 @@ const me = (req, res) => {
 
 const logout = async (req, res, next) => {
   try {
-    const { refreshToken } = req.body
-    await authService.logout(refreshToken)
+    const rawToken = req.cookies.refresh_token
+    await authService.logout(rawToken)
+
+    clearTokenCookies(res)
+
     res.json({ message: 'Logged out successfully' })
   } catch (err) { next(err) }
 }

@@ -24,6 +24,7 @@
     "bcryptjs": "^3.0.3",
     "cookie-parser": "^1.4.7",
     "cors": "^2.8.6",
+    "csrf-csrf": "^4.0.3",
     "dotenv": "^17.4.0",
     "express": "^5.2.1",
     "express-prom-bundle": "^8.0.0",

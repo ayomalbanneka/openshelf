@@ -12,13 +12,13 @@ interface User {
 }
 
 interface AuthState {
-  user: User | null
+  user:      User | null
   isLoading: boolean
-  login: (email: string, password: string) => Promise<void>
-  register: (name: string, email: string, password: string) => Promise<void>
-  logout: () => Promise<void>
-  fetchMe: () => Promise<void>
-  setUser: (user: User) => void
+  login:     (email: string, password: string) => Promise<void>
+  register:  (name: string, email: string, password: string) => Promise<void>
+  logout:    () => Promise<void>
+  fetchMe:   () => Promise<void>
+  setUser:   (user: User) => void
 }
 
 export const useAuthStore = create<AuthState>()(
@@ -30,9 +30,8 @@ export const useAuthStore = create<AuthState>()(
       login: async (email, password) => {
         set({ isLoading: true })
         try {
+          // Server sets httpOnly cookies — we just store the user object
           const { data } = await http.post('/auth/login', { email, password })
-          localStorage.setItem('accessToken',  data.accessToken)
-          localStorage.setItem('refreshToken', data.refreshToken)
           set({ user: data.user })
         } finally {
           set({ isLoading: false })
@@ -43,8 +42,6 @@ export const useAuthStore = create<AuthState>()(
         set({ isLoading: true })
         try {
           const { data } = await http.post('/auth/register', { name, email, password })
-          localStorage.setItem('accessToken',  data.accessToken)
-          localStorage.setItem('refreshToken', data.refreshToken)
           set({ user: data.user })
         } finally {
           set({ isLoading: false })
@@ -53,16 +50,11 @@ export const useAuthStore = create<AuthState>()(
 
       logout: async () => {
         try {
-          const refreshToken = localStorage.getItem('refreshToken')
-          // Revoke the token server-side before clearing locally
-          if (refreshToken) {
-            await http.post('/auth/logout', { refreshToken })
-          }
+          // Server clears the httpOnly cookies
+          await http.post('/auth/logout', {})
         } catch {
-          // If the server call fails, still clear locally
+          // Always clear local state even if server call fails
         } finally {
-          localStorage.removeItem('accessToken')
-          localStorage.removeItem('refreshToken')
           set({ user: null })
         }
       },
@@ -80,7 +72,7 @@ export const useAuthStore = create<AuthState>()(
     }),
     {
       name:       'auth',
-      partialize: (s) => ({ user: s.user }),
+      partialize: (s) => ({ user: s.user }),  // only persist user object, not tokens
     }
   )
 )

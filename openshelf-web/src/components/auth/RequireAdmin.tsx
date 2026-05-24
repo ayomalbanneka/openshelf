@@ -14,7 +14,7 @@ export function RequireAdmin({ children }: { children: React.ReactNode }) {
     if (!user) {
       router.replace('/admin/login')
     } else if (user.role !== 'ADMIN' && user.role !== 'MODERATOR') {
-      router.replace('/admin/login')
+      router.replace('/')   // regular user — send home, not to admin login
     }
   }, [hydrated, user, router])
 
