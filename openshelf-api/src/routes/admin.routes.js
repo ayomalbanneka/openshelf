@@ -46,4 +46,8 @@ router.delete('/staff/invites/:id', authorize('ADMIN'), controller.cancelInvite)
 router.get('/reports',     authorize('ADMIN', 'MODERATOR'), reportController.getReports)
 router.patch('/reports/:id', authorize('ADMIN', 'MODERATOR'), reportController.updateReport)
 
+// Bulk actions — MODERATOR + ADMIN
+router.post('/resources/bulk-publish', controller.bulkPublish)
+router.post('/resources/bulk-reject',  controller.bulkReject)
+
 module.exports = router

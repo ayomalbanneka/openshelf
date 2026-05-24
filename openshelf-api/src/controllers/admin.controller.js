@@ -560,6 +560,107 @@ const cancelInvite = async (req, res, next) => {
   } catch (err) { next(err) }
 }
 
+// Bulk publish — MODERATOR + ADMIN
+const bulkPublish = async (req, res, next) => {
+  try {
+    const { ids } = req.body
+    if (!Array.isArray(ids) || ids.length === 0) {
+      return res.status(400).json({ message: 'ids must be a non-empty array' })
+    }
+    if (ids.length > 50) {
+      return res.status(400).json({ message: 'Cannot bulk publish more than 50 resources at once' })
+    }
+
+    const results = await Promise.allSettled(
+      ids.map((id) => resourceService.publishById(id))
+    )
+
+    const succeeded = results
+      .filter((r) => r.status === 'fulfilled')
+      .map((r) => r.value.id)
+
+    const failed = results
+      .filter((r) => r.status === 'rejected')
+      .map((r, i) => ({ id: ids[i], reason: r.reason?.message }))
+
+    await audit({
+      actorId:    req.user.id,
+      action:     'RESOURCE_PUBLISHED',
+      targetType: 'Resource',
+      targetId:   'bulk',
+      targetName: `Bulk publish: ${succeeded.length} resources`,
+      metadata:   { succeeded: succeeded.length, failed: failed.length },
+    })
+
+    res.json({ succeeded, failed, message: `${succeeded.length} published, ${failed.length} failed` })
+  } catch (err) { next(err) }
+}
+
+// Bulk reject — MODERATOR + ADMIN
+const bulkReject = async (req, res, next) => {
+  try {
+    const { ids, reason } = req.body
+    if (!Array.isArray(ids) || ids.length === 0) {
+      return res.status(400).json({ message: 'ids must be a non-empty array' })
+    }
+    if (ids.length > 50) {
+      return res.status(400).json({ message: 'Cannot bulk reject more than 50 resources at once' })
+    }
+
+    const results = await Promise.allSettled(
+      ids.map(async (id) => {
+        const resource = await prisma.resource.findUnique({
+          where:   { id },
+          include: { lessons: true, uploadedBy: { select: { email: true } } },
+        })
+        if (!resource) throw new Error('Not found')
+
+        if (resource.fileUrl && resource.fileUrl !== 'course-content') {
+          await deleteFile(resource.fileUrl)
+        }
+        if (resource.thumbnailUrl) {
+          await deleteFile(resource.thumbnailUrl).catch(() => {})
+        }
+        if (resource.type === 'COURSE' && resource.lessons?.length) {
+          await Promise.allSettled(
+            resource.lessons
+              .filter((l) => l.fileUrl && l.fileUrl !== 'pending')
+              .map((l) => deleteFile(l.fileUrl))
+          )
+        }
+        if (resource.uploadedBy?.email) {
+          emailSvc.sendResourceRejected({
+            to:     resource.uploadedBy.email,
+            title:  resource.title,
+            reason: reason || null,
+          }).catch(() => {})
+        }
+        await prisma.resource.delete({ where: { id } })
+        return id
+      })
+    )
+
+    const succeeded = results
+      .filter((r) => r.status === 'fulfilled')
+      .map((r) => r.value)
+
+    const failed = results
+      .filter((r) => r.status === 'rejected')
+      .map((r, i) => ({ id: ids[i], reason: r.reason?.message }))
+
+    await audit({
+      actorId:    req.user.id,
+      action:     'RESOURCE_REJECTED',
+      targetType: 'Resource',
+      targetId:   'bulk',
+      targetName: `Bulk reject: ${succeeded.length} resources`,
+      metadata:   { succeeded: succeeded.length, failed: failed.length, reason },
+    })
+
+    res.json({ succeeded, failed, message: `${succeeded.length} rejected, ${failed.length} failed` })
+  } catch (err) { next(err) }
+}
+
 module.exports = {
   getStats,
   getPending, publishResource, rejectResource,
@@ -568,5 +669,5 @@ module.exports = {
   getClubs, deleteClub,
   getCategories, createCategory, deleteCategory,
   getTags, deleteTag, inviteStaff, acceptInvite,
-  listStaff, revokeStaff, cancelInvite,
+  listStaff, revokeStaff, cancelInvite, bulkPublish, bulkReject,
 }
