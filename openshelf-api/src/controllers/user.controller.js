@@ -168,38 +168,61 @@ const isFollowing = async (req, res, next) => {
 // Get followers of a user
 const getFollowers = async (req, res, next) => {
     try {
-        const followers = await prisma.userFollow.findMany({
-            where: { followingId: req.params.id },
-            include: {
-                follower: {
-                    id: true,
-                    name: true,
-                    avatarUrl: true,
-                    bio: true,
+        const { paginate, paginateMeta } = require('../utils/pagination')
+        const { page, limit, skip, take } = paginate(req.query)
+
+        const [followers, total] = await Promise.all([
+            prisma.userFollow.findMany({
+                where: { followingId: req.params.id },
+                include: {
+                    follower: {
+                        select: { id: true, name: true, avatarUrl: true, bio: true }, // ← fix: add select
+                    },
                 },
-            },
-            orderBy: { createdAt: 'desc' },
+                orderBy: { createdAt: 'desc' },
+                skip,
+                take,
+            }),
+            prisma.userFollow.count({ where: { followingId: req.params.id } }),
+        ])
+
+        res.json({
+            data: followers.map((f) => f.follower),
+            meta: paginateMeta(total, page, limit),
         })
-        res.json(followers.map((f) => f.follower));
     } catch (err) {
-        next(err);
+        next(err)
     }
 }
 
 // Get following list
 const getFollowing = async (req, res, next) => {
     try {
-        const follows = await prisma.userFollow.findMany({
-            where: { followerId: req.params.id },
-            include: {
-                following: {
-                    select: { id: true, name: true, avatarUrl: true, bio: true },
+        const { paginate, paginateMeta } = require('../utils/pagination')
+        const { page, limit, skip, take } = paginate(req.query)
+
+        const [follows, total] = await Promise.all([
+            prisma.userFollow.findMany({
+                where: { followerId: req.params.id },
+                include: {
+                    following: {
+                        select: { id: true, name: true, avatarUrl: true, bio: true },
+                    },
                 },
-            },
-            orderBy: { createdAt: 'desc' },
+                orderBy: { createdAt: 'desc' },
+                skip,
+                take,
+            }),
+            prisma.userFollow.count({ where: { followerId: req.params.id } }),
+        ])
+
+        res.json({
+            data: follows.map((f) => f.following),
+            meta: paginateMeta(total, page, limit),
         })
-        res.json(follows.map((f) => f.following))
-    } catch (err) { next(err) }
+    } catch (err) {
+        next(err)
+    }
 }
 
 // Get uploads of a user
