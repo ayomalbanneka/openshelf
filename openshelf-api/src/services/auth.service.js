@@ -36,6 +36,18 @@ const register = async ({ name, email, password }) => {
     throw err
   }
 
+  // Block registration if a pending staff invite exists for this email
+  const pendingInvite = await prisma.staffInvite.findFirst({
+    where: { email, usedAt: null, expiresAt: { gt: new Date() } },
+  })
+  if (pendingInvite) {
+    const err = new Error(
+      'This email has a pending staff invite. Please check your inbox and use the invite link to set up your account.'
+    )
+    err.status = 403
+    throw err
+  }
+
   const passwordHash = await bcrypt.hash(password, 12)
 
   const user = await prisma.user.create({
