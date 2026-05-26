@@ -50,4 +50,7 @@ router.patch('/reports/:id', authorize('ADMIN', 'MODERATOR'), reportController.u
 router.post('/resources/bulk-publish', controller.bulkPublish)
 router.post('/resources/bulk-reject',  controller.bulkReject)
 
+// Edit resource metadata — ADMIN only
+router.patch('/resources/:id/edit', authorize('ADMIN'), controller.editResource)
+
 module.exports = router

@@ -661,6 +661,54 @@ const bulkReject = async (req, res, next) => {
   } catch (err) { next(err) }
 }
 
+const editResource = async (req, res, next) => {
+  try {
+    const {
+      title, author, description,
+      language, categoryId, publisher,
+      publicationYear, pageCount,
+    } = req.body
+
+    const resource = await prisma.resource.findUnique({
+      where:  { id: req.params.id },
+      select: { id: true, title: true },
+    })
+    if (!resource) return res.status(404).json({ message: 'Resource not found' })
+
+    const updated = await prisma.resource.update({
+      where: { id: req.params.id },
+      data: {
+        ...(title           !== undefined && { title }),
+        ...(author          !== undefined && { author }),
+        ...(description     !== undefined && { description }),
+        ...(language        !== undefined && { language }),
+        ...(categoryId      !== undefined && { categoryId }),
+        ...(publisher       !== undefined && { publisher }),
+        ...(publicationYear !== undefined && { publicationYear: Number(publicationYear) }),
+        ...(pageCount       !== undefined && { pageCount: Number(pageCount) }),
+      },
+      include: {
+        category: { select: { id: true, name: true } },
+        uploadedBy: { select: { id: true, name: true } },
+      },
+    })
+
+    // Update search index so changes are reflected immediately
+    await resourceService.updateIndex?.(updated)
+
+    await audit({
+      actorId:    req.user.id,
+      action:     'RESOURCE_EDITED',
+      targetType: 'Resource',
+      targetId:   resource.id,
+      targetName: resource.title,
+      metadata:   { fields: Object.keys(req.body) },
+    })
+
+    res.json(updated)
+  } catch (err) { next(err) }
+}
+
 module.exports = {
   getStats,
   getPending, publishResource, rejectResource,
@@ -670,4 +718,5 @@ module.exports = {
   getCategories, createCategory, deleteCategory,
   getTags, deleteTag, inviteStaff, acceptInvite,
   listStaff, revokeStaff, cancelInvite, bulkPublish, bulkReject,
+  editResource,
 }

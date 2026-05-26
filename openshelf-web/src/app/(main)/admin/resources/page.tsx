@@ -3,6 +3,7 @@ import { useEffect, useState, useRef } from 'react'
 import { http } from '@/lib/api'
 import Link from 'next/link'
 import { getErrorMessage } from '@/lib/errors'
+import { EditResourceModal } from '@/components/admin/EditResourceModal'
 
 interface Resource {
   id: string; title: string; slug: string; type: string; language: string
@@ -12,26 +13,36 @@ interface Resource {
   _count: { reviews: number; bookmarks: number }
 }
 
+interface AdminResource extends Resource {
+  author?: string
+  description?: string
+  publisher?: string
+  publicationYear?: number
+  pageCount?: number
+  category: { id: string; name: string }
+}
+
 const TYPE_COLORS: Record<string, { backgroundColor: string; color: string }> = {
-  BOOK:       { backgroundColor: '#e0f2fe', color: '#0284c7' },
-  COURSE:     { backgroundColor: '#ccfbf1', color: '#0f766e' },
+  BOOK: { backgroundColor: '#e0f2fe', color: '#0284c7' },
+  COURSE: { backgroundColor: '#ccfbf1', color: '#0f766e' },
   EXAM_PAPER: { backgroundColor: '#ffedd5', color: '#9a3412' },
-  DOCUMENT:   { backgroundColor: '#dcfce7', color: '#166534' },
-  AUDIO:      { backgroundColor: '#ffe4e6', color: '#be123c' },
+  DOCUMENT: { backgroundColor: '#dcfce7', color: '#166534' },
+  AUDIO: { backgroundColor: '#ffe4e6', color: '#be123c' },
 }
 
 const TYPES = ['', 'BOOK', 'COURSE', 'EXAM_PAPER', 'DOCUMENT', 'AUDIO']
 
 export default function ResourcesPage() {
   const [resources, setResources] = useState<Resource[]>([])
-  const [total, setTotal]         = useState(0)
-  const [page, setPage]           = useState(1)
-  const [pages, setPages]         = useState(1)
-  const [loading, setLoading]     = useState(true)
-  const [search, setSearch]       = useState('')
-  const [type, setType]           = useState('')
-  const [acting, setActing]       = useState<string | null>(null)
-  const [error, setError]         = useState('')
+  const [total, setTotal] = useState(0)
+  const [page, setPage] = useState(1)
+  const [pages, setPages] = useState(1)
+  const [loading, setLoading] = useState(true)
+  const [search, setSearch] = useState('')
+  const [type, setType] = useState('')
+  const [acting, setActing] = useState<string | null>(null)
+  const [error, setError] = useState('')
+  const [editTarget, setEditTarget] = useState<AdminResource | null>(null)
   const timer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined)
   const limit = 20
 
@@ -79,6 +90,8 @@ export default function ResourcesPage() {
 
   const row = 'grid grid-cols-12 gap-3 px-4 py-3 items-center text-sm'
   const inputStyle = { border: '1px solid var(--admin-border)', backgroundColor: 'var(--admin-surface)', color: 'var(--admin-text)' }
+
+  const openEdit = (resource: AdminResource) => setEditTarget(resource)
 
   return (
     <div className="flex flex-col gap-5">
@@ -131,7 +144,7 @@ export default function ResourcesPage() {
 
         {loading ? (
           <div className="flex flex-col gap-0">
-            {[1,2,3,4,5].map((i) => (
+            {[1, 2, 3, 4, 5].map((i) => (
               <div key={i} className="h-16 mx-4 my-2 rounded-xl animate-pulse" style={{ backgroundColor: 'var(--admin-soft)' }} />
             ))}
           </div>
@@ -159,6 +172,15 @@ export default function ResourcesPage() {
               <div className="col-span-2 text-center text-sm" style={{ color: 'var(--admin-muted)' }}>{r.viewCount}</div>
               <div className="col-span-2 text-center text-sm" style={{ color: 'var(--admin-muted)' }}>{r._count.reviews}</div>
               <div className="col-span-2 flex justify-center">
+
+                <button
+                  onClick={() => openEdit(r as AdminResource)}
+                  className="text-xs px-2.5 py-1.5 rounded-lg font-medium transition-colors"
+                  style={{ backgroundColor: '#eff6ff', color: '#1e40af' }}
+                >
+                  Edit
+                </button>
+
                 <button onClick={() => handleDelete(r.id, r.title)} disabled={acting === r.id}
                   className="text-xs px-3 py-1.5 rounded-lg font-medium transition-colors disabled:opacity-50"
                   style={{ backgroundColor: '#fee2e2', color: '#b91c1c' }}>
@@ -169,6 +191,13 @@ export default function ResourcesPage() {
           ))
         )}
       </div>
+
+      {/* Edit resource modal */}
+      <EditResourceModal
+        resource={editTarget}
+        onClose={() => setEditTarget(null)}
+        onSaved={() => fetch_()}
+      />
 
       {pages > 1 && (
         <div className="flex items-center justify-end gap-2">
