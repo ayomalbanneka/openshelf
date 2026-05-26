@@ -53,4 +53,7 @@ router.post('/resources/bulk-reject',  controller.bulkReject)
 // Edit resource metadata — ADMIN only
 router.patch('/resources/:id/edit', authorize('ADMIN'), controller.editResource)
 
+// Message a user — ADMIN only
+router.post('/users/:id/message', controller.messageUser)
+
 module.exports = router

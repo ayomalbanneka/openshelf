@@ -217,6 +217,7 @@ export default function AdminPage() {
     const found = dayData.find((x) => String(x.date).startsWith(key))
     return { label: d.toLocaleDateString('en', { weekday: 'short' }).slice(0, 2), value: Number(found?.count ?? 0) }
   })
+  const hasUploadsThisWeek = chartDays.some((d) => d.value > 0)
 
   const typeSegments = typeData.map((t) => ({
     label: t.type.replace('_', ' '),
@@ -317,6 +318,11 @@ export default function AdminPage() {
             </span>
           </div>
           <BarChart data={chartDays} color="#2563eb" />
+          {!hasUploadsThisWeek && (
+            <p className="text-xs mt-3" style={{ color: 'var(--admin-muted)' }}>
+              No uploads this week.
+            </p>
+          )}
         </div>
 
         {/* Resource types */}
@@ -345,7 +351,7 @@ export default function AdminPage() {
             style={{ borderBottom: '1px solid var(--admin-border)' }}
           >
             <p className="text-sm font-bold" style={{ color: 'var(--admin-text)' }}>Recent uploads</p>
-            <Link href="/admin/pending" className="text-xs font-medium" style={{ color: '#2563eb' }}>
+            <Link href="/admin/pending" className="text-xs font-medium" style={{ color: 'var(--admin-link)' }}>
               View pending →
             </Link>
           </div>
@@ -353,7 +359,7 @@ export default function AdminPage() {
           {recent.length === 0 ? (
             <div className="py-12 text-center text-sm" style={{ color: 'var(--admin-muted)' }}>No uploads yet.</div>
           ) : (
-            <div className="divide-y" style={{ borderColor: '#f1f5f9' }}>
+            <div className="divide-y" style={{ borderColor: 'var(--admin-border)' }}>
               {recent.map((r) => (
                 <div key={r.id} className="flex items-center gap-4 px-5 py-3">
                   {/* Type icon */}
@@ -370,11 +376,11 @@ export default function AdminPage() {
                     <Link
                       href={`/resources/${r.slug}`}
                       className="text-sm font-medium hover:text-blue-600 transition-colors truncate block"
-                      style={{ color: '#1e293b' }}
+                      style={{ color: 'var(--admin-text)' }}
                     >
                       {r.title}
                     </Link>
-                    <p className="text-xs mt-0.5 truncate" style={{ color: '#94a3b8' }}>
+                    <p className="text-xs mt-0.5 truncate" style={{ color: 'var(--admin-muted)' }}>
                       {r.uploadedBy.name} · {r.category.name}
                     </p>
                   </div>

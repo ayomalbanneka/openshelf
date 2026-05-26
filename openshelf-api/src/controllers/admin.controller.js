@@ -709,6 +709,47 @@ const editResource = async (req, res, next) => {
   } catch (err) { next(err) }
 }
 
+const messageUser = async (req, res, next) => {
+  try {
+    const { subject, message } = req.body
+
+    if (!subject?.trim() || !message?.trim()) {
+      return res.status(400).json({ message: 'Subject and message are required' })
+    }
+
+    if (message.length > 2000) {
+      return res.status(400).json({ message: 'Message cannot exceed 2000 characters' })
+    }
+
+    const target = await prisma.user.findUnique({
+      where:  { id: req.params.id },
+      select: { id: true, name: true, email: true, isActive: true },
+    })
+
+    if (!target) return res.status(404).json({ message: 'User not found' })
+    if (!target.isActive) return res.status(400).json({ message: 'Cannot message a deactivated user' })
+
+    await emailSvc.sendAdminMessage({
+      to:         target.email,
+      userName:   target.name,
+      subject:    subject.trim(),
+      message:    message.trim(),
+      senderName: req.user.name,
+    })
+
+    await audit({
+      actorId:    req.user.id,
+      action:     'USER_MESSAGED',
+      targetType: 'User',
+      targetId:   target.id,
+      targetName: target.name,
+      metadata:   { subject: subject.trim() },
+    })
+
+    res.json({ message: `Message sent to ${target.name}` })
+  } catch (err) { next(err) }
+}
+
 module.exports = {
   getStats,
   getPending, publishResource, rejectResource,
@@ -718,5 +759,5 @@ module.exports = {
   getCategories, createCategory, deleteCategory,
   getTags, deleteTag, inviteStaff, acceptInvite,
   listStaff, revokeStaff, cancelInvite, bulkPublish, bulkReject,
-  editResource,
+  editResource, messageUser,
 }
