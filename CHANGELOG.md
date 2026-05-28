@@ -1,5 +1,30 @@
 # Changelog
 
+## [0.11.0](https://github.com/ayomalbanneka/openshelf/compare/v0.10.0...v0.11.0) (2026-05-28)
+
+
+### Features
+
+* **admin:** add bulk publish and reject functionality for resources ([498570e](https://github.com/ayomalbanneka/openshelf/commit/498570e73667adc097d8a143c672885cf38e4a58))
+* **admin:** add functionality to send emails to the users ([e7e0fb6](https://github.com/ayomalbanneka/openshelf/commit/e7e0fb60d957bafe62098da078078d27c665771d))
+* **audit:** add audit log functionality and integrate into admin panel ([176d6c6](https://github.com/ayomalbanneka/openshelf/commit/176d6c6578fe32db2c52d6b8a109096f464f8d94))
+* **audit:** implement audit logging for resource and user actions ([47cfbe1](https://github.com/ayomalbanneka/openshelf/commit/47cfbe1c880e23aa5c6099b2fc0c7d33cb2fd4a3))
+* **auth:** block registration for emails with pending staff invites ([bc75c3f](https://github.com/ayomalbanneka/openshelf/commit/bc75c3f25ae0219260efd1ae7b5716ef86ba2890))
+* **auth:** enhance password security with strength meter and HIBP check in registration and reset password forms ([3aeec58](https://github.com/ayomalbanneka/openshelf/commit/3aeec589463cab3b9a87a1f77dee2a444bfcdfb5))
+* **auth:** update email verification flow to include redirect parameter for upload ([f597b89](https://github.com/ayomalbanneka/openshelf/commit/f597b89efabe67fd8be7f6a3e44abb988d50e85d))
+* **csrf:** implement CSRF protection with cookie management and update authentication flow ([3fb2bf7](https://github.com/ayomalbanneka/openshelf/commit/3fb2bf7bd174610ac764ef5b8135386f33afa848))
+* **dashboard:** add ContributorDashboard component and dashboard page with user stats ([4022385](https://github.com/ayomalbanneka/openshelf/commit/4022385b9bdb9893fda49b8bfe6cf600bde15b1c))
+* **notifications:** implement notification system with CRUD operations and UI integration ([5327e82](https://github.com/ayomalbanneka/openshelf/commit/5327e82f92498738842e002478476c4d97970cd8))
+* **pagination:** implement pagination utility for consistent data handling across controllers ([350ba78](https://github.com/ayomalbanneka/openshelf/commit/350ba78fe4fb87f23abff095023e9f0a2c71956f))
+* **resource:** add PDF and audio preview functionality in ResourceDetail component ([b405900](https://github.com/ayomalbanneka/openshelf/commit/b405900f95604168d85895f7c0c1d5f89a78e3bb))
+* **resources:** add edit resource functionality and corresponding modal for admin ([837abf9](https://github.com/ayomalbanneka/openshelf/commit/837abf9e68bdda826589afbd8a3cc0899148732d))
+
+
+### Bug Fixes
+
+* **auth:** enhance admin login verification with user role checks ([741f306](https://github.com/ayomalbanneka/openshelf/commit/741f306413771cccdc8c487f4edef7766be8d0e6))
+* **followers:** implement pagination and fix getFollowers and getFollowing endpoints ([48d49e3](https://github.com/ayomalbanneka/openshelf/commit/48d49e3d26c809e29384be3d4139dc6e7d0fecf9))
+
 ## [0.10.0](https://github.com/ayomalbanneka/openshelf/compare/v0.9.0...v0.10.0) (2026-05-21)
 
 
