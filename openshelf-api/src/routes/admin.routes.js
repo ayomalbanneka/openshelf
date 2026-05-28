@@ -46,4 +46,17 @@ router.delete('/staff/invites/:id', authorize('ADMIN'), controller.cancelInvite)
 router.get('/reports',     authorize('ADMIN', 'MODERATOR'), reportController.getReports)
 router.patch('/reports/:id', authorize('ADMIN', 'MODERATOR'), reportController.updateReport)
 
+// Bulk actions — MODERATOR + ADMIN
+router.post('/resources/bulk-publish', controller.bulkPublish)
+router.post('/resources/bulk-reject',  controller.bulkReject)
+
+// Edit resource metadata — ADMIN only
+router.patch('/resources/:id/edit', authorize('ADMIN'), controller.editResource)
+
+// Message a user — ADMIN only
+router.post('/users/:id/message', controller.messageUser)
+
+// Audit log — ADMIN only
+router.get('/audit', authorize('ADMIN'), controller.getAuditLogs)
+
 module.exports = router

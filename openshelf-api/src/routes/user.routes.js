@@ -4,6 +4,9 @@ const { authenticate } = require('../middleware/auth');
 const upload = require('../middleware/upload')
 const { validateFileBytes } = require('../utils/validateFileBytes')
 
+// Contributor stats — authenticated, own stats only
+router.get('/me/stats', authenticate, controller.getMyStats)
+
 // Public
 router.get('/:id', controller.getProfile)
 router.get('/:id/followers', controller.getFollowers)

@@ -9,6 +9,7 @@ import { useTheme } from 'next-themes'
 import { Suspense } from 'react'
 import { SearchBar } from './SearchBar'
 import { useHydrated } from '@/hooks/useHydrated'
+import { NotificationBell } from '@/components/layout/NotificationBell'
 
 function GithubIcon({ className }: { className?: string }) {
   return (
@@ -31,7 +32,7 @@ export function Navbar() {
   const mounted = useHydrated()
   const { resolvedTheme, setTheme } = useTheme()
   const isDark = mounted && resolvedTheme === 'dark'
-  
+
 
   return (
     <header
@@ -104,6 +105,9 @@ export function Navbar() {
           >
             <GithubIcon className="w-4.5 h-4.5" />
           </a>
+
+          <NotificationBell />
+
           {user ? (
             <div className="relative">
               <button
@@ -136,6 +140,9 @@ export function Navbar() {
                     className="block px-4 py-2 text-sm text-foreground hover:bg-muted transition-colors"
                   >
                     My profile
+                  </Link>
+                  <Link href="/dashboard" className="block px-4 py-2 text-sm text-foreground hover:bg-muted transition-colors">
+                    My Dashboard
                   </Link>
                   <Link
                     href="/lists"

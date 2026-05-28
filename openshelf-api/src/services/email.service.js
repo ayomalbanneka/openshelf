@@ -273,6 +273,37 @@ const sendResourceRejected = async ({ to, title, reason }) => {
   })
 }
 
+// Send message from admin to user
+const sendAdminMessage = async ({ to, userName, subject, message, senderName }) => {
+  await sendEmail({
+    to,
+    subject: `[OpenShelf] ${subject}`,
+    html: `
+      <div style="font-family:sans-serif;max-width:480px;margin:0 auto;padding:24px">
+        <h2 style="color:#1e40af;margin-bottom:4px">Message from OpenShelf</h2>
+        <p style="color:#6b7280;font-size:13px;margin-bottom:24px">
+          Sent by ${senderName} · OpenShelf Team
+        </p>
+
+        <p style="color:#374151;margin-bottom:8px">Hi ${userName},</p>
+
+        <div style="background:#f8fafc;border-left:4px solid #1e40af;border-radius:0 12px 12px 0;
+                    padding:16px 20px;margin-bottom:24px;white-space:pre-wrap;
+                    color:#374151;font-size:15px;line-height:1.7">
+          ${message}
+        </div>
+
+        <hr style="border:none;border-top:1px solid #e5e7eb;margin:24px 0" />
+
+        <p style="color:#9ca3af;font-size:12px">
+          This message was sent to you by the OpenShelf moderation team.
+          If you believe this was sent in error, you can ignore it.
+        </p>
+      </div>
+    `,
+  })
+}
+
 module.exports = {
   sendVerificationCode,
   sendPasswordResetCode,
@@ -281,4 +312,5 @@ module.exports = {
   sendStaffInvite,
   sendResourcePublished,
   sendResourceRejected,
+  sendAdminMessage,
 }

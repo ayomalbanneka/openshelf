@@ -3,12 +3,93 @@ import axios from 'axios'
 const BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000/api'
 
 export const http = axios.create({
-  baseURL: BASE_URL,
-  withCredentials: true,
+  baseURL:         BASE_URL,
+  withCredentials: true,   // send cookies on every request
 })
 
+// ── CSRF token management ────────────────────────────────────
+let csrfToken: string | null = null
+
+const fetchCsrfToken = async (): Promise<string> => {
+  const { data } = await axios.get(`${BASE_URL}/csrf-token`, {
+    withCredentials: true,
+  })
+  csrfToken = data.csrfToken
+  return data.csrfToken
+}
+
+// Fetch CSRF token once on module load (client-side only)
+if (typeof window !== 'undefined') {
+  fetchCsrfToken().catch(() => {
+    console.warn('Could not fetch CSRF token — mutating requests may fail')
+  })
+}
+
+// ── Request interceptor — attach CSRF token ─────────────────
+http.interceptors.request.use(async (config) => {
+  const method = config.method?.toUpperCase()
+  const mutating = ['POST', 'PUT', 'PATCH', 'DELETE'].includes(method ?? '')
+
+  if (mutating && typeof window !== 'undefined') {
+    // Use cached token or fetch a fresh one
+    const token = csrfToken ?? await fetchCsrfToken()
+    config.headers['x-csrf-token'] = token
+  }
+
+  return config
+})
+
+// ── Response interceptor — auto-refresh on 401 ──────────────
+http.interceptors.response.use(
+  (response) => response,
+  async (error) => {
+    const original = error.config
+
+    const isAuthEndpoint =
+      typeof original?.url === 'string' &&
+      (original.url.includes('/auth/login')    ||
+       original.url.includes('/auth/register') ||
+       original.url.includes('/auth/refresh')  ||
+       original.url.includes('/auth/logout'))
+
+    if (error.response?.status === 401 && !original._retry && !isAuthEndpoint) {
+      original._retry = true
+
+      try {
+        // Refresh — cookie is sent automatically (path: /api/auth/refresh)
+        await axios.post(
+          `${BASE_URL}/auth/refresh`,
+          {},
+          { withCredentials: true }
+        )
+
+        // Retry the original request — new access cookie is set automatically
+        return http(original)
+      } catch {
+        // Refresh failed — redirect to appropriate login
+        if (typeof window !== 'undefined') {
+          const isAdmin = window.location.pathname.startsWith('/admin')
+          window.location.href = isAdmin ? '/admin/login' : '/login'
+        }
+      }
+    }
+
+    // If CSRF token is rejected (403), fetch a fresh one and retry once
+    if (error.response?.status === 403 &&
+        error.response?.data?.message?.includes('csrf') &&
+        !original._csrfRetry) {
+      original._csrfRetry = true
+      csrfToken = await fetchCsrfToken()
+      original.headers['x-csrf-token'] = csrfToken
+      return http(original)
+    }
+
+    return Promise.reject(error)
+  }
+)
+
+// ── API client — all existing endpoints unchanged ───────────
 export const api = {
-  // Users endpoints for following/unfollowing and profile updates
   users: {
     isFollowing: (id: string) =>
       http.get(`/users/${id}/is-following`).then((r) => r.data),
@@ -28,8 +109,6 @@ export const api = {
       }).then((r) => r.data)
     },
   },
-
-  // Lists endpoints for managing user-created lists and their items
   lists: {
     getMine: (page = 1, limit = 10) =>
       http.get(`/lists/mine?page=${page}&limit=${limit}`).then((r) => r.data),
@@ -46,8 +125,6 @@ export const api = {
     removeItem: (id: string, itemId: string) =>
       http.delete(`/lists/${id}/items/${itemId}`).then((r) => r.data),
   },
-
-  // Clubs endpoints for managing book clubs, discussions, and comments
   clubs: {
     list: (params?: { search?: string; page?: number }) =>
       http.get('/clubs', { params }).then((r) => r.data),
@@ -70,92 +147,25 @@ export const api = {
     createComment: (slug: string, discussionId: string, body: string) =>
       http.post(`/clubs/${slug}/discussions/${discussionId}/comments`, { body }).then((r) => r.data),
   },
-
-  // Reading progress endpoints for tracking and updating user progress on resources
   progress: {
     get: (resourceId: string) =>
       http.get(`/progress/${resourceId}`).then((r) => r.data),
     update: (resourceId: string, data: {
-      currentPage?: number
-      totalPages?: number
-      currentTime?: number
-      totalTime?: number
+      currentPage?: number; totalPages?: number
+      currentTime?: number; totalTime?: number
     }) =>
       http.put(`/progress/${resourceId}`, data).then((r) => r.data),
-    getMine: () =>
-      http.get('/progress/mine').then((r) => r.data),
-    getCompleted: () =>
-      http.get('/progress/completed').then((r) => r.data),
+    getMine: () => http.get('/progress/mine').then((r) => r.data),
+    getCompleted: () => http.get('/progress/completed').then((r) => r.data),
   },
-
-  // Comments endpoints for managing comments on resources and club discussions
   comments: {
     getForResource: (slug: string) =>
       http.get(`/resources/${slug}/comments`).then((r) => r.data),
     create: (slug: string, body: string, parentId?: string) =>
-      http.post(`/resources/${slug}/comments`, { body, parentId })
-        .then((r) => r.data),
+      http.post(`/resources/${slug}/comments`, { body, parentId }).then((r) => r.data),
     update: (id: string, body: string) =>
       http.patch(`/comments/${id}`, { body }).then((r) => r.data),
     delete: (id: string) =>
       http.delete(`/comments/${id}`).then((r) => r.data),
   },
 }
-
-
-// Attach the access token to every outgoing request
-http.interceptors.request.use((config) => {
-  if (typeof window !== 'undefined') {
-    const token = localStorage.getItem('accessToken')
-    if (token) {
-      config.headers.Authorization = `Bearer ${token}`
-    }
-  }
-  return config
-})
-
-// If a request returns 401, try refreshing the token once
-http.interceptors.response.use(
-  (response) => response,
-  async (error) => {
-    const original = error.config
-
-    // Don't retry on auth endpoints or if already retried
-    const isAuthEndpoint =
-      typeof original?.url === 'string' &&
-      (original.url.includes('/auth/login') ||
-       original.url.includes('/auth/register') ||
-       original.url.includes('/auth/refresh') ||
-       original.url.includes('/auth/logout'))
-
-    if (error.response?.status === 401 && !original._retry && !isAuthEndpoint) {
-      original._retry = true
-
-      try {
-        const refreshToken = localStorage.getItem('refreshToken')
-        if (!refreshToken) throw new Error('No refresh token')
-
-        // Use a plain axios call — not the http instance — to avoid interceptor loops
-        const { data } = await axios.post(`${BASE_URL}/auth/refresh`, { refreshToken })
-
-        // Store the rotated token pair (server now returns both on refresh)
-        localStorage.setItem('accessToken',  data.accessToken)
-        localStorage.setItem('refreshToken', data.refreshToken)
-
-        // Retry the original request with the new access token
-        original.headers.Authorization = `Bearer ${data.accessToken}`
-        return http(original)
-      } catch {
-        // Refresh failed — clear everything and redirect to login
-        localStorage.removeItem('accessToken')
-        localStorage.removeItem('refreshToken')
-
-        // Redirect to the right login page based on current path
-        const isAdminPath = window.location.pathname.startsWith('/admin')
-        window.location.href = isAdminPath ? '/admin/login' : '/login'
-      }
-    }
-
-    return Promise.reject(error)
-  }
-)

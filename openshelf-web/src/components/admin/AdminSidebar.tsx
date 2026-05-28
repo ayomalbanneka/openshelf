@@ -4,7 +4,7 @@ import { usePathname } from 'next/navigation'
 import { useAuthStore } from '@/store/auth.store'
 import {
   LayoutDashboard, Hourglass, Users, UsersRound, BookOpen, Activity, Newspaper,
-  Library, Tags, FolderOpen, Users2, LogOut, type LucideIcon,
+  Library, Tags, FolderOpen, Users2, LogOut, ScrollText, type LucideIcon,
 } from 'lucide-react'
 
 type NavItem = { href: string; label: string; icon: LucideIcon; badge?: 'pending' }
@@ -35,6 +35,7 @@ const ADMIN_LINKS: NavSection[] = [
     section: 'Access', items: [
       { href: '/admin/users', label: 'Users', icon: Users },
       { href: '/admin/staff', label: 'Staff', icon: UsersRound },
+      { href: '/admin/audit',  label: 'Audit Log', icon: ScrollText },
     ]
   },
 ]

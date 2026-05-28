@@ -5,10 +5,12 @@ const { uploadFile, deleteFile } = require('./storage.service')
 const searchService = require('./search.service')
 const { validateFileBytes } = require('../utils/validateFileBytes')
 const emailSvc = require('./email.service')
+const { paginate, paginateMeta } = require('../utils/pagination')
+const notifSvc = require('./notification.service')
 
 // List
 const list = async ({ type, category, language, search, page = 1, limit = 20 }) => {
-  const skip = (Number(page) - 1) * Number(limit)
+  const { page: safePage, limit: safeLimit, skip, take } = paginate({ page, limit })
 
   // ── Full-text search path
   if (search && search.trim().length > 0) {
@@ -58,8 +60,8 @@ const list = async ({ type, category, language, search, page = 1, limit = 20 }) 
           ${langFilter}
           ${categoryFilter}
         ORDER BY rank DESC
-        LIMIT ${Number(limit)}
-      OFFSET ${skip}`;
+        LIMIT ${take}
+        OFFSET ${skip}`;
 
     const countResult = await prisma.$queryRaw`
       SELECT COUNT(*) as total
@@ -93,12 +95,7 @@ const list = async ({ type, category, language, search, page = 1, limit = 20 }) 
 
     return {
       data: ranked,
-      meta: {
-        total,
-        page: Number(page),
-        limit: Number(limit),
-        pages: Math.ceil(total / Number(limit)),
-      },
+      meta: paginateMeta(total, safePage, safeLimit),
     }
   }
 
@@ -114,7 +111,7 @@ const list = async ({ type, category, language, search, page = 1, limit = 20 }) 
     prisma.resource.findMany({
       where,
       skip,
-      take: Number(limit),
+      take,
       orderBy: { createdAt: 'desc' },
       include: {
         category: { select: { id: true, name: true, slug: true } },
@@ -128,12 +125,7 @@ const list = async ({ type, category, language, search, page = 1, limit = 20 }) 
 
   return {
     data,
-    meta: {
-      total,
-      page: Number(page),
-      limit: Number(limit),
-      pages: Math.ceil(total / Number(limit)),
-    },
+    meta: paginateMeta(total, safePage, safeLimit),
   }
 }
 
@@ -404,6 +396,14 @@ const publishById = async (id) => {
       title: updated.title,
     }).catch((err) => console.error('Failed to send publish notification:', err))
   }
+
+  await notifSvc.notify({
+    userId: resource.uploadedById,
+    type: 'RESOURCE_PUBLISHED',
+    title: 'Your resource was published 🎉',
+    body: `"${resource.title}" is now live on OpenShelf.`,
+    link: `/resources/${resource.slug}`,
+  })
 
   return updated
 }

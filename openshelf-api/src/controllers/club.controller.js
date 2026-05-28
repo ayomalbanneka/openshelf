@@ -1,11 +1,12 @@
 const prisma = require('../config/prisma');
 const slugify = require('../utils/slugify');
+const { paginate, paginateMeta } = require('../utils/pagination')
 
 // List public clubs with pagination and search
 const list = async (req, res, next) => {
     try {
-        const { search, page = 1, limit = 20 } = req.query;
-        const skip = (Number(page) - 1) * Number(limit);
+        const { search } = req.query;
+        const { page, limit, skip, take } = paginate(req.query)
 
         const where = {
             isPublic: true,
@@ -18,7 +19,7 @@ const list = async (req, res, next) => {
             prisma.club.findMany({
                 where,
                 skip,
-                take: Number(limit),
+                take,
                 orderBy: { createdAt: 'desc' },
                 include: {
                     createdBy: { select: { id: true, name: true } },
@@ -30,12 +31,7 @@ const list = async (req, res, next) => {
 
         res.json({
             data: clubs,
-            meta: {
-                total,
-                page: Number(page),
-                limit: Number(limit),
-                pages: Math.ceil(total / Number(limit)),
-            },
+            meta: paginateMeta(total, page, limit),
         })
 
     } catch (err) {

@@ -122,6 +122,14 @@ const follow = async (req, res, next) => {
             data: { followerId: req.user.id, followingId },
         })
 
+        await notifSvc.notify({
+            userId: req.params.id,      // the person being followed
+            type: 'NEW_FOLLOWER',
+            title: 'New follower',
+            body: `${req.user.name} started following you.`,
+            link: `/user/${req.user.id}`,
+        })
+
         res.status(201).json({ message: "Followed" });
     } catch (err) {
         if (err.code === 'P2002') {
@@ -168,38 +176,61 @@ const isFollowing = async (req, res, next) => {
 // Get followers of a user
 const getFollowers = async (req, res, next) => {
     try {
-        const followers = await prisma.userFollow.findMany({
-            where: { followingId: req.params.id },
-            include: {
-                follower: {
-                    id: true,
-                    name: true,
-                    avatarUrl: true,
-                    bio: true,
+        const { paginate, paginateMeta } = require('../utils/pagination')
+        const { page, limit, skip, take } = paginate(req.query)
+
+        const [followers, total] = await Promise.all([
+            prisma.userFollow.findMany({
+                where: { followingId: req.params.id },
+                include: {
+                    follower: {
+                        select: { id: true, name: true, avatarUrl: true, bio: true }, // ← fix: add select
+                    },
                 },
-            },
-            orderBy: { createdAt: 'desc' },
+                orderBy: { createdAt: 'desc' },
+                skip,
+                take,
+            }),
+            prisma.userFollow.count({ where: { followingId: req.params.id } }),
+        ])
+
+        res.json({
+            data: followers.map((f) => f.follower),
+            meta: paginateMeta(total, page, limit),
         })
-        res.json(followers.map((f) => f.follower));
     } catch (err) {
-        next(err);
+        next(err)
     }
 }
 
 // Get following list
 const getFollowing = async (req, res, next) => {
     try {
-        const follows = await prisma.userFollow.findMany({
-            where: { followerId: req.params.id },
-            include: {
-                following: {
-                    select: { id: true, name: true, avatarUrl: true, bio: true },
+        const { paginate, paginateMeta } = require('../utils/pagination')
+        const { page, limit, skip, take } = paginate(req.query)
+
+        const [follows, total] = await Promise.all([
+            prisma.userFollow.findMany({
+                where: { followerId: req.params.id },
+                include: {
+                    following: {
+                        select: { id: true, name: true, avatarUrl: true, bio: true },
+                    },
                 },
-            },
-            orderBy: { createdAt: 'desc' },
+                orderBy: { createdAt: 'desc' },
+                skip,
+                take,
+            }),
+            prisma.userFollow.count({ where: { followerId: req.params.id } }),
+        ])
+
+        res.json({
+            data: follows.map((f) => f.following),
+            meta: paginateMeta(total, page, limit),
         })
-        res.json(follows.map((f) => f.following))
-    } catch (err) { next(err) }
+    } catch (err) {
+        next(err)
+    }
 }
 
 // Get uploads of a user
@@ -223,9 +254,98 @@ const getUploads = async (req, res, next) => {
     }
 }
 
+const getMyStats = async (req, res, next) => {
+    try {
+        const userId = req.user.id
+
+        const [
+            uploads,
+            totalReviews,
+            totalDownloads,
+            pendingCount,
+            publishedCount,
+            followerCount,
+            recentActivity,
+            topResources,
+        ] = await Promise.all([
+            // All uploads including unpublished
+            prisma.resource.count({ where: { uploadedById: userId } }),
+
+            // Total reviews received across all resources
+            prisma.review.count({
+                where: { resource: { uploadedById: userId } },
+            }),
+
+            // Total download count across all published resources
+            prisma.resource.aggregate({
+                where: { uploadedById: userId, isPublished: true },
+                _sum: { downloadCount: true },
+            }),
+
+            // Pending submissions
+            prisma.resource.count({
+                where: { uploadedById: userId, isPublished: false },
+            }),
+
+            // Published count
+            prisma.resource.count({
+                where: { uploadedById: userId, isPublished: true },
+            }),
+
+            // Followers
+            prisma.userFollow.count({ where: { followingId: userId } }),
+
+            // Recent 5 uploads with review counts
+            prisma.resource.findMany({
+                where: { uploadedById: userId },
+                orderBy: { createdAt: 'desc' },
+                take: 5,
+                select: {
+                    id: true,
+                    title: true,
+                    slug: true,
+                    type: true,
+                    isPublished: true,
+                    downloadCount: true,
+                    createdAt: true,
+                    _count: { select: { reviews: true } },
+                },
+            }),
+
+            // Top 5 resources by download count
+            prisma.resource.findMany({
+                where: { uploadedById: userId, isPublished: true },
+                orderBy: { downloadCount: 'desc' },
+                take: 5,
+                select: {
+                    id: true,
+                    title: true,
+                    slug: true,
+                    type: true,
+                    downloadCount: true,
+                    _count: { select: { reviews: true } },
+                },
+            }),
+        ])
+
+        res.json({
+            overview: {
+                totalUploads: uploads,
+                publishedCount,
+                pendingCount,
+                totalReviews,
+                totalDownloads: totalDownloads._sum.downloadCount ?? 0,
+                followerCount,
+            },
+            recentActivity,
+            topResources,
+        })
+    } catch (err) { next(err) }
+}
+
 module.exports = {
     getProfile, updateProfile, changePassword,
     follow, unfollow, isFollowing,
     getFollowers, getFollowing,
-    getUploads,
+    getUploads, getMyStats,
 }

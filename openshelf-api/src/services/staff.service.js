@@ -2,6 +2,7 @@ const crypto    = require('crypto')
 const prisma    = require('../config/prisma')
 const bcrypt    = require('bcryptjs')
 const emailSvc  = require('./email.service')
+const { audit } = require('../utils/audit')
 
 // Invite a new staff member
 const inviteStaff = async ({ email, role, invitedById }) => {
@@ -22,6 +23,15 @@ const inviteStaff = async ({ email, role, invitedById }) => {
     await prisma.user.update({
       where: { id: existing.id },
       data:  { role },
+    })
+
+    await audit({
+      actorId:    invitedById,
+      action:     'STAFF_PROMOTED',
+      targetType: 'User',
+      targetId:   existing.id,
+      targetName: existing.name,
+      metadata:   { role },
     })
 
     return { promoted: true, message: `${existing.name} has been promoted to ${role}` }
@@ -48,8 +58,17 @@ const inviteStaff = async ({ email, role, invitedById }) => {
     select: { name: true },
   })
 
-  await prisma.staffInvite.create({
+  const invite = await prisma.staffInvite.create({
     data: { email, role, tokenHash, expiresAt, invitedById },
+  })
+
+  await audit({
+    actorId:    invitedById,
+    action:     'STAFF_INVITED',
+    targetType: 'StaffInvite',
+    targetId:   invite.id,
+    targetName: email,
+    metadata:   { role },
   })
 
   await emailSvc.sendStaffInvite({
@@ -178,11 +197,20 @@ const revokeStaff = async ({ targetId, requestingUserId }) => {
     select: { id: true, name: true, email: true, role: true },
   })
 
+  await audit({
+    actorId:    requestingUserId,
+    action:     'STAFF_REVOKED',
+    targetType: 'User',
+    targetId:   target.id,
+    targetName: target.name,
+    metadata:   { previousRole: target.role },
+  })
+
   return updated
 }
 
 // Cancel a pending invite
-const cancelInvite = async (inviteId) => {
+const cancelInvite = async (inviteId, actorId) => {
   const invite = await prisma.staffInvite.findUnique({ where: { id: inviteId } })
   if (!invite) {
     throw Object.assign(new Error('Invite not found'), { status: 404 })
@@ -195,6 +223,14 @@ const cancelInvite = async (inviteId) => {
   await prisma.staffInvite.update({
     where: { id: inviteId },
     data:  { usedAt: new Date() },
+  })
+
+  await audit({
+    actorId,
+    action:     'STAFF_INVITE_CANCELLED',
+    targetType: 'StaffInvite',
+    targetId:   inviteId,
+    targetName: invite.email,
   })
 
   return { message: 'Invite cancelled' }

@@ -32,6 +32,11 @@ export default function PendingPage() {
   const [modalMode, setModalMode] = useState<'publish' | 'reject'>('publish')
   const [modalResource, setModalResource] = useState<PendingResource | null>(null)
   const [rejectReason, setRejectReason] = useState('')
+  const [selected, setSelected] = useState<Set<string>>(new Set())
+  const [bulkReason, setBulkReason] = useState('')
+  const [bulkModalOpen, setBulkModalOpen] = useState(false)
+  const [bulkMode, setBulkMode] = useState<'publish' | 'reject'>('publish')
+  const [bulking, setBulking] = useState(false)
   const timer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined)
   const limit = 15
 
@@ -116,6 +121,48 @@ export default function PendingPage() {
     }
   }
 
+  const toggleSelect = (id: string) => {
+    setSelected((prev) => {
+      const next = new Set(prev)
+      next.has(id) ? next.delete(id) : next.add(id)
+      return next
+    })
+  }
+
+  const toggleSelectAll = () => {
+    if (selected.size === resources.length) {
+      setSelected(new Set())
+    } else {
+      setSelected(new Set(resources.map((r) => r.id)))
+    }
+  }
+
+  const handleBulkAction = async () => {
+    if (selected.size === 0) return
+    setBulking(true)
+    try {
+      const ids = Array.from(selected)
+      const endpoint = bulkMode === 'publish'
+        ? '/admin/resources/bulk-publish'
+        : '/admin/resources/bulk-reject'
+
+      const body = bulkMode === 'publish'
+        ? { ids }
+        : { ids, reason: bulkReason }
+
+      const { data } = await http.post(endpoint, body)
+      toast.success(data.message)
+      setSelected(new Set())
+      setBulkModalOpen(false)
+      setBulkReason('')
+      fetch_(search, page)
+    } catch (err: unknown) {
+      toast.error(getErrorMessage(err, 'Bulk action failed'))
+    } finally {
+      setBulking(false)
+    }
+  }
+
   const row = 'grid grid-cols-12 gap-3 px-4 py-3 items-center text-sm'
   const inputStyle = { border: '1px solid var(--admin-border)', backgroundColor: 'var(--admin-surface)', color: 'var(--admin-text)' }
 
@@ -158,12 +205,52 @@ export default function PendingPage() {
         </div>
       )}
 
+      {/* Bulk action bar — appears when items are selected */}
+      {selected.size > 0 && (
+        <div className="flex items-center gap-3 px-4 py-2.5 rounded-xl"
+          style={{ backgroundColor: '#eff6ff', border: '1px solid #bfdbfe' }}>
+          <span className="text-sm font-medium" style={{ color: '#1e40af' }}>
+            {selected.size} selected
+          </span>
+          <div className="flex-1" />
+          <button
+            onClick={() => { setBulkMode('publish'); setBulkModalOpen(true) }}
+            className="text-xs px-3 py-1.5 rounded-lg font-semibold"
+            style={{ backgroundColor: '#dcfce7', color: '#166534' }}
+          >
+            Publish all
+          </button>
+          <button
+            onClick={() => { setBulkMode('reject'); setBulkModalOpen(true) }}
+            className="text-xs px-3 py-1.5 rounded-lg font-semibold"
+            style={{ backgroundColor: '#fee2e2', color: '#991b1b' }}
+          >
+            Reject all
+          </button>
+          <button
+            onClick={() => setSelected(new Set())}
+            className="text-xs px-3 py-1.5 rounded-lg font-medium"
+            style={{ backgroundColor: 'var(--admin-soft)', color: 'var(--admin-muted)' }}
+          >
+            Clear
+          </button>
+        </div>
+      )}
+
       <div className="rounded-2xl overflow-hidden" style={{ backgroundColor: 'var(--admin-surface)', border: '1px solid var(--admin-border)', boxShadow: 'var(--admin-card-shadow)' }}>
         <div className={`${row} text-xs font-bold uppercase tracking-wider`}
           style={{ backgroundColor: 'var(--admin-soft)', color: 'var(--admin-muted)', borderBottom: '1px solid var(--admin-border)' }}>
+          <div className="col-span-1 flex items-center">
+            <input
+              type="checkbox"
+              checked={selected.size === resources.length && resources.length > 0}
+              onChange={toggleSelectAll}
+              className="w-4 h-4 accent-blue-600 cursor-pointer"
+            />
+          </div>
           <div className="col-span-4">Resource</div>
           <div className="col-span-2">Type</div>
-          <div className="col-span-3">Uploader</div>
+          <div className="col-span-2">Uploader</div>
           <div className="col-span-1 text-center">Reviews</div>
           <div className="col-span-2 text-center">Actions</div>
         </div>
@@ -181,6 +268,14 @@ export default function PendingPage() {
         ) : (
           resources.map((r, i) => (
             <div key={r.id} className={row} style={{ borderTop: i === 0 ? 'none' : '1px solid var(--admin-border)' }}>
+              <div className="col-span-1 flex items-center">
+                <input
+                  type="checkbox"
+                  checked={selected.has(r.id)}
+                  onChange={() => toggleSelect(r.id)}
+                  className="w-4 h-4 accent-blue-600 cursor-pointer"
+                />
+              </div>
               <div className="col-span-4 min-w-0">
                 <Link
                   href={`/resources/${r.slug}`}
@@ -200,7 +295,7 @@ export default function PendingPage() {
                   {TYPES.includes(r.type) ? r.type.replace('_', ' ') : r.type}
                 </span>
               </div>
-              <div className="col-span-3 min-w-0">
+              <div className="col-span-2 min-w-0">
                 <p className="text-xs font-semibold truncate" style={{ color: 'var(--admin-text)' }}>{r.uploadedBy.name}</p>
                 <p className="text-xs truncate" style={{ color: 'var(--admin-muted)' }}>{r.uploadedBy.email}</p>
               </div>
@@ -291,12 +386,12 @@ export default function PendingPage() {
                     )}
                   </div>
                   <div>
-                  <p className="text-xs font-semibold uppercase tracking-wider" style={{ color: 'var(--admin-muted)' }}>
-                    {modalMode === 'publish' ? 'Approve submission' : 'Reject submission'}
-                  </p>
-                  <h2 className="text-lg font-bold" style={{ color: 'var(--admin-text)' }}>
-                    {modalMode === 'publish' ? 'Publish this resource?' : 'Reject and delete this resource?'}
-                  </h2>
+                    <p className="text-xs font-semibold uppercase tracking-wider" style={{ color: 'var(--admin-muted)' }}>
+                      {modalMode === 'publish' ? 'Approve submission' : 'Reject submission'}
+                    </p>
+                    <h2 className="text-lg font-bold" style={{ color: 'var(--admin-text)' }}>
+                      {modalMode === 'publish' ? 'Publish this resource?' : 'Reject and delete this resource?'}
+                    </h2>
                   </div>
                 </div>
                 <button
@@ -385,6 +480,63 @@ export default function PendingPage() {
                 {acting === modalResource.id
                   ? 'Working...'
                   : (modalMode === 'publish' ? 'Publish resource' : 'Reject resource')}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Bulk action confirmation modal */}
+      {bulkModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4"
+          style={{ backgroundColor: 'rgba(0,0,0,0.5)' }}
+          onClick={(e) => { if (e.target === e.currentTarget) setBulkModalOpen(false) }}>
+          <div className="w-full max-w-md rounded-2xl p-6 flex flex-col gap-4"
+            style={{ backgroundColor: 'var(--admin-surface)', border: '1px solid var(--admin-border)' }}>
+
+            <h3 className="font-bold text-lg" style={{ color: 'var(--admin-text)' }}>
+              {bulkMode === 'publish' ? 'Publish' : 'Reject'} {selected.size} resource{selected.size !== 1 ? 's' : ''}?
+            </h3>
+
+            <p className="text-sm" style={{ color: 'var(--admin-muted)' }}>
+              {bulkMode === 'publish'
+                ? `${selected.size} resources will be published and their uploaders notified.`
+                : `${selected.size} resources will be permanently deleted and their uploaders notified.`}
+            </p>
+
+            {bulkMode === 'reject' && (
+              <div className="flex flex-col gap-1.5">
+                <label className="text-xs font-semibold uppercase tracking-wider"
+                  style={{ color: 'var(--admin-muted)' }}>
+                  Reason (optional — sent to all uploaders)
+                </label>
+                <textarea
+                  value={bulkReason}
+                  onChange={(e) => setBulkReason(e.target.value)}
+                  placeholder="Explain why these resources are being rejected..."
+                  rows={3}
+                  className="rounded-xl px-3 py-2 text-sm outline-none resize-none"
+                  style={{ border: '1px solid var(--admin-border)', backgroundColor: 'var(--admin-soft)', color: 'var(--admin-text)' }}
+                />
+              </div>
+            )}
+
+            <div className="flex gap-2 pt-1">
+              <button
+                onClick={() => setBulkModalOpen(false)}
+                className="flex-1 h-10 rounded-xl text-sm font-semibold"
+                style={{ backgroundColor: 'var(--admin-soft)', color: 'var(--admin-text)' }}>
+                Cancel
+              </button>
+              <button
+                onClick={handleBulkAction}
+                disabled={bulking}
+                className="flex-1 h-10 rounded-xl text-sm font-semibold disabled:opacity-50"
+                style={{
+                  backgroundColor: bulkMode === 'publish' ? '#166534' : '#991b1b',
+                  color: '#ffffff'
+                }}>
+                {bulking ? 'Processing…' : `${bulkMode === 'publish' ? 'Publish' : 'Reject'} all`}
               </button>
             </div>
           </div>
