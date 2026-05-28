@@ -254,9 +254,98 @@ const getUploads = async (req, res, next) => {
     }
 }
 
+const getMyStats = async (req, res, next) => {
+    try {
+        const userId = req.user.id
+
+        const [
+            uploads,
+            totalReviews,
+            totalDownloads,
+            pendingCount,
+            publishedCount,
+            followerCount,
+            recentActivity,
+            topResources,
+        ] = await Promise.all([
+            // All uploads including unpublished
+            prisma.resource.count({ where: { uploadedById: userId } }),
+
+            // Total reviews received across all resources
+            prisma.review.count({
+                where: { resource: { uploadedById: userId } },
+            }),
+
+            // Total download count across all published resources
+            prisma.resource.aggregate({
+                where: { uploadedById: userId, isPublished: true },
+                _sum: { downloadCount: true },
+            }),
+
+            // Pending submissions
+            prisma.resource.count({
+                where: { uploadedById: userId, isPublished: false },
+            }),
+
+            // Published count
+            prisma.resource.count({
+                where: { uploadedById: userId, isPublished: true },
+            }),
+
+            // Followers
+            prisma.userFollow.count({ where: { followingId: userId } }),
+
+            // Recent 5 uploads with review counts
+            prisma.resource.findMany({
+                where: { uploadedById: userId },
+                orderBy: { createdAt: 'desc' },
+                take: 5,
+                select: {
+                    id: true,
+                    title: true,
+                    slug: true,
+                    type: true,
+                    isPublished: true,
+                    downloadCount: true,
+                    createdAt: true,
+                    _count: { select: { reviews: true } },
+                },
+            }),
+
+            // Top 5 resources by download count
+            prisma.resource.findMany({
+                where: { uploadedById: userId, isPublished: true },
+                orderBy: { downloadCount: 'desc' },
+                take: 5,
+                select: {
+                    id: true,
+                    title: true,
+                    slug: true,
+                    type: true,
+                    downloadCount: true,
+                    _count: { select: { reviews: true } },
+                },
+            }),
+        ])
+
+        res.json({
+            overview: {
+                totalUploads: uploads,
+                publishedCount,
+                pendingCount,
+                totalReviews,
+                totalDownloads: totalDownloads._sum.downloadCount ?? 0,
+                followerCount,
+            },
+            recentActivity,
+            topResources,
+        })
+    } catch (err) { next(err) }
+}
+
 module.exports = {
     getProfile, updateProfile, changePassword,
     follow, unfollow, isFollowing,
     getFollowers, getFollowing,
-    getUploads,
+    getUploads, getMyStats,
 }
