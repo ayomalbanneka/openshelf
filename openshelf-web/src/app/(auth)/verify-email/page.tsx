@@ -1,6 +1,6 @@
 'use client'
 import { useState, useRef, useEffect } from 'react'
-import { useRouter } from 'next/navigation'
+import { useRouter, useSearchParams } from 'next/navigation'
 import { useAuthStore } from '@/store/auth.store'
 import { http } from '@/lib/api'
 import { CheckCircle, Mail } from 'lucide-react'
@@ -9,12 +9,14 @@ import { getErrorMessage } from '@/lib/errors'
 export default function VerifyEmailPage() {
   const { user, setUser } = useAuthStore()
   const router = useRouter()
-  const [code, setCode]       = useState(['', '', '', '', '', ''])
-  const [error, setError]     = useState('')
+  const [code, setCode] = useState(['', '', '', '', '', ''])
+  const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
   const [resending, setResending] = useState(false)
-  const [resent, setResent]   = useState(false)
+  const [resent, setResent] = useState(false)
   const inputs = useRef<(HTMLInputElement | null)[]>([])
+  const searchParams = useSearchParams()
+  const from = searchParams.get('from')
 
   useEffect(() => {
     // If already verified, redirect to browse
@@ -82,6 +84,12 @@ export default function VerifyEmailPage() {
 
   return (
     <div>
+      {from === 'upload' && (
+        <div className="rounded-xl px-4 py-3 mb-5 text-sm"
+          style={{ backgroundColor: '#fef3c7', color: '#92400e', border: '1px solid #fcd34d' }}>
+          You need to verify your email before uploading resources.
+        </div>
+      )}
       <div className="mb-8 text-center">
         <Mail className="w-10 h-10 mb-3" />
         <h1 className="text-2xl font-bold mb-1">Check your email</h1>

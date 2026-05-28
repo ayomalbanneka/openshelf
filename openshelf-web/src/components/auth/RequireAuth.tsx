@@ -20,7 +20,7 @@ export function RequireAuth({ children, requireVerified = false }: {
       return
     }
     if (requireVerified && !user.isEmailVerified) {
-      router.replace('/verify-email')
+      router.replace('/verify-email?from=upload')
     }
   }, [hydrated, user, requireVerified, router])
 
