@@ -56,4 +56,7 @@ router.patch('/resources/:id/edit', authorize('ADMIN'), controller.editResource)
 // Message a user — ADMIN only
 router.post('/users/:id/message', controller.messageUser)
 
+// Audit log — ADMIN only
+router.get('/audit', authorize('ADMIN'), controller.getAuditLogs)
+
 module.exports = router

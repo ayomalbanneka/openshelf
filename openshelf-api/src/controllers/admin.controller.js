@@ -584,12 +584,12 @@ const bulkPublish = async (req, res, next) => {
       .map((r, i) => ({ id: ids[i], reason: r.reason?.message }))
 
     await audit({
-      actorId:    req.user.id,
-      action:     'RESOURCE_PUBLISHED',
+      actorId: req.user.id,
+      action: 'RESOURCE_PUBLISHED',
       targetType: 'Resource',
-      targetId:   'bulk',
+      targetId: 'bulk',
       targetName: `Bulk publish: ${succeeded.length} resources`,
-      metadata:   { succeeded: succeeded.length, failed: failed.length },
+      metadata: { succeeded: succeeded.length, failed: failed.length },
     })
 
     res.json({ succeeded, failed, message: `${succeeded.length} published, ${failed.length} failed` })
@@ -610,7 +610,7 @@ const bulkReject = async (req, res, next) => {
     const results = await Promise.allSettled(
       ids.map(async (id) => {
         const resource = await prisma.resource.findUnique({
-          where:   { id },
+          where: { id },
           include: { lessons: true, uploadedBy: { select: { email: true } } },
         })
         if (!resource) throw new Error('Not found')
@@ -619,7 +619,7 @@ const bulkReject = async (req, res, next) => {
           await deleteFile(resource.fileUrl)
         }
         if (resource.thumbnailUrl) {
-          await deleteFile(resource.thumbnailUrl).catch(() => {})
+          await deleteFile(resource.thumbnailUrl).catch(() => { })
         }
         if (resource.type === 'COURSE' && resource.lessons?.length) {
           await Promise.allSettled(
@@ -630,10 +630,10 @@ const bulkReject = async (req, res, next) => {
         }
         if (resource.uploadedBy?.email) {
           emailSvc.sendResourceRejected({
-            to:     resource.uploadedBy.email,
-            title:  resource.title,
+            to: resource.uploadedBy.email,
+            title: resource.title,
             reason: reason || null,
-          }).catch(() => {})
+          }).catch(() => { })
         }
         await prisma.resource.delete({ where: { id } })
         return id
@@ -649,12 +649,12 @@ const bulkReject = async (req, res, next) => {
       .map((r, i) => ({ id: ids[i], reason: r.reason?.message }))
 
     await audit({
-      actorId:    req.user.id,
-      action:     'RESOURCE_REJECTED',
+      actorId: req.user.id,
+      action: 'RESOURCE_REJECTED',
       targetType: 'Resource',
-      targetId:   'bulk',
+      targetId: 'bulk',
       targetName: `Bulk reject: ${succeeded.length} resources`,
-      metadata:   { succeeded: succeeded.length, failed: failed.length, reason },
+      metadata: { succeeded: succeeded.length, failed: failed.length, reason },
     })
 
     res.json({ succeeded, failed, message: `${succeeded.length} rejected, ${failed.length} failed` })
@@ -670,7 +670,7 @@ const editResource = async (req, res, next) => {
     } = req.body
 
     const resource = await prisma.resource.findUnique({
-      where:  { id: req.params.id },
+      where: { id: req.params.id },
       select: { id: true, title: true },
     })
     if (!resource) return res.status(404).json({ message: 'Resource not found' })
@@ -678,14 +678,14 @@ const editResource = async (req, res, next) => {
     const updated = await prisma.resource.update({
       where: { id: req.params.id },
       data: {
-        ...(title           !== undefined && { title }),
-        ...(author          !== undefined && { author }),
-        ...(description     !== undefined && { description }),
-        ...(language        !== undefined && { language }),
-        ...(categoryId      !== undefined && { categoryId }),
-        ...(publisher       !== undefined && { publisher }),
+        ...(title !== undefined && { title }),
+        ...(author !== undefined && { author }),
+        ...(description !== undefined && { description }),
+        ...(language !== undefined && { language }),
+        ...(categoryId !== undefined && { categoryId }),
+        ...(publisher !== undefined && { publisher }),
         ...(publicationYear !== undefined && { publicationYear: Number(publicationYear) }),
-        ...(pageCount       !== undefined && { pageCount: Number(pageCount) }),
+        ...(pageCount !== undefined && { pageCount: Number(pageCount) }),
       },
       include: {
         category: { select: { id: true, name: true } },
@@ -697,12 +697,12 @@ const editResource = async (req, res, next) => {
     await resourceService.updateIndex?.(updated)
 
     await audit({
-      actorId:    req.user.id,
-      action:     'RESOURCE_EDITED',
+      actorId: req.user.id,
+      action: 'RESOURCE_EDITED',
       targetType: 'Resource',
-      targetId:   resource.id,
+      targetId: resource.id,
       targetName: resource.title,
-      metadata:   { fields: Object.keys(req.body) },
+      metadata: { fields: Object.keys(req.body) },
     })
 
     res.json(updated)
@@ -722,7 +722,7 @@ const messageUser = async (req, res, next) => {
     }
 
     const target = await prisma.user.findUnique({
-      where:  { id: req.params.id },
+      where: { id: req.params.id },
       select: { id: true, name: true, email: true, isActive: true },
     })
 
@@ -730,23 +730,52 @@ const messageUser = async (req, res, next) => {
     if (!target.isActive) return res.status(400).json({ message: 'Cannot message a deactivated user' })
 
     await emailSvc.sendAdminMessage({
-      to:         target.email,
-      userName:   target.name,
-      subject:    subject.trim(),
-      message:    message.trim(),
+      to: target.email,
+      userName: target.name,
+      subject: subject.trim(),
+      message: message.trim(),
       senderName: req.user.name,
     })
 
     await audit({
-      actorId:    req.user.id,
-      action:     'USER_MESSAGED',
+      actorId: req.user.id,
+      action: 'USER_MESSAGED',
       targetType: 'User',
-      targetId:   target.id,
+      targetId: target.id,
       targetName: target.name,
-      metadata:   { subject: subject.trim() },
+      metadata: { subject: subject.trim() },
     })
 
     res.json({ message: `Message sent to ${target.name}` })
+  } catch (err) { next(err) }
+}
+
+const getAuditLogs = async (req, res, next) => {
+  try {
+    const { paginate, paginateMeta } = require('../utils/pagination')
+    const { action, actorId, targetType } = req.query
+    const { page, limit, skip, take } = paginate(req.query)
+
+    const where = {
+      ...(action && { action }),
+      ...(actorId && { actorId }),
+      ...(targetType && { targetType }),
+    }
+
+    const [logs, total] = await Promise.all([
+      prisma.auditLog.findMany({
+        where,
+        skip,
+        take,
+        orderBy: { createdAt: 'desc' },
+        include: {
+          actor: { select: { id: true, name: true, role: true } },
+        },
+      }),
+      prisma.auditLog.count({ where }),
+    ])
+
+    res.json({ data: logs, meta: paginateMeta(total, page, limit) })
   } catch (err) { next(err) }
 }
 
@@ -759,5 +788,5 @@ module.exports = {
   getCategories, createCategory, deleteCategory,
   getTags, deleteTag, inviteStaff, acceptInvite,
   listStaff, revokeStaff, cancelInvite, bulkPublish, bulkReject,
-  editResource, messageUser,
+  editResource, messageUser, getAuditLogs,
 }
