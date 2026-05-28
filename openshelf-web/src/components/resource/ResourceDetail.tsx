@@ -10,6 +10,8 @@ import { toast } from '@/lib/toast'
 import { ReadingProgress } from './ReadingProgress'
 import { CommentsSection } from './CommentsSection'
 import { ReportButton } from '@/components/resource/ReportButton'
+import { PdfViewer } from '@/components/resource/PdfViewer'
+import { AudioPlayer } from '@/components/resource/AudioPlayer'
 import {
   BookOpen,
   GraduationCap,
@@ -52,6 +54,7 @@ export function ResourceDetail({ resource }: { resource: Resource }) {
   const [showListPicker, setShowListPicker] = useState(false)
   const [savingToList, setSavingToList] = useState(false)
   const [savedMsg, setSavedMsg] = useState('')
+  const [showPreview, setShowPreview] = useState(false)
   const isVerified = user?.isEmailVerified ?? false
   const TypeIcon = TYPE_ICONS[resource.type] || FileText
 
@@ -75,6 +78,13 @@ export function ResourceDetail({ resource }: { resource: Resource }) {
     loadBookmark()
     return () => { isActive = false }
   }, [user?.id, resource.slug])
+
+  const isPdf = resource.mimeType === 'application/pdf' ||
+    resource.fileUrl?.toLowerCase().endsWith('.pdf')
+  const isAudio = resource.type === 'AUDIO' ||
+    resource.mimeType?.startsWith('audio/')
+
+  const canPreview = isPdf || isAudio
 
   // Load lists when picker opens
   const openListPicker = async () => {
@@ -315,6 +325,22 @@ export function ResourceDetail({ resource }: { resource: Resource }) {
 
           {/* Action buttons */}
           <div className="flex flex-wrap gap-3 pt-2">
+
+            {/* Preview button — PDF and audio only */}
+            {canPreview && resource.type !== 'COURSE' && (
+              <button
+                onClick={() => setShowPreview((s) => !s)}
+                className="px-6 py-2.5 rounded-xl text-sm font-medium transition-colors"
+                style={{
+                  backgroundColor: showPreview ? '#1e40af' : '#eff6ff',
+                  color: showPreview ? '#ffffff' : '#1e40af',
+                  border: '1px solid #bfdbfe',
+                }}
+              >
+                {showPreview ? 'Close preview' : 'Preview'}
+              </button>
+            )}
+
             {resource.type !== 'COURSE' && (
               <a
                 href={resource.fileUrl}
@@ -470,6 +496,23 @@ export function ResourceDetail({ resource }: { resource: Resource }) {
 
         </div>
       </div>
+
+      {/* Inline preview */}
+      {showPreview && canPreview && (
+        <div className="mt-8">
+          {isPdf ? (
+            <PdfViewer
+              url={resource.fileUrl}
+              onClose={() => setShowPreview(false)}
+            />
+          ) : isAudio ? (
+            <AudioPlayer
+              url={resource.fileUrl}
+              title={resource.title}
+            />
+          ) : null}
+        </div>
+      )}
 
       {/* Reading progress */}
       {user && (
