@@ -21,6 +21,7 @@ const commentRoutes = require('./routes/comment.routes');
 const metricsRoutes = require('./routes/metrics.routes');
 const reportRoutes = require('./routes/report.routes');
 const snapshotJob = require('./jobs/snapshotMetrics.job');
+const notificationRoutes = require('./routes/notification.routes')
 const { doubleCsrf } = require('csrf-csrf')
 
 let configureIndex
@@ -93,6 +94,7 @@ app.use('/api/tags',      doubleCsrfProtection, tagRoutes)
 app.use('/api/admin',     doubleCsrfProtection, adminRoutes)
 app.use('/api/progress',  doubleCsrfProtection, progressRoutes)
 app.use('/api',           doubleCsrfProtection, commentRoutes)
+app.use('/api/notifications', doubleCsrfProtection, notificationRoutes)
 
 app.use('/api',            doubleCsrfProtection, reportRoutes)
 app.use('/api/categories', categoryRoutes)

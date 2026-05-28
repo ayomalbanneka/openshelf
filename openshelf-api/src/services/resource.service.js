@@ -6,6 +6,7 @@ const searchService = require('./search.service')
 const { validateFileBytes } = require('../utils/validateFileBytes')
 const emailSvc = require('./email.service')
 const { paginate, paginateMeta } = require('../utils/pagination')
+const notifSvc = require('./notification.service')
 
 // List
 const list = async ({ type, category, language, search, page = 1, limit = 20 }) => {
@@ -395,6 +396,14 @@ const publishById = async (id) => {
       title: updated.title,
     }).catch((err) => console.error('Failed to send publish notification:', err))
   }
+
+  await notifSvc.notify({
+    userId: resource.uploadedById,
+    type: 'RESOURCE_PUBLISHED',
+    title: 'Your resource was published 🎉',
+    body: `"${resource.title}" is now live on OpenShelf.`,
+    link: `/resources/${resource.slug}`,
+  })
 
   return updated
 }

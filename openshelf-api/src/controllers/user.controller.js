@@ -122,6 +122,14 @@ const follow = async (req, res, next) => {
             data: { followerId: req.user.id, followingId },
         })
 
+        await notifSvc.notify({
+            userId: req.params.id,      // the person being followed
+            type: 'NEW_FOLLOWER',
+            title: 'New follower',
+            body: `${req.user.name} started following you.`,
+            link: `/user/${req.user.id}`,
+        })
+
         res.status(201).json({ message: "Followed" });
     } catch (err) {
         if (err.code === 'P2002') {

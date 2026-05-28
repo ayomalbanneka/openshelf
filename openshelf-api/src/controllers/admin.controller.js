@@ -1,6 +1,7 @@
 const prisma = require('../config/prisma')
 const resourceService = require('../services/resource.service')
 const emailSvc = require('../services/email.service')
+const notifSvc = require('../services/notification.service')
 const { deleteFile } = require('../services/storage.service')
 const staffService = require('../services/staff.service')
 const { paginate, paginateMeta } = require('../utils/pagination')
@@ -182,6 +183,13 @@ const rejectResource = async (req, res, next) => {
         reason: reason || null,
       }).catch((err) => console.error('Failed to send reject notification:', err))
     }
+
+    await notifSvc.notify({
+      userId: resource.uploadedById,
+      type: 'RESOURCE_REJECTED',
+      title: 'Submission update',
+      body: `Your submission "${resource.title}" could not be published${reason ? `: ${reason}` : '.'}`,
+    })
 
     await prisma.resource.delete({ where: { id: req.params.id } })
 
