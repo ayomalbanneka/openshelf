@@ -127,7 +127,7 @@ export function PdfViewer({ url, onClose }: PdfViewerProps) {
           <ChevronLeft className="w-4 h-4" />
         </button>
 
-        <span className="text-xs font-medium min-w-[80px] text-center"
+        <span className="text-xs font-medium min-w-20 text-center"
           style={{ color: 'hsl(var(--foreground))' }}>
           {status === 'loading' ? '…' : `${page} / ${pages}`}
         </span>
