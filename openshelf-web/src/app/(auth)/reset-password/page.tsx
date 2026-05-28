@@ -1,10 +1,12 @@
 'use client'
-import { useState, useRef } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { http } from '@/lib/api'
 import { CheckCircle } from 'lucide-react'
 import { getErrorMessage } from '@/lib/errors'
+import { PasswordStrength } from '@/components/auth/PasswordStrength'
+import { checkPwned } from '@/lib/hibp'
 
 export default function ResetPasswordPage() {
   const router  = useRouter()
@@ -16,7 +18,10 @@ export default function ResetPasswordPage() {
   const [loading, setLoading]   = useState(false)
   const [error, setError]       = useState('')
   const [success, setSuccess]   = useState(false)
+  const [pwned, setPwned] = useState<boolean | undefined>(undefined)
+  const [checking, setChecking] = useState(false)
   const inputs = useRef<(HTMLInputElement | null)[]>([])
+  const debounceRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined)
 
   const inputStyle = {
     border: '1px solid hsl(var(--border))',
@@ -55,10 +60,29 @@ export default function ResetPasswordPage() {
     setStep('password')
   }
 
+  useEffect(() => {
+    if (password.length < 8) {
+      setPwned(undefined)
+      return
+    }
+    clearTimeout(debounceRef.current)
+    setChecking(true)
+    debounceRef.current = setTimeout(async () => {
+      const result = await checkPwned(password)
+      setPwned(result)
+      setChecking(false)
+    }, 600)
+    return () => clearTimeout(debounceRef.current)
+  }, [password])
+
   const handlePasswordSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     if (password.length < 8) {
       setError('Password must be at least 8 characters')
+      return
+    }
+    if (pwned) {
+      setError('This password has appeared in data breaches. Please choose a different one.')
       return
     }
     if (password !== confirm) {
@@ -174,6 +198,7 @@ export default function ResetPasswordPage() {
               className="h-10 rounded-lg px-3 text-sm outline-none focus:ring-2 focus:ring-blue-500"
               style={inputStyle}
             />
+            <PasswordStrength password={password} pwned={pwned} checking={checking} />
           </div>
           <div className="flex flex-col gap-1.5">
             <label className="text-sm font-medium">Confirm new password</label>
