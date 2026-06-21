@@ -1,4 +1,4 @@
-const router     = require('express').Router()
+const router = require('express').Router()
 const controller = require('../controllers/metrics.controller')
 const { authenticate, authorize } = require('../middleware/auth')
 
@@ -34,6 +34,22 @@ router.get(
   authenticate,
   authorize('ADMIN', 'MODERATOR'),
   controller.getStorageMetrics
+)
+
+// Meilisearch health
+router.get(
+  '/meilisearch',
+  authenticate,
+  authorize('ADMIN', 'MODERATOR'),
+  controller.getMeilisearchHealth
+)
+
+// Email service health
+router.get(
+  '/email',
+  authenticate,
+  authorize('ADMIN', 'MODERATOR'),
+  controller.getEmailHealth
 )
 
 module.exports = router

@@ -481,6 +481,16 @@ model Notification {
   @@map("notifications")
 }
 
+model AlertState {
+  id            String    @id @default(cuid())
+  metric        String    @unique // 'error_rate' | 'p95' | 'memory' | 'db_latency'
+  isBreached    Boolean   @default(false)
+  lastAlertedAt DateTime?
+  updatedAt     DateTime  @updatedAt
+
+  @@map("alert_states")
+}
+
 enum ReportReason {
   SPAM
   COPYRIGHT

@@ -1,6 +1,6 @@
 const { Resend } = require('resend')
 
-const FROM   = process.env.EMAIL_FROM || 'onboarding@resend.dev'
+const FROM = process.env.EMAIL_FROM || 'onboarding@resend.dev'
 
 let resend
 
@@ -144,10 +144,10 @@ const sendAdminLoginCode = async ({ to, name, code }) => {
 
 // Send staff invite email
 const sendStaffInvite = async ({ to, role, token, inviterName }) => {
-  const inviteUrl  = `${process.env.WEB_URL}/admin/accept-invite?token=${token}`
-  const roleLabel  = role === 'ADMIN' ? 'Administrator' : 'Moderator'
-  const roleColor  = role === 'ADMIN' ? '#991b1b' : '#92400e'
-  const roleBg     = role === 'ADMIN' ? '#fee2e2' : '#fef3c7'
+  const inviteUrl = `${process.env.WEB_URL}/admin/accept-invite?token=${token}`
+  const roleLabel = role === 'ADMIN' ? 'Administrator' : 'Moderator'
+  const roleColor = role === 'ADMIN' ? '#991b1b' : '#92400e'
+  const roleBg = role === 'ADMIN' ? '#fee2e2' : '#fef3c7'
 
   await sendEmail({
     to,
@@ -304,6 +304,19 @@ const sendAdminMessage = async ({ to, userName, subject, message, senderName }) 
   })
 }
 
+const sendThresholdAlert = async ({ to, metric, value, limit, unit }) => {
+  return resend.emails.send({
+    from: EMAIL_FROM,
+    to,
+    subject: `⚠️ OpenShelf alert: ${metric} threshold breached`,
+    html: `
+      <p><strong>${metric}</strong> is currently <strong>${value.toFixed(1)}${unit}</strong>,
+      above the configured threshold of <strong>${limit}${unit}</strong>.</p>
+      <p>Check the <a href="${process.env.WEB_URL}/admin/monitoring">monitoring dashboard</a> for details.</p>
+    `,
+  })
+}
+
 module.exports = {
   sendVerificationCode,
   sendPasswordResetCode,
@@ -313,4 +326,5 @@ module.exports = {
   sendResourcePublished,
   sendResourceRejected,
   sendAdminMessage,
+  sendThresholdAlert,
 }

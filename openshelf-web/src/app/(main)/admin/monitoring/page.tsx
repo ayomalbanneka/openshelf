@@ -1,6 +1,7 @@
 'use client'
 
 import { useCallback, useEffect, useMemo, useState } from 'react'
+import Link from 'next/link'
 import { http } from '@/lib/api'
 import { toast } from '@/lib/toast'
 
@@ -93,6 +94,31 @@ interface StorageMetrics {
   error?: string
 }
 
+interface MeilisearchHealth {
+  status: 'healthy' | 'degraded' | 'down'
+  latencyMs: number
+  documentCount?: number | null
+  isIndexing?: boolean
+  error?: string
+}
+
+interface EmailHealth {
+  status: 'healthy' | 'degraded' | 'down'
+  latencyMs: number
+  domainVerified?: boolean
+  httpStatus?: number
+  error?: string
+}
+
+interface AuditEntry {
+  id: string
+  action: string
+  targetType: string
+  targetName: string | null
+  actor: { name: string; avatarUrl: string | null; role: string }
+  createdAt: string
+}
+
 const MAX_POINTS = 24
 
 const cardStyle = {
@@ -159,12 +185,14 @@ function StatCard({
 
 function StatusBadge({ status }: { status: string }) {
   const healthy = status === 'healthy'
+  const degraded = status === 'degraded' || status === 'warning'
+  const colour = healthy ? 'var(--admin-success)' : degraded ? 'var(--admin-warn)' : 'var(--admin-danger)'
   return (
     <span
       className="text-xs font-semibold px-2.5 py-1 rounded-full"
       style={{
-        backgroundColor: healthy ? 'color-mix(in srgb, var(--admin-success) 14%, transparent)' : 'color-mix(in srgb, var(--admin-danger) 14%, transparent)',
-        color: healthy ? 'var(--admin-success)' : 'var(--admin-danger)',
+        backgroundColor: `color-mix(in srgb, ${colour} 14%, transparent)`,
+        color: colour,
       }}
     >
       {status}
@@ -190,12 +218,91 @@ function AlertChip({ severity, message }: { severity: AlertSeverity; message: st
   )
 }
 
-function Section({ title, children }: { title: string; children: React.ReactNode }) {
+function Section({ title, action, children }: { title: string; action?: React.ReactNode; children: React.ReactNode }) {
   return (
     <section className="flex flex-col gap-4">
-      <h2 className="text-lg font-bold" style={{ color: 'var(--admin-text)' }}>{title}</h2>
+      <div className="flex items-center justify-between">
+        <h2 className="text-lg font-bold" style={{ color: 'var(--admin-text)' }}>{title}</h2>
+        {action}
+      </div>
       {children}
     </section>
+  )
+}
+
+function timeAgo(iso: string) {
+  const diffMs = Date.now() - new Date(iso).getTime()
+  const mins = Math.floor(diffMs / 60000)
+  if (mins < 1) return 'just now'
+  if (mins < 60) return `${mins}m ago`
+  const hours = Math.floor(mins / 60)
+  if (hours < 24) return `${hours}h ago`
+  return `${Math.floor(hours / 24)}d ago`
+}
+
+const ACTION_COLOURS: Record<string, string> = {
+  created: 'var(--admin-success)',
+  published: 'var(--admin-success)',
+  deleted: 'var(--admin-danger)',
+  rejected: 'var(--admin-danger)',
+  edited: 'var(--admin-accent)',
+  staff: 'var(--admin-warn)',
+}
+
+function actionColour(action: string) {
+  const key = Object.keys(ACTION_COLOURS).find((k) => action.toLowerCase().includes(k))
+  return key ? ACTION_COLOURS[key] : 'var(--admin-muted)'
+}
+
+function RecentActivityFeed({ entries, loading }: { entries: AuditEntry[]; loading: boolean }) {
+  return (
+    <div className="p-4 rounded-2xl flex flex-col gap-3" style={cardStyle}>
+      {loading ? (
+        <div className="flex flex-col gap-2">
+          {[1, 2, 3].map((i) => (
+            <div key={i} className="h-8 rounded-lg animate-pulse" style={{ backgroundColor: 'var(--admin-soft)' }} />
+          ))}
+        </div>
+      ) : entries.length === 0 ? (
+        <p className="text-sm" style={{ color: 'var(--admin-muted)' }}>No recent activity</p>
+      ) : (
+        <ul className="flex flex-col gap-2.5">
+          {entries.map((e) => (
+            <li key={e.id} className="flex items-center gap-2 text-sm">
+              {e.actor.avatarUrl ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img src={e.actor.avatarUrl} alt="" className="w-5 h-5 rounded-full shrink-0" />
+              ) : (
+                <span
+                  className="w-5 h-5 rounded-full shrink-0 flex items-center justify-center text-[10px] font-semibold"
+                  style={{ backgroundColor: 'var(--admin-soft)', color: 'var(--admin-muted)' }}
+                >
+                  {e.actor.name?.[0]?.toUpperCase() ?? '?'}
+                </span>
+              )}
+              <span className="font-medium shrink-0" style={{ color: 'var(--admin-text)' }}>
+                {e.actor.name}
+              </span>
+              <span
+                className="text-xs font-semibold px-2 py-0.5 rounded-full shrink-0"
+                style={{
+                  backgroundColor: `color-mix(in srgb, ${actionColour(e.action)} 14%, transparent)`,
+                  color: actionColour(e.action),
+                }}
+              >
+                {e.action.replace(/_/g, ' ').toLowerCase()}
+              </span>
+              <span className="truncate" style={{ color: 'var(--admin-muted)' }}>
+                {e.targetName ?? e.targetType}
+              </span>
+              <span className="ml-auto text-xs shrink-0" style={{ color: 'var(--admin-muted)' }}>
+                {timeAgo(e.createdAt)}
+              </span>
+            </li>
+          ))}
+        </ul>
+      )}
+    </div>
   )
 }
 
@@ -204,15 +311,23 @@ export default function MonitoringPage() {
   const [history, setHistory] = useState<TrendPoint[]>([])
   const [storage, setStorage] = useState<StorageMetrics | null>(null)
   const [storageLoading, setStorageLoading] = useState(true)
+  const [meilisearch, setMeilisearch] = useState<MeilisearchHealth | null>(null)
+  const [meilisearchLoading, setMeilisearchLoading] = useState(true)
+  const [emailHealth, setEmailHealth] = useState<EmailHealth | null>(null)
+  const [emailHealthLoading, setEmailHealthLoading] = useState(true)
+  const [activity, setActivity] = useState<AuditEntry[]>([])
+  const [activityLoading, setActivityLoading] = useState(true)
   const [loading, setLoading] = useState(true)
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null)
   const [autoRefresh, setAutoRefresh] = useState(true)
   const [refreshInterval, setRefreshInterval] = useState(10)
 
-  const metricsUrl = useMemo(() => {
+  const apiBase = useMemo(() => {
     const base = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000/api'
-    return `${base.replace(/\/api\/?$/, '')}/metrics/dashboard`
+    return base.replace(/\/api\/?$/, '')
   }, [])
+
+  const metricsUrl = useMemo(() => `${apiBase}/metrics/dashboard`, [apiBase])
 
   const fetchMetrics = useCallback(async () => {
     try {
@@ -229,8 +344,7 @@ export default function MonitoringPage() {
   // Fetch real historical snapshots from DB — separate from live metrics
   const fetchHistory = useCallback(async () => {
     try {
-      const base = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000/api'
-      const historyUrl = `${base.replace(/\/api\/?$/, '')}/metrics/history?points=24`
+      const historyUrl = `${apiBase}/metrics/history?points=24`
       const { data } = await http.get<{ data: StorageSnapshot[] }>(historyUrl)
 
       setHistory(
@@ -245,14 +359,13 @@ export default function MonitoringPage() {
     } catch {
       // History is non-critical — fail silently
     }
-  }, [])
+  }, [apiBase])
 
   // Fetch storage metrics — only once on mount, they're slow to query
   const fetchStorage = useCallback(async () => {
     setStorageLoading(true)
     try {
-      const base = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000/api'
-      const storageUrl = `${base.replace(/\/api\/?$/, '')}/metrics/storage`
+      const storageUrl = `${apiBase}/metrics/storage`
       const { data } = await http.get<StorageMetrics>(storageUrl)
       setStorage(data)
     } catch {
@@ -268,27 +381,79 @@ export default function MonitoringPage() {
     } finally {
       setStorageLoading(false)
     }
-  }, [])
+  }, [apiBase])
 
-  // Load live metrics + history on mount
+  // Fetch Meilisearch health — cheap ping, safe to poll alongside live metrics
+  const fetchMeilisearch = useCallback(async () => {
+    try {
+      const { data } = await http.get<MeilisearchHealth>(`${apiBase}/metrics/meilisearch`)
+      setMeilisearch(data)
+    } catch {
+      setMeilisearch({ status: 'down', latencyMs: 0, error: 'Failed to reach search health endpoint' })
+    } finally {
+      setMeilisearchLoading(false)
+    }
+  }, [apiBase])
+
+  // Fetch email service health — Resend ping, doesn't send mail
+  const fetchEmailHealth = useCallback(async () => {
+    try {
+      const { data } = await http.get<EmailHealth>(`${apiBase}/metrics/email`)
+      setEmailHealth(data)
+    } catch {
+      setEmailHealth({ status: 'down', latencyMs: 0, error: 'Failed to reach email health endpoint' })
+    } finally {
+      setEmailHealthLoading(false)
+    }
+  }, [apiBase])
+
+  // Fetch a compact slice of the audit log for the recent activity feed
+  const fetchActivity = useCallback(async () => {
+    try {
+      const { data } = await http.get<{ entries?: AuditEntry[]; data?: AuditEntry[] }>(
+        `${apiBase}/api/admin/audit`,
+        { params: { limit: 6 } }
+      )
+      setActivity(data.entries ?? data.data ?? [])
+    } catch {
+      // Non-critical — leave feed empty rather than surfacing an error
+    } finally {
+      setActivityLoading(false)
+    }
+  }, [apiBase])
+
+  // Load everything on mount
   useEffect(() => {
     fetchMetrics()
     fetchHistory()
     fetchStorage()
-  }, [fetchMetrics, fetchHistory, fetchStorage])
+    fetchMeilisearch()
+    fetchEmailHealth()
+    fetchActivity()
+  }, [fetchMetrics, fetchHistory, fetchStorage, fetchMeilisearch, fetchEmailHealth, fetchActivity])
 
-  // Auto-refresh live metrics only — history refreshes every 5 min via the DB job
+  // Auto-refresh live metrics + health pings together
   useEffect(() => {
     if (!autoRefresh) return
-    const id = setInterval(fetchMetrics, refreshInterval * 1000)
+    const id = setInterval(() => {
+      fetchMetrics()
+      fetchMeilisearch()
+      fetchEmailHealth()
+    }, refreshInterval * 1000)
     return () => clearInterval(id)
-  }, [autoRefresh, refreshInterval, fetchMetrics])
+  }, [autoRefresh, refreshInterval, fetchMetrics, fetchMeilisearch, fetchEmailHealth])
 
   // Refresh history every 5 minutes to pick up new DB snapshots
   useEffect(() => {
     const id = setInterval(fetchHistory, 5 * 60 * 1000)
     return () => clearInterval(id)
   }, [fetchHistory])
+
+  // Refresh activity feed every 60s — lighter weight than live metrics, no need to match that cadence
+  useEffect(() => {
+    const id = setInterval(fetchActivity, 60 * 1000)
+    return () => clearInterval(id)
+  }, [fetchActivity])
 
   const exportJson = () => {
     if (!metrics) return
@@ -321,6 +486,10 @@ export default function MonitoringPage() {
       ['db_p95_query_ms', String(metrics.database.p95QueryMs ?? 0)],
       ['db_slow_queries', String(metrics.database.slowQueries ?? 0)],
       ['system_memory_pct', metrics.memory.systemUsedPct],
+      ['meilisearch_status', meilisearch?.status ?? 'n/a'],
+      ['meilisearch_latency_ms', String(meilisearch?.latencyMs ?? 0)],
+      ['email_status', emailHealth?.status ?? 'n/a'],
+      ['email_latency_ms', String(emailHealth?.latencyMs ?? 0)],
     ]
 
     const csv = rows.map((r) => r.map((v) => `"${String(v).replaceAll('"', '""')}"`).join(',')).join('\n')
@@ -460,6 +629,9 @@ export default function MonitoringPage() {
               <AlertChip key={`${item.key}-${item.message}`} severity={item.severity} message={item.message} />
             ))
           )}
+          <p className="text-xs" style={{ color: 'var(--admin-muted)' }}>
+            Thresholds are configured via environment variables. Sustained breaches email admins after a cooldown period — see Alert settings in deployment config.
+          </p>
         </div>
       </Section>
 
@@ -482,6 +654,85 @@ export default function MonitoringPage() {
             <MiniTrend values={history.map((h) => h.memoryPct)} colour="var(--admin-success)" />
           </div>
         </div>
+      </Section>
+
+      <Section title="Service health">
+        <div className="grid md:grid-cols-2 gap-6">
+          <div className="p-5 rounded-2xl flex flex-col gap-2.5" style={cardStyle}>
+            <div className="flex items-center justify-between mb-1">
+              <p className="font-semibold" style={{ color: 'var(--admin-text)' }}>Search (Meilisearch)</p>
+              {meilisearchLoading ? (
+                <span className="text-xs" style={{ color: 'var(--admin-muted)' }}>Checking…</span>
+              ) : (
+                <StatusBadge status={meilisearch?.status ?? 'down'} />
+              )}
+            </div>
+            {meilisearchLoading ? (
+              <div className="h-16 rounded-xl animate-pulse" style={{ backgroundColor: 'var(--admin-soft)' }} />
+            ) : meilisearch?.error ? (
+              <p className="text-sm" style={{ color: 'var(--admin-danger)' }}>{meilisearch.error}</p>
+            ) : (
+              <>
+                {[{
+                  label: 'Ping latency', value: `${meilisearch?.latencyMs ?? 0}ms`,
+                }, {
+                  label: 'Indexed documents', value: meilisearch?.documentCount?.toLocaleString() ?? '—',
+                }, {
+                  label: 'Currently indexing', value: meilisearch?.isIndexing ? 'Yes' : 'No',
+                }].map((row) => (
+                  <div key={row.label} className="flex items-center justify-between text-sm gap-4">
+                    <span style={{ color: 'var(--admin-muted)' }}>{row.label}</span>
+                    <span className="font-medium text-right" style={{ color: 'var(--admin-text)' }}>{row.value}</span>
+                  </div>
+                ))}
+              </>
+            )}
+          </div>
+
+          <div className="p-5 rounded-2xl flex flex-col gap-2.5" style={cardStyle}>
+            <div className="flex items-center justify-between mb-1">
+              <p className="font-semibold" style={{ color: 'var(--admin-text)' }}>Email (Resend)</p>
+              {emailHealthLoading ? (
+                <span className="text-xs" style={{ color: 'var(--admin-muted)' }}>Checking…</span>
+              ) : (
+                <StatusBadge status={emailHealth?.status ?? 'down'} />
+              )}
+            </div>
+            {emailHealthLoading ? (
+              <div className="h-16 rounded-xl animate-pulse" style={{ backgroundColor: 'var(--admin-soft)' }} />
+            ) : emailHealth?.error ? (
+              <p className="text-sm" style={{ color: 'var(--admin-danger)' }}>{emailHealth.error}</p>
+            ) : (
+              <>
+                {[{
+                  label: 'Ping latency', value: `${emailHealth?.latencyMs ?? 0}ms`,
+                }, {
+                  label: 'Domain verified', value: emailHealth?.domainVerified ? 'Yes' : 'No',
+                }].map((row) => (
+                  <div key={row.label} className="flex items-center justify-between text-sm gap-4">
+                    <span style={{ color: 'var(--admin-muted)' }}>{row.label}</span>
+                    <span className="font-medium text-right" style={{ color: 'var(--admin-text)' }}>{row.value}</span>
+                  </div>
+                ))}
+              </>
+            )}
+          </div>
+        </div>
+      </Section>
+
+      <Section
+        title="Recent admin activity"
+        action={
+          <Link
+            href="/admin/audit"
+            className="text-xs font-semibold"
+            style={{ color: 'var(--admin-accent)' }}
+          >
+            View all →
+          </Link>
+        }
+      >
+        <RecentActivityFeed entries={activity} loading={activityLoading} />
       </Section>
 
       <Section title="System and database">

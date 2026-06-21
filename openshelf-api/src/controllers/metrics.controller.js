@@ -2,6 +2,8 @@ const prisma   = require('../config/prisma')
 const os       = require('os')
 const { register, errorsTotal } = require('../config/metrics')
 const { getStorageMetrics } = require('../utils/storageMetrics')
+const { getMeilisearchHealth } = require('../utils/meilisearchHealth')
+const { getEmailHealth } = require('../utils/emailHealth')
 
 const processStartedAt = new Date()
 let requestSnapshot = {
@@ -371,4 +373,22 @@ const getStorageMetrics_ = async (req, res, next) => {
   }
 }
 
-module.exports = { getPrometheusMetrics, getDashboardMetrics, getMetricHistory, getStorageMetrics: getStorageMetrics_ }
+const getMeilisearchHealth_ = async (req, res) => {
+  const health = await getMeilisearchHealth()
+  res.json(health)
+}
+
+const getEmailHealth_ = async (req, res) => {
+  const health = await getEmailHealth()
+  res.json(health)
+}
+
+
+module.exports = {
+  getPrometheusMetrics,
+  getDashboardMetrics,
+  getMetricHistory,
+  getStorageMetrics: getStorageMetrics_,
+  getMeilisearchHealth: getMeilisearchHealth_,
+  getEmailHealth: getEmailHealth_,
+}
