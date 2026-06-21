@@ -6,16 +6,30 @@ import { ContinueReading } from '@/components/resource/ContinueReading'
 import { serverApi } from '@/lib/server-api'
 import type { Metadata } from 'next'
 
-export const metadata: Metadata = { title: 'Browse — OpenShelf' }
+type Props = { searchParams: Promise<{ q?: string; type?: string; category?: string }> }
 
-interface Props {
-  searchParams: Promise<{
-    type?: string
-    language?: string
-    search?: string
-    category?: string
-    page?: string
-  }>
+export async function generateMetadata({ searchParams }: Props): Promise<Metadata> {
+  const { q, type, category } = await searchParams
+
+  let title = 'Browse Resources'
+  const parts: string[] = []
+  if (q) parts.push(`"${q}"`)
+  if (type) parts.push(type.toLowerCase())
+  if (category) parts.push(category)
+  if (parts.length) title = `Browse ${parts.join(', ')}`
+
+  const description = q
+    ? `Search results for "${q}" in the OpenShelf free library.`
+    : 'Browse thousands of free books, research papers, audio recordings, and courses on OpenShelf.'
+
+  return {
+    title,
+    description,
+    // Don't index filtered/search result pages — prevents duplicate content
+    robots: q || type || category
+      ? { index: false, follow: true }
+      : { index: true, follow: true },
+  }
 }
 
 function GridSkeleton() {
