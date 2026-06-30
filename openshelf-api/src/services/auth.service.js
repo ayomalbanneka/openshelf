@@ -397,5 +397,5 @@ module.exports = {
   register, verifyEmail, resendVerificationCode,
   login, logout, adminLoginStep1, adminLoginStep2,
   forgotPassword, resetPassword,
-  refreshAccessToken,
+  refreshAccessToken, generateTokens,
 }

@@ -12,20 +12,23 @@ interface User {
 }
 
 interface AuthState {
-  user:      User | null
-  isLoading: boolean
-  login:     (email: string, password: string) => Promise<void>
-  register:  (name: string, email: string, password: string) => Promise<void>
-  logout:    () => Promise<void>
-  fetchMe:   () => Promise<void>
-  setUser:   (user: User) => void
+  user:          User | null
+  isLoading:     boolean
+  hasHydrated:   boolean
+  login:         (email: string, password: string) => Promise<void>
+  register:      (name: string, email: string, password: string) => Promise<void>
+  logout:        () => Promise<void>
+  fetchMe:       () => Promise<void>
+  setUser:       (user: User) => void
+  setHasHydrated: (value: boolean) => void
 }
 
 export const useAuthStore = create<AuthState>()(
   persist(
     (set) => ({
-      user:      null,
-      isLoading: false,
+      user:        null,
+      isLoading:   false,
+      hasHydrated: false,
 
       login: async (email, password) => {
         set({ isLoading: true })
@@ -69,10 +72,14 @@ export const useAuthStore = create<AuthState>()(
       },
 
       setUser: (user) => set({ user }),
+      setHasHydrated: (value) => set({ hasHydrated: value }),
     }),
     {
       name:       'auth',
       partialize: (s) => ({ user: s.user }),  // only persist user object, not tokens
+      onRehydrateStorage: () => (state) => {
+        state?.setHasHydrated(true)
+      },
     }
   )
 )

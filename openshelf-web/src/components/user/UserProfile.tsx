@@ -131,6 +131,7 @@ export function UserProfile({ user, uploads }: Props) {
                   height={80}
                   unoptimized
                   className="h-20 w-20 object-cover"
+                  style={{ width: 'auto', height: 'auto' }}
                 />
               ) : (
                 user.name.charAt(0).toUpperCase()

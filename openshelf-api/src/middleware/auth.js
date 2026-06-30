@@ -19,13 +19,15 @@ const authenticate = async (req, res, next) => {
     const decoded = jwt.verify(token, process.env.JWT_SECRET)
 
     const user = await prisma.user.findUnique({
-      where:  { id: decoded.userId },
+      where: { id: decoded.userId },
       select: {
-        id:       true,
-        name:     true,
-        email:    true,
-        role:     true,
+        id: true,
+        name: true,
+        email: true,
+        role: true,
         isActive: true,
+        isEmailVerified: true,
+        avatarUrl: true,
       },
     })
 

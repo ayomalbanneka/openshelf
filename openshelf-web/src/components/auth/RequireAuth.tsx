@@ -9,12 +9,14 @@ export function RequireAuth({ children, requireVerified = false }: {
   children: React.ReactNode
   requireVerified?: boolean
 }) {
-  const { user }  = useAuthStore()
-  const router    = useRouter()
-  const hydrated = useHydrated()
+  const { user }       = useAuthStore()
+  const storeHydrated  = useAuthStore((s) => s.hasHydrated)
+  const router         = useRouter()
+  const reactHydrated  = useHydrated()
+  const ready = reactHydrated && storeHydrated
 
   useEffect(() => {
-    if (!hydrated) return
+    if (!ready) return
     if (!user) {
       router.replace('/login')
       return
@@ -22,9 +24,9 @@ export function RequireAuth({ children, requireVerified = false }: {
     if (requireVerified && !user.isEmailVerified) {
       router.replace('/verify-email?from=upload')
     }
-  }, [hydrated, user, requireVerified, router])
+  }, [ready, user, requireVerified, router])
 
-  if (!hydrated) return null
+  if (!ready) return null
   if (!user) return null
   if (requireVerified && !user.isEmailVerified) return null
 

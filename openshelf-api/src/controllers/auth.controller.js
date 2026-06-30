@@ -1,5 +1,6 @@
-const authService = require('../services/auth.service')
-const { setTokenCookies, clearTokenCookies } = require('../utils/cookies')
+const authService = require('../services/auth.service');
+const { setTokenCookies, clearTokenCookies } = require('../utils/cookies');
+const { generateTokens } = require('../services/auth.service');
 
 const register = async (req, res, next) => {
   try {
@@ -100,9 +101,21 @@ const logout = async (req, res, next) => {
   } catch (err) { next(err) }
 }
 
+const oauthCallback = async (req, res, next) => {
+  try {
+    const tokens = await generateTokens(req.user.id)
+    setTokenCookies(res, tokens)
+
+    res.redirect(`${process.env.WEB_URL}/auth/callback`)
+  } catch (err) {
+    console.error('[oauthCallback] failed:', err)
+    res.redirect(`${process.env.WEB_URL}/login?error=oauth_failed`)
+  }
+}
+
 module.exports = {
   register, verifyEmail, resendCode,
   login, adminLoginStep1, adminLoginStep2,
   forgotPassword, resetPassword,
-  refresh, me, logout,
+  refresh, me, logout, oauthCallback
 }

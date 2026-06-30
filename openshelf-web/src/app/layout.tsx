@@ -4,6 +4,7 @@ import { ThemeProvider } from 'next-themes'
 import { ToasterClient } from '@/components/ui/ToasterClient'
 import './globals.css'
 import 'goey-toast/styles.css'
+import { AuthBootstrap } from '@/components/auth/AuthBootstrap'
 
 const inter = Inter({ subsets: ['latin'] })
 
@@ -64,6 +65,7 @@ export default function RootLayout({
     <html lang="en" suppressHydrationWarning>
       <body className={inter.className}>
         <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
+          <AuthBootstrap />
           {children}
           <ToasterClient />
         </ThemeProvider>

@@ -10,7 +10,9 @@ model User {
   id                 String              @id @default(cuid())
   name               String
   email              String              @unique
-  passwordHash       String
+  passwordHash       String?
+  oauthProvider      OAuthProvider?
+  oauthId            String?
   role               Role                @default(USER)
   avatarUrl          String?
   bio                String?
@@ -41,6 +43,8 @@ model User {
   auditLogs          AuditLog[]
   notifications      Notification[]
 
+  @@unique([email, oauthProvider])
+  @@index([oauthProvider, oauthId])
   @@index([email])
   @@map("users")
 }
@@ -572,10 +576,17 @@ enum AuditAction {
   TAG_DELETED
 }
 
+// Notification types for user-facing notifications
 enum NotificationType {
   RESOURCE_PUBLISHED
   RESOURCE_REJECTED
   NEW_FOLLOWER
   COMMENT_ON_RESOURCE
   CLUB_INVITE
+}
+
+// OAuth providers for social login
+enum OAuthProvider {
+  GOOGLE
+  GITHUB
 }
