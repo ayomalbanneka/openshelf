@@ -343,9 +343,28 @@ const getMyStats = async (req, res, next) => {
     } catch (err) { next(err) }
 }
 
+const updateNotificationPrefs = async (req, res, next) => {
+  try {
+    const { prefs } = req.body
+    if (typeof prefs !== 'object' || Array.isArray(prefs)) {
+      return res.status(400).json({ message: 'prefs must be an object' })
+    }
+
+    const user = await prisma.user.update({
+      where:  { id: req.user.id },
+      data:   { notificationPrefs: prefs },
+      select: { id: true, notificationPrefs: true },
+    })
+
+    res.json({ notificationPrefs: user.notificationPrefs })
+  } catch (err) {
+    next(err)
+  }
+}
+
 module.exports = {
     getProfile, updateProfile, changePassword,
     follow, unfollow, isFollowing,
     getFollowers, getFollowing,
-    getUploads, getMyStats,
+    getUploads, getMyStats, updateNotificationPrefs,
 }

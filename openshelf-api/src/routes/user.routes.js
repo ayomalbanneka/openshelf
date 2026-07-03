@@ -15,6 +15,8 @@ router.get('/:id/uploads', controller.getUploads)
 
 // Authenticated
 router.patch('/me', authenticate, controller.updateProfile)
+// src/routes/user.routes.js — add this route after PATCH /me/password
+router.patch('/me/notification-prefs', authenticate, controller.updateNotificationPrefs)
 router.patch('/me/password', authenticate, controller.changePassword)
 router.get('/:id/is-following', authenticate, controller.isFollowing)
 router.post('/:id/follow', authenticate, controller.follow)

@@ -36,6 +36,8 @@ const authenticate = async (req, res, next) => {
             cancelAtPeriodEnd: true,
           },
         },
+
+        notificationPrefs: true,
       },
     })
 

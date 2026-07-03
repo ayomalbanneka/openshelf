@@ -180,7 +180,12 @@ export const api = {
       http.post('/payments/checkout', { tier }).then((r) => r.data as { url: string }),
     portal: () =>
       http.post('/payments/portal', {}).then((r) => r.data as { url: string }),
-    sync: () => 
+    sync: () =>
       http.post('/payments/sync', {}).then((r) => r.data),
+  },
+
+  notifications: {
+    updatePrefs: (prefs: Record<string, boolean>) =>
+      http.patch('/users/me/notification-prefs', { prefs }).then((r) => r.data),
   },
 }

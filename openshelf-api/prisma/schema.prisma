@@ -18,6 +18,7 @@ model User {
   bio                String?
   country            String?
   preferredLanguage  String              @default("en")
+  notificationPrefs  Json                @default("{}") @map("notification_prefs")
   isActive           Boolean             @default(true)
   isEmailVerified    Boolean             @default(false)
   createdAt          DateTime            @default(now())

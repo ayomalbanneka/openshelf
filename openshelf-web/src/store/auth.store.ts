@@ -16,7 +16,9 @@ interface User {
   role: 'ADMIN' | 'MODERATOR' | 'USER'
   avatarUrl?: string
   isEmailVerified: boolean
+  oauthProvider?: 'GOOGLE' | 'GITHUB'
   subscription?: Subscription
+  notificationPrefs?: Record<string, boolean>
 }
 
 interface AuthState {

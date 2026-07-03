@@ -16,6 +16,7 @@ export interface User {
   bio?: string
   country?: string
   createdAt: string
+  oauthProvider?: 'GOOGLE' | 'GITHUB'
 }
 
 export interface Category {
