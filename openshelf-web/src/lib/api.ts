@@ -3,12 +3,13 @@ import axios from 'axios'
 const BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000/api'
 
 export const http = axios.create({
-  baseURL:         BASE_URL,
+  baseURL: BASE_URL,
   withCredentials: true,   // send cookies on every request
 })
 
 // ── CSRF token management ────────────────────────────────────
 let csrfToken: string | null = null
+let csrfTokenPromise: Promise<string> | null = null
 
 const fetchCsrfToken = async (): Promise<string> => {
   const { data } = await axios.get(`${BASE_URL}/csrf-token`, {
@@ -18,11 +19,16 @@ const fetchCsrfToken = async (): Promise<string> => {
   return data.csrfToken
 }
 
-// Fetch CSRF token once on module load (client-side only)
-if (typeof window !== 'undefined') {
-  fetchCsrfToken().catch(() => {
-    console.warn('Could not fetch CSRF token — mutating requests may fail')
-  })
+const getCsrfToken = async (): Promise<string> => {
+  if (csrfToken) return csrfToken
+
+  if (!csrfTokenPromise) {
+    csrfTokenPromise = fetchCsrfToken().finally(() => {
+      csrfTokenPromise = null
+    })
+  }
+
+  return csrfTokenPromise
 }
 
 // ── Request interceptor — attach CSRF token ─────────────────
@@ -32,7 +38,7 @@ http.interceptors.request.use(async (config) => {
 
   if (mutating && typeof window !== 'undefined') {
     // Use cached token or fetch a fresh one
-    const token = csrfToken ?? await fetchCsrfToken()
+    const token = await getCsrfToken()
     config.headers['x-csrf-token'] = token
   }
 
@@ -47,10 +53,10 @@ http.interceptors.response.use(
 
     const isAuthEndpoint =
       typeof original?.url === 'string' &&
-      (original.url.includes('/auth/login')    ||
-       original.url.includes('/auth/register') ||
-       original.url.includes('/auth/refresh')  ||
-       original.url.includes('/auth/logout'))
+      (original.url.includes('/auth/login') ||
+        original.url.includes('/auth/register') ||
+        original.url.includes('/auth/refresh') ||
+        original.url.includes('/auth/logout'))
 
     if (error.response?.status === 401 && !original._retry && !isAuthEndpoint) {
       original._retry = true
@@ -76,8 +82,8 @@ http.interceptors.response.use(
 
     // If CSRF token is rejected (403), fetch a fresh one and retry once
     if (error.response?.status === 403 &&
-        error.response?.data?.message?.includes('csrf') &&
-        !original._csrfRetry) {
+      error.response?.data?.message?.includes('csrf') &&
+      !original._csrfRetry) {
       original._csrfRetry = true
       csrfToken = await fetchCsrfToken()
       original.headers['x-csrf-token'] = csrfToken
@@ -167,5 +173,14 @@ export const api = {
       http.patch(`/comments/${id}`, { body }).then((r) => r.data),
     delete: (id: string) =>
       http.delete(`/comments/${id}`).then((r) => r.data),
+  },
+
+  payments: {
+    checkout: (tier: 'SUPPORTER' | 'PATRON') =>
+      http.post('/payments/checkout', { tier }).then((r) => r.data as { url: string }),
+    portal: () =>
+      http.post('/payments/portal', {}).then((r) => r.data as { url: string }),
+    sync: () => 
+      http.post('/payments/sync', {}).then((r) => r.data),
   },
 }

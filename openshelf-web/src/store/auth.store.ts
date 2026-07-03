@@ -2,6 +2,13 @@ import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
 import { http } from '@/lib/api'
 
+interface Subscription {
+  tier: 'SUPPORTER' | 'PATRON'
+  status: 'ACTIVE' | 'PAST_DUE' | 'CANCELED' | 'INCOMPLETE'
+  currentPeriodEnd: string | null
+  cancelAtPeriodEnd: boolean
+}
+
 interface User {
   id: string
   name: string
@@ -9,25 +16,26 @@ interface User {
   role: 'ADMIN' | 'MODERATOR' | 'USER'
   avatarUrl?: string
   isEmailVerified: boolean
+  subscription?: Subscription
 }
 
 interface AuthState {
-  user:          User | null
-  isLoading:     boolean
-  hasHydrated:   boolean
-  login:         (email: string, password: string) => Promise<void>
-  register:      (name: string, email: string, password: string) => Promise<void>
-  logout:        () => Promise<void>
-  fetchMe:       () => Promise<void>
-  setUser:       (user: User) => void
+  user: User | null
+  isLoading: boolean
+  hasHydrated: boolean
+  login: (email: string, password: string) => Promise<void>
+  register: (name: string, email: string, password: string) => Promise<void>
+  logout: () => Promise<void>
+  fetchMe: () => Promise<void>
+  setUser: (user: User) => void
   setHasHydrated: (value: boolean) => void
 }
 
 export const useAuthStore = create<AuthState>()(
   persist(
     (set) => ({
-      user:        null,
-      isLoading:   false,
+      user: null,
+      isLoading: false,
       hasHydrated: false,
 
       login: async (email, password) => {
@@ -75,7 +83,7 @@ export const useAuthStore = create<AuthState>()(
       setHasHydrated: (value) => set({ hasHydrated: value }),
     }),
     {
-      name:       'auth',
+      name: 'auth',
       partialize: (s) => ({ user: s.user }),  // only persist user object, not tokens
       onRehydrateStorage: () => (state) => {
         state?.setHasHydrated(true)

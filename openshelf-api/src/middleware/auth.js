@@ -28,6 +28,14 @@ const authenticate = async (req, res, next) => {
         isActive: true,
         isEmailVerified: true,
         avatarUrl: true,
+        subscription: {
+          select: {
+            tier: true,
+            status: true,
+            currentPeriodEnd: true,
+            cancelAtPeriodEnd: true,
+          },
+        },
       },
     })
 
