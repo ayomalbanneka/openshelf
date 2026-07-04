@@ -1,12 +1,10 @@
-const prisma = require('../config/prisma')
-const { PrismaClient, Prisma } = require('@prisma/client')
-const slugify = require('../utils/slugify')
-const { uploadFile, deleteFile } = require('./storage.service')
-const searchService = require('./search.service')
-const { validateFileBytes } = require('../utils/validateFileBytes')
-const emailSvc = require('./email.service')
-const { paginate, paginateMeta } = require('../utils/pagination')
-const notifSvc = require('./notification.service')
+const prisma = require('../config/prisma');
+const { Prisma } = require('@prisma/client');
+const slugify = require('../utils/slugify');
+const { uploadFile, deleteFile } = require('./storage.service');
+const { validateFileBytes } = require('../utils/validateFileBytes');
+const { paginate, paginateMeta } = require('../utils/pagination');
+const { emailQueue, searchQueue, thumbnailQueue, notifyQueue } = require('../queues');
 
 // List
 const list = async ({ type, category, language, search, page = 1, limit = 20 }) => {
@@ -160,64 +158,39 @@ const getOne = async (slug) => {
 // ── Create ────────────────────────────────────────────────────
 const create = async (data, files, userId) => {
   const {
-    title,
-    description,
-    type,
-    language = 'en',
-    pageCount,
-    duration,
-    author,
-    publisher,
-    isbn,
-    edition,
-    publicationYear,
-    categoryId,
-    tagIds = [],
-    lessons,
+    title, description, type, language = 'en',
+    pageCount, duration, author, publisher,
+    isbn, edition, publicationYear, categoryId,
+    tagIds = [], lessons,
   } = data
 
   const isCourse = type === 'COURSE'
   const uploadedFiles = Array.isArray(files) ? files : []
 
-  // Thumbnail is optional for all types
   const thumbnailFile = uploadedFiles.find((f) => f.fieldname === 'thumbnail')
-  const thumbnailUrl = thumbnailFile
-    ? await uploadFile(thumbnailFile, 'resources/thumbnails')
-    : null
-
-  // For courses: main file is not required — lessons carry their own files
-  // For all other types: main file is required
   const mainFile = uploadedFiles.find((f) => f.fieldname === 'file')
 
   if (!isCourse && !mainFile) {
-    const err = new Error('File is required')
-    err.status = 400
-    throw err
+    const err = new Error('File is required'); err.status = 400; throw err
   }
 
-  // Validate actual file content against magic bytes — not just the client-reported MIME type
-  if (mainFile) {
-    await validateFileBytes(mainFile.buffer, 'file')
-  }
-  if (thumbnailFile) {
-    await validateFileBytes(thumbnailFile.buffer, 'thumbnail')
-  }
+  if (mainFile) await validateFileBytes(mainFile.buffer, 'file')
+  if (thumbnailFile) await validateFileBytes(thumbnailFile.buffer, 'thumbnail')
 
-  // Validate lesson files for courses
   if (isCourse && lessons) {
     const lessonFiles = uploadedFiles.filter((f) => f.fieldname.startsWith('lessonFile_'))
-    await Promise.all(
-      lessonFiles.map((f) => validateFileBytes(f.buffer, f.fieldname))
-    )
+    await Promise.all(lessonFiles.map((f) => validateFileBytes(f.buffer, f.fieldname)))
   }
-
   if (isCourse && !lessons) {
-    const err = new Error('Course must have at least one lesson')
-    err.status = 400
-    throw err
+    const err = new Error('Course must have at least one lesson'); err.status = 400; throw err
   }
 
-  // Upload main file for non-courses; courses use 'course-content' as placeholder
+  // Upload thumbnail raw — worker will compress and replace it
+  let thumbnailUrl = null
+  if (thumbnailFile) {
+    thumbnailUrl = await uploadFile(thumbnailFile, 'resources/thumbnails')
+  }
+
   let fileUrl = 'course-content'
   let fileSize = 0
   let mimeType = 'application/octet-stream'
@@ -238,31 +211,17 @@ const create = async (data, files, userId) => {
 
   const resource = await prisma.resource.create({
     data: {
-      title,
-      slug,
-      description,
-      type,
-      language,
-      fileUrl,
-      fileSize,
-      mimeType,
-      thumbnailUrl,
+      title, slug, description, type, language,
+      fileUrl, fileSize, mimeType, thumbnailUrl,
       pageCount: pageCount ? Number(pageCount) : null,
       duration: duration ? Number(duration) : null,
       publicationYear: publicationYear ? Number(publicationYear) : null,
-      author,
-      publisher,
-      isbn,
-      edition,
+      author, publisher, isbn, edition,
       uploadedById: userId,
       categoryId,
       isPublished: false,
       tags: parsedTagIds.length
-        ? {
-          create: parsedTagIds.map((tagId) => ({
-            tag: { connect: { id: tagId } },
-          })),
-        }
+        ? { create: parsedTagIds.map((tagId) => ({ tag: { connect: { id: tagId } } })) }
         : undefined,
     },
     include: {
@@ -272,49 +231,39 @@ const create = async (data, files, userId) => {
     },
   })
 
-  // Sync to Meilisearch after creating
-  // Re-fetch with relations for accurate indexing
-  const full = await prisma.resource.findUnique({
-    where: { id: resource.id },
-    include: {
-      category: { select: { id: true, name: true, slug: true } },
-      tags: { include: { tag: true } },
-    },
-  })
-  await searchService.updateResourceIndex(full)
+  // Queue search indexing — non-blocking
+  await searchQueue.add('upsert', { type: 'UPSERT', resourceId: resource.id })
 
-  // Upload each lesson's file independently to resources/course/lessons
+  // Queue thumbnail compression — non-blocking
+  if (thumbnailFile) {
+    await thumbnailQueue.add('compress', {
+      resourceId: resource.id,
+      buffer: Array.from(thumbnailFile.buffer),
+      originalName: thumbnailFile.originalname,
+    })
+  }
+
   if (isCourse && lessons) {
     const lessonsMeta = JSON.parse(lessons)
-
     await Promise.all(
       lessonsMeta.map(async (meta, i) => {
         const lessonFile = uploadedFiles.find((f) => f.fieldname === `lessonFile_${i}`)
-
         if (!lessonFile) {
-          // Skip lessons with no file attached — title-only lessons are allowed
           return prisma.lesson.create({
             data: {
               title: meta.title || `Lesson ${i + 1}`,
-              sortOrder: i,
-              duration: meta.duration || null,
-              fileUrl: 'pending',
-              resourceId: resource.id,
+              sortOrder: i, duration: meta.duration || null,
+              fileUrl: 'pending', resourceId: resource.id,
             },
           })
         }
-
         const lessonFileUrl = await uploadFile(lessonFile, 'resources/course/lessons')
-
         return prisma.lesson.create({
           data: {
             title: meta.title || `Lesson ${i + 1}`,
-            sortOrder: i,
-            duration: meta.duration || null,
-            fileUrl: lessonFileUrl,
-            fileSize: lessonFile.size,
-            mimeType: lessonFile.mimetype,
-            resourceId: resource.id,
+            sortOrder: i, duration: meta.duration || null,
+            fileUrl: lessonFileUrl, fileSize: lessonFile.size,
+            mimeType: lessonFile.mimetype, resourceId: resource.id,
           },
         })
       })
@@ -369,11 +318,8 @@ const update = async (slug, data, requestingUser) => {
 // ── Publish ───────────────────────────────────────────────────
 const publishById = async (id) => {
   const resource = await prisma.resource.findUnique({ where: { id } })
-
   if (!resource) {
-    const err = new Error('Resource not found')
-    err.status = 404
-    throw err
+    const err = new Error('Resource not found'); err.status = 404; throw err
   }
 
   const updated = await prisma.resource.update({
@@ -386,18 +332,19 @@ const publishById = async (id) => {
     },
   })
 
-  // Now it's published — add to search index
-  await searchService.updateResourceIndex(updated)
+  // Queue search index update
+  await searchQueue.add('upsert', { type: 'UPSERT', resourceId: updated.id })
 
-  // Notify the uploader — fire and forget, don't block the response
+  // Queue email notification
   if (updated.uploadedBy?.email) {
-    emailSvc.sendResourcePublished({
-      to: updated.uploadedBy.email,
-      title: updated.title,
-    }).catch((err) => console.error('Failed to send publish notification:', err))
+    await emailQueue.add('resource-published', {
+      type: 'RESOURCE_PUBLISHED',
+      payload: { to: updated.uploadedBy.email, title: updated.title },
+    })
   }
 
-  await notifSvc.notify({
+  // Queue in-app notification
+  await notifyQueue.add('resource-published', {
     userId: resource.uploadedById,
     type: 'RESOURCE_PUBLISHED',
     title: 'Your resource was published 🎉',
@@ -423,26 +370,22 @@ const publish = async (slug) => {
 // ── Delete ────────────────────────────────────────────────────
 const remove = async (slug, requestingUser) => {
   const resource = await prisma.resource.findUnique({ where: { slug } })
-
   if (!resource) {
-    const err = new Error('Resource not found')
-    err.status = 404
-    throw err
+    const err = new Error('Resource not found'); err.status = 404; throw err
   }
 
-  const isOwner = resource.uploadedById === requestingUser.id
+  const isOwner      = resource.uploadedById === requestingUser.id
   const isPrivileged = ['ADMIN', 'MODERATOR'].includes(requestingUser.role)
 
   if (!isOwner && !isPrivileged) {
-    const err = new Error('Access denied')
-    err.status = 403
-    throw err
+    const err = new Error('Access denied'); err.status = 403; throw err
   }
 
   await deleteFile(resource.fileUrl)
   await prisma.resource.delete({ where: { id: resource.id } })
 
-  searchService.deleteResourceFromIndex(resource.id)
+  await searchQueue.add('delete', { type: 'DELETE', resourceId: resource.id })
+
   return { message: 'Resource deleted' }
 }
 

@@ -119,6 +119,16 @@ if (process.env.NODE_ENV !== 'test') {
   snapshotJob.start();
 }
 
+if (process.env.NODE_ENV !== 'test') {
+  snapshotJob.start()
+
+  // Boot BullMQ workers — Phase 12
+  require('./workers/email.worker')
+  require('./workers/search.worker')
+  require('./workers/thumbnail.worker')
+  require('./workers/notify.worker')
+}
+
 module.exports = app
 
 if (process.env.NODE_ENV !== 'test') {
