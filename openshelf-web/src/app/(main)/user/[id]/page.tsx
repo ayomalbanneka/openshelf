@@ -56,5 +56,10 @@ export default async function UserProfilePage({ params }: Props) {
     notFound()
   }
 
-  return <UserProfile user={user} uploads={uploads} />
+  const userWithBadges = {
+    ...user,
+    badges: user.badges,
+  }
+
+  return <UserProfile user={userWithBadges} uploads={uploads} />
 }

@@ -19,6 +19,7 @@ model User {
   country            String?
   preferredLanguage  String              @default("en")
   notificationPrefs  Json                @default("{}") @map("notification_prefs")
+  badges             Json                @default("[]")
   isActive           Boolean             @default(true)
   isEmailVerified    Boolean             @default(false)
   createdAt          DateTime            @default(now())

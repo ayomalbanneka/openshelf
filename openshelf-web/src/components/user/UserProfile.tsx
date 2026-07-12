@@ -8,7 +8,16 @@ import Link from 'next/link'
 import Image from 'next/image'
 import type { Resource } from '@/types'
 import { toast } from '@/lib/toast'
-import { Trash2 } from 'lucide-react'
+import { BadgeList } from '@/components/profile/BadgeList'
+
+interface Badge {                                              // ← add
+  id: string
+  label: string
+  description: string
+  icon: string
+  tier: 'bronze' | 'silver' | 'gold' | 'supporter' | 'patron'
+  awardedAt: string | null
+}
 
 interface UserData {
   id: string
@@ -19,6 +28,7 @@ interface UserData {
   country?: string
   createdAt: string
   _count: { uploads: number; followers: number; following: number }
+  badges?: Badge[]
 }
 
 interface Props {
@@ -41,7 +51,7 @@ export function UserProfile({ user, uploads }: Props) {
     if (!currentUser || isMe) return
     api.users.isFollowing(user.id)
       .then((d) => setFollowing(d.isFollowing))
-      .catch(() => {})
+      .catch(() => { })
   }, [currentUser, user.id, isMe])
 
   const handleFollow = async () => {
@@ -222,6 +232,14 @@ export function UserProfile({ user, uploads }: Props) {
               </div>
             ))}
           </div>
+
+          {/* Badges */}
+          {user.badges && user.badges.length > 0 && (
+            <div className="mt-5 pt-5" style={{ borderTop: '1px solid hsl(var(--border))' }}>
+              <BadgeList badges={user.badges} />
+            </div>
+          )}
+
         </div>
       </div>
 

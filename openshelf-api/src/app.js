@@ -24,19 +24,20 @@ const snapshotJob = require('./jobs/snapshotMetrics.job');
 const notificationRoutes = require('./routes/notification.routes');
 const paymentsRoutes = require('./routes/payments.routes');
 const { webhook: stripeWebhook } = require('./controllers/payments.controller');
-const { doubleCsrf } = require('csrf-csrf')
+const { doubleCsrf } = require('csrf-csrf');
+const badgeSweepJob = require('./jobs/badgeSweep.job');
 
-let configureIndex
+let configureIndex;
 if (process.env.NODE_ENV !== 'test') {
   ; ({ configureIndex } = require('./config/meilisearch'));
 }
 
-const app = express()
+const app = express();
 
-app.set('trust proxy', 1)
+app.set('trust proxy', 1);
 
-app.use(helmet())
-app.use(morgan('dev'))
+app.use(helmet());
+app.use(morgan('dev'));
 app.use(cors({
   origin: process.env.CLIENT_URL,
   credentials: true,               // required for cookies to flow cross-origin
@@ -76,7 +77,7 @@ app.use(metricsMiddleware);
 
 // Health check
 app.get('/health', (req, res) => {
-  res.json({ status: 'ok', env: process.env.NODE_ENV })
+  res.json({ status: 'ok', env: process.env.NODE_ENV });
 });
 
 // Configure Meilisearch index on startup
@@ -109,7 +110,7 @@ app.use('/metrics', metricsRoutes);
 
 // 404 handler
 app.use((req, res) => {
-  res.status(404).json({ message: 'Route not found' })
+  res.status(404).json({ message: 'Route not found' });
 });
 
 // Global error handler — must be last
@@ -120,7 +121,8 @@ if (process.env.NODE_ENV !== 'test') {
 }
 
 if (process.env.NODE_ENV !== 'test') {
-  snapshotJob.start()
+  snapshotJob.start();
+  badgeSweepJob.start();
   require('./workers/email.worker');
   require('./workers/search.worker');
   require('./workers/thumbnail.worker');
@@ -128,11 +130,11 @@ if (process.env.NODE_ENV !== 'test') {
   require('./workers/scan.worker');
 }
 
-module.exports = app
+module.exports = app;
 
 if (process.env.NODE_ENV !== 'test') {
   const PORT = process.env.PORT || 4000
   app.listen(PORT, () => {
-    console.log(`Server running on http://localhost:${PORT}`)
+    console.log(`Server running on http://localhost:${PORT}`);
   });
 }

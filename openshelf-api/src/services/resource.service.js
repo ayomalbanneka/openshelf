@@ -5,6 +5,7 @@ const { uploadFile, deleteFile } = require('./storage.service');
 const { validateFileBytes } = require('../utils/validateFileBytes');
 const { paginate, paginateMeta } = require('../utils/pagination');
 const { emailQueue, searchQueue, thumbnailQueue, notifyQueue, scanQueue } = require('../queues');
+const badgeService = require('./badge.service')
 
 // List
 const list = async ({ type, category, language, search, page = 1, limit = 20 }) => {
@@ -361,6 +362,8 @@ const publishById = async (id) => {
     body: `"${resource.title}" is now live on OpenShelf.`,
     link: `/resources/${resource.slug}`,
   })
+
+  await badgeService.evaluateAndAward(resource.uploadedById)
 
   return updated
 }

@@ -1,5 +1,6 @@
 const bcrypt = require('bcryptjs');
 const prisma = require('../config/prisma');
+const badgeService = require('../services/badge.service');
 
 // Get user profile
 const getProfile = async (req, res, next) => {
@@ -22,10 +23,12 @@ const getProfile = async (req, res, next) => {
                     },
                 },
             },
-        })
+        });
 
         if (!user) return res.status(404).json({ message: 'User not found' });
-        res.json(user);
+
+        const badges = await badgeService.getBadgesForUser(req.params.id);
+        res.json({ ...user, badges });
     } catch (err) {
         next(err);
     }
@@ -344,22 +347,22 @@ const getMyStats = async (req, res, next) => {
 }
 
 const updateNotificationPrefs = async (req, res, next) => {
-  try {
-    const { prefs } = req.body
-    if (typeof prefs !== 'object' || Array.isArray(prefs)) {
-      return res.status(400).json({ message: 'prefs must be an object' })
+    try {
+        const { prefs } = req.body
+        if (typeof prefs !== 'object' || Array.isArray(prefs)) {
+            return res.status(400).json({ message: 'prefs must be an object' })
+        }
+
+        const user = await prisma.user.update({
+            where: { id: req.user.id },
+            data: { notificationPrefs: prefs },
+            select: { id: true, notificationPrefs: true },
+        })
+
+        res.json({ notificationPrefs: user.notificationPrefs })
+    } catch (err) {
+        next(err)
     }
-
-    const user = await prisma.user.update({
-      where:  { id: req.user.id },
-      data:   { notificationPrefs: prefs },
-      select: { id: true, notificationPrefs: true },
-    })
-
-    res.json({ notificationPrefs: user.notificationPrefs })
-  } catch (err) {
-    next(err)
-  }
 }
 
 module.exports = {
