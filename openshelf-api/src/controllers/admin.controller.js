@@ -787,6 +787,101 @@ const getAuditLogs = async (req, res, next) => {
   } catch (err) { next(err) }
 }
 
+const getQuarantined = async (req, res, next) => {
+  try {
+    const resources = await prisma.resource.findMany({
+      where:   { scanStatus: { in: ['INFECTED', 'ERROR'] } },
+      include: {
+        uploadedBy: { select: { id: true, name: true, email: true } },
+        category:   { select: { id: true, name: true } },
+      },
+      orderBy: { updatedAt: 'desc' },
+    })
+    res.json(resources)
+  } catch (err) {
+    next(err)
+  }
+}
+
+const releaseFromQuarantine = async (req, res, next) => {
+  try {
+    const { id } = req.params
+    const { s3, BUCKET, PUBLIC_URL } = require('../config/storage')
+    const { CopyObjectCommand, DeleteObjectCommand } = require('@aws-sdk/client-s3')
+
+    const resource = await prisma.resource.findUnique({ where: { id } })
+    if (!resource) return res.status(404).json({ message: 'Resource not found' })
+
+    // Move file back from quarantine prefix to normal prefix
+    const quarantineKey = resource.fileUrl.replace(`${PUBLIC_URL}/`, '')
+    const restoredKey   = quarantineKey.replace(/^quarantine\//, 'resources/')
+
+    await s3.send(new CopyObjectCommand({
+      Bucket:     BUCKET,
+      CopySource: `${BUCKET}/${quarantineKey}`,
+      Key:        restoredKey,
+    }))
+    await s3.send(new DeleteObjectCommand({ Bucket: BUCKET, Key: quarantineKey }))
+
+    const restoredUrl = `${PUBLIC_URL}/${restoredKey}`
+
+    const updated = await prisma.resource.update({
+      where: { id },
+      data:  { scanStatus: 'CLEAN', scanError: null, fileUrl: restoredUrl },
+    })
+
+    await prisma.auditLog.create({
+      data: {
+        actorId:    req.user.id,
+        action:     'RESOURCE_PUBLISHED', // closest existing AuditAction
+        targetType: 'Resource',
+        targetId:   id,
+        targetName: resource.title,
+        metadata:   { action: 'quarantine_released' },
+      },
+    })
+
+    const { searchQueue } = require('../queues')
+    await searchQueue.add('upsert', { type: 'UPSERT', resourceId: id })
+
+    res.json(updated)
+  } catch (err) {
+    next(err)
+  }
+}
+
+const deleteQuarantined = async (req, res, next) => {
+  try {
+    const { id } = req.params
+    const { s3, BUCKET, PUBLIC_URL } = require('../config/storage')
+    const { DeleteObjectCommand }    = require('@aws-sdk/client-s3')
+
+    const resource = await prisma.resource.findUnique({ where: { id } })
+    if (!resource) return res.status(404).json({ message: 'Resource not found' })
+
+    const key = resource.fileUrl.replace(`${PUBLIC_URL}/`, '')
+    await s3.send(new DeleteObjectCommand({ Bucket: BUCKET, Key: key })).catch(() => {})
+
+    await prisma.resource.delete({ where: { id } })
+
+    await prisma.auditLog.create({
+      data: {
+        actorId:    req.user.id,
+        action:     'RESOURCE_DELETED',
+        targetType: 'Resource',
+        targetId:   id,
+        targetName: resource.title,
+        metadata:   { reason: 'malware_confirmed' },
+      },
+    })
+
+    res.json({ message: 'Quarantined resource permanently deleted' })
+  } catch (err) {
+    next(err)
+  }
+}
+
+
 module.exports = {
   getStats,
   getPending, publishResource, rejectResource,
@@ -796,5 +891,6 @@ module.exports = {
   getCategories, createCategory, deleteCategory,
   getTags, deleteTag, inviteStaff, acceptInvite,
   listStaff, revokeStaff, cancelInvite, bulkPublish, bulkReject,
-  editResource, messageUser, getAuditLogs,
+  editResource, messageUser, getAuditLogs, getQuarantined, 
+  releaseFromQuarantine,deleteQuarantined,
 }

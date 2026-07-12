@@ -59,4 +59,9 @@ router.post('/users/:id/message', controller.messageUser)
 // Audit log — ADMIN only
 router.get('/audit', authorize('ADMIN'), controller.getAuditLogs)
 
+// Quarantine management — ADMIN + MODERATOR
+router.get('/quarantine',              authorize('ADMIN', 'MODERATOR'), controller.getQuarantined)
+router.patch('/quarantine/:id/release', authorize('ADMIN'),              controller.releaseFromQuarantine)
+router.delete('/quarantine/:id',        authorize('ADMIN'),              controller.deleteQuarantined)
+
 module.exports = router

@@ -7,5 +7,6 @@ const emailQueue = new Queue('email', CONNECTION);
 const searchQueue = new Queue('search', CONNECTION);
 const thumbnailQueue = new Queue('thumbnail', CONNECTION);
 const notifyQueue = new Queue('notify', CONNECTION);
+const scanQueue = new Queue('scan', CONNECTION)
 
-module.exports = { emailQueue, searchQueue, thumbnailQueue, notifyQueue };
+module.exports = { emailQueue, searchQueue, thumbnailQueue, notifyQueue, scanQueue };

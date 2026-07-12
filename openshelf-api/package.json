@@ -23,6 +23,7 @@
     "@prisma/client": "^7.7.0",
     "bcryptjs": "^3.0.3",
     "bullmq": "^5.79.2",
+    "clamscan": "^2.4.0",
     "cookie-parser": "^1.4.7",
     "cors": "^2.8.6",
     "csrf-csrf": "^4.0.3",

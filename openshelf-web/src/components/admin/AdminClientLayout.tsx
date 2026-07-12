@@ -5,12 +5,17 @@ import { AdminSidebar } from '@/components/admin/AdminSidebar'
 import { http } from '@/lib/api'
 
 export function AdminClientLayout({ children }: { children: React.ReactNode }) {
-  const [pendingCount, setPendingCount] = useState(0)
-  const [theme, setTheme]               = useState<'light' | 'dark'>('light')
+  const [pendingCount,    setPendingCount]    = useState(0)
+  const [quarantineCount, setQuarantineCount] = useState(0)
+  const [theme, setTheme]                     = useState<'light' | 'dark'>('light')
 
   useEffect(() => {
     http.get('/admin/pending?limit=1')
       .then((r) => setPendingCount(r.data.meta.total))
+      .catch(() => {})
+
+    http.get('/admin/quarantine')
+      .then((r) => setQuarantineCount(r.data.length))
       .catch(() => {})
   }, [])
 
@@ -37,7 +42,10 @@ export function AdminClientLayout({ children }: { children: React.ReactNode }) {
     >
       {/* Fixed sidebar */}
       <div className="hidden lg:block w-56 shrink-0 sticky top-0 h-screen">
-        <AdminSidebar pendingCount={pendingCount} />
+        <AdminSidebar
+          pendingCount={pendingCount}
+          quarantineCount={quarantineCount}
+        />
       </div>
 
       {/* Main content */}

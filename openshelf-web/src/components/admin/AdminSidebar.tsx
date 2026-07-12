@@ -4,10 +4,10 @@ import { usePathname } from 'next/navigation'
 import { useAuthStore } from '@/store/auth.store'
 import {
   LayoutDashboard, Hourglass, Users, UsersRound, BookOpen, Activity, Newspaper,
-  Library, Tags, FolderOpen, Users2, LogOut, ScrollText, type LucideIcon,
+  Library, Tags, FolderOpen, Users2, LogOut, ScrollText, ShieldAlert, type LucideIcon,
 } from 'lucide-react'
 
-type NavItem = { href: string; label: string; icon: LucideIcon; badge?: 'pending' }
+type NavItem = { href: string; label: string; icon: LucideIcon; badge?: 'pending' | 'quarantine' }
 type NavSection = { section: string; items: NavItem[] }
 
 const ADMIN_LINKS: NavSection[] = [
@@ -19,6 +19,7 @@ const ADMIN_LINKS: NavSection[] = [
   {
     section: 'Content', items: [
       { href: '/admin/pending', label: 'Pending', icon: Hourglass, badge: 'pending' },
+      { href: '/admin/quarantine', label: 'Quarantine', icon: ShieldAlert, badge: 'quarantine' },
       { href: '/admin/monitoring', label: 'Monitoring', icon: Activity },
       { href: '/admin/resources', label: 'Resources', icon: Library },
       { href: '/admin/categories', label: 'Categories', icon: FolderOpen },
@@ -35,7 +36,7 @@ const ADMIN_LINKS: NavSection[] = [
     section: 'Access', items: [
       { href: '/admin/users', label: 'Users', icon: Users },
       { href: '/admin/staff', label: 'Staff', icon: UsersRound },
-      { href: '/admin/audit',  label: 'Audit Log', icon: ScrollText },
+      { href: '/admin/audit', label: 'Audit Log', icon: ScrollText },
     ]
   },
 ]
@@ -49,11 +50,18 @@ const MOD_LINKS: NavSection[] = [
   {
     section: 'Content', items: [
       { href: '/admin/pending', label: 'Pending', icon: Hourglass, badge: 'pending' },
+      { href: '/admin/quarantine', label: 'Quarantine', icon: ShieldAlert, badge: 'quarantine' },
     ]
   },
 ]
 
-export function AdminSidebar({ pendingCount = 0 }: { pendingCount?: number }) {
+export function AdminSidebar({
+  pendingCount = 0,
+  quarantineCount = 0,
+}: {
+  pendingCount?: number
+  quarantineCount?: number
+}) {
   const pathname = usePathname()
   const { user, logout } = useAuthStore()
   const isAdmin = user?.role === 'ADMIN'
@@ -79,7 +87,9 @@ export function AdminSidebar({ pendingCount = 0 }: { pendingCount?: number }) {
             <BookOpen className="w-4 h-4" style={{ color: 'white' }} />
           </div>
           <div>
-            <p className="text-sm font-bold leading-tight" style={{ color: 'var(--admin-sidebar-text)' }}>OpenShelf</p>
+            <p className="text-sm font-bold leading-tight" style={{ color: 'var(--admin-sidebar-text)' }}>
+              OpenShelf
+            </p>
             <p className="text-[10px] font-medium uppercase tracking-wider" style={{ color: 'var(--admin-sidebar-muted)' }}>
               {isAdmin ? 'Admin Panel' : 'Moderator Panel'}
             </p>
@@ -91,13 +101,20 @@ export function AdminSidebar({ pendingCount = 0 }: { pendingCount?: number }) {
       <nav className="flex-1 px-3 py-4 overflow-y-auto flex flex-col gap-5">
         {links.map(({ section, items }) => (
           <div key={section}>
-            <p className="text-[10px] font-bold uppercase tracking-widest px-2 mb-1.5" style={{ color: 'var(--admin-sidebar-muted)' }}>
+            <p
+              className="text-[10px] font-bold uppercase tracking-widest px-2 mb-1.5"
+              style={{ color: 'var(--admin-sidebar-muted)' }}
+            >
               {section}
             </p>
             <div className="flex flex-col gap-0.5">
               {items.map(({ href, label, icon: Icon, badge }) => {
                 const active = pathname === href || (href !== '/admin' && pathname.startsWith(href))
-                const showBadge = badge === 'pending' && pendingCount > 0
+
+                const badgeCount = badge === 'pending' ? pendingCount : badge === 'quarantine' ? quarantineCount : 0
+                const showBadge = badgeCount > 0
+                const isQuarantine = badge === 'quarantine'
+
                 return (
                   <Link
                     key={href}
@@ -105,8 +122,15 @@ export function AdminSidebar({ pendingCount = 0 }: { pendingCount?: number }) {
                     className="flex items-center gap-3 px-3 py-2 rounded-xl text-sm font-medium transition-all"
                     style={
                       active
-                        ? { background: 'var(--admin-sidebar-active)', color: 'var(--admin-sidebar-text)', borderLeft: '3px solid var(--admin-sidebar-active-border)' }
-                        : { color: 'var(--admin-sidebar-muted)', paddingLeft: active ? undefined : '15px' }
+                        ? {
+                          background: 'var(--admin-sidebar-active)',
+                          color: 'var(--admin-sidebar-text)',
+                          borderLeft: '3px solid var(--admin-sidebar-active-border)',
+                        }
+                        : {
+                          color: 'var(--admin-sidebar-muted)',
+                          paddingLeft: '15px',
+                        }
                     }
                   >
                     <Icon className="w-4 h-4 shrink-0" />
@@ -114,9 +138,12 @@ export function AdminSidebar({ pendingCount = 0 }: { pendingCount?: number }) {
                     {showBadge && (
                       <span
                         className="text-[10px] font-bold px-1.5 py-0.5 rounded-full"
-                        style={{ backgroundColor: 'var(--admin-badge-bg)', color: 'var(--admin-badge-text)' }}
+                        style={{
+                          backgroundColor: isQuarantine ? 'hsl(38 92% 50% / 0.15)' : 'var(--admin-badge-bg)',
+                          color: isQuarantine ? 'hsl(38 92% 35%)' : 'var(--admin-badge-text)',
+                        }}
                       >
-                        {pendingCount}
+                        {badgeCount}
                       </span>
                     )}
                   </Link>
@@ -137,8 +164,12 @@ export function AdminSidebar({ pendingCount = 0 }: { pendingCount?: number }) {
             {user?.name?.charAt(0).toUpperCase()}
           </div>
           <div className="flex-1 min-w-0">
-            <p className="text-sm font-medium truncate" style={{ color: 'var(--admin-sidebar-text)' }}>{user?.name}</p>
-            <p className="text-[10px]" style={{ color: 'var(--admin-sidebar-muted)' }}>{user?.role}</p>
+            <p className="text-sm font-medium truncate" style={{ color: 'var(--admin-sidebar-text)' }}>
+              {user?.name}
+            </p>
+            <p className="text-[10px]" style={{ color: 'var(--admin-sidebar-muted)' }}>
+              {user?.role}
+            </p>
           </div>
         </div>
         <button

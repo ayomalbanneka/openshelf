@@ -4,7 +4,7 @@ const slugify = require('../utils/slugify');
 const { uploadFile, deleteFile } = require('./storage.service');
 const { validateFileBytes } = require('../utils/validateFileBytes');
 const { paginate, paginateMeta } = require('../utils/pagination');
-const { emailQueue, searchQueue, thumbnailQueue, notifyQueue } = require('../queues');
+const { emailQueue, searchQueue, thumbnailQueue, notifyQueue, scanQueue } = require('../queues');
 
 // List
 const list = async ({ type, category, language, search, page = 1, limit = 20 }) => {
@@ -234,6 +234,16 @@ const create = async (data, files, userId) => {
   // Queue search indexing — non-blocking
   await searchQueue.add('upsert', { type: 'UPSERT', resourceId: resource.id })
 
+  if (mainFile) {
+    await scanQueue.add('scan-upload', {
+      resourceId: resource.id,
+      fileUrl: fileUrl,
+    }, {
+      attempts: 3,
+      backoff: { type: 'exponential', delay: 5000 },
+    })
+  }
+
   // Queue thumbnail compression — non-blocking
   if (thumbnailFile) {
     await thumbnailQueue.add('compress', {
@@ -374,7 +384,7 @@ const remove = async (slug, requestingUser) => {
     const err = new Error('Resource not found'); err.status = 404; throw err
   }
 
-  const isOwner      = resource.uploadedById === requestingUser.id
+  const isOwner = resource.uploadedById === requestingUser.id
   const isPrivileged = ['ADMIN', 'MODERATOR'].includes(requestingUser.role)
 
   if (!isOwner && !isPrivileged) {
