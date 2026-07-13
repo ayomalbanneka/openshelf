@@ -158,8 +158,7 @@ Make sure the following are installed before you begin:
 ### 1. Clone the repositories
 
 ```bash
-git clone https://github.com/ayomalbanneka/openshelf-api.git
-git clone https://github.com/ayomalbanneka/openshelf-web.git
+git clone git@github.com:ayomalbanneka/openshelf.git
 ```
 
 ### 2. Start the infrastructure services
