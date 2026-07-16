@@ -1,8 +1,10 @@
-const router     = require('express').Router()
-const controller = require('../controllers/report.controller')
-const { authenticate, authorize } = require('../middleware/auth')
+import { Router } from 'express';
+import * as controller from '../controllers/report.controller.js';
+import { authenticate } from '../middleware/auth.js';
+
+const router = Router();
 
 // User-facing — submit a report
-router.post('/resources/:slug/report', authenticate, controller.createReport)
+router.post('/resources/:slug/report', authenticate, controller.createReport);
 
-module.exports = router
+export default router;

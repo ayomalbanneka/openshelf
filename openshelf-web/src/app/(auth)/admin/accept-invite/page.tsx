@@ -1,25 +1,25 @@
 'use client'
-import { useState, useEffect, Suspense } from 'react'
-import { useRouter, useSearchParams } from 'next/navigation'
-import { http } from '@/lib/api'
-import { getErrorMessage } from '@/lib/errors'
-import { Shield } from 'lucide-react'
+import { useState, useEffect, Suspense } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
+import { http } from '@/lib/api';
+import { getErrorMessage } from '@/lib/errors';
+import { Shield } from 'lucide-react';
 
 function AcceptInviteForm() {
-  const router       = useRouter()
-  const searchParams = useSearchParams()
-  const token        = searchParams.get('token')
+  const router       = useRouter();
+  const searchParams = useSearchParams();
+  const token        = searchParams.get('token');
 
-  const [name, setName]         = useState('')
-  const [password, setPassword] = useState('')
-  const [confirm, setConfirm]   = useState('')
-  const [loading, setLoading]   = useState(false)
-  const [success, setSuccess]   = useState(false)
-  const [error, setError]       = useState('')
+  const [name, setName]         = useState('');
+  const [password, setPassword] = useState('');
+  const [confirm, setConfirm]   = useState('');
+  const [loading, setLoading]   = useState(false);
+  const [success, setSuccess]   = useState(false);
+  const [error, setError]       = useState('');
 
   useEffect(() => {
     if (!token) setError('Invalid invite link. Please ask an admin to send a new one.')
-  }, [token])
+  }, [token]);
 
   const validate = () => {
     if (!name.trim())         return 'Name is required'
@@ -29,10 +29,10 @@ function AcceptInviteForm() {
   }
 
   const handleSubmit = async () => {
-    const err = validate()
-    if (err) return setError(err)
-    setLoading(true)
-    setError('')
+    const err = validate();
+    if (err) return setError(err);
+    setLoading(true);
+    setError('');
     try {
       await http.post('/auth/accept-invite', { token, name: name.trim(), password })
       setSuccess(true)

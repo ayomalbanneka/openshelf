@@ -1,22 +1,22 @@
-const jwt = require('jsonwebtoken')
-const prisma = require('../config/prisma')
+import jwt from 'jsonwebtoken';
+import prisma from '../config/prisma.js';
 
 const authenticate = async (req, res, next) => {
   try {
     // Read from cookie first, fall back to Authorization header
     // (header fallback supports API clients, Postman, mobile apps)
-    const cookieToken = req.cookies?.access_token
+    const cookieToken = req.cookies?.access_token;
     const headerToken = req.headers.authorization?.startsWith('Bearer ')
       ? req.headers.authorization.split(' ')[1]
-      : null
+      : null;
 
-    const token = cookieToken || headerToken
+    const token = cookieToken || headerToken;
 
     if (!token) {
-      return res.status(401).json({ message: 'No token provided' })
+      return res.status(401).json({ message: 'No token provided' });
     }
 
-    const decoded = jwt.verify(token, process.env.JWT_SECRET)
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
 
     const user = await prisma.user.findUnique({
       where: { id: decoded.userId },
@@ -36,35 +36,34 @@ const authenticate = async (req, res, next) => {
             cancelAtPeriodEnd: true,
           },
         },
-
         notificationPrefs: true,
       },
-    })
+    });
 
     if (!user || !user.isActive) {
-      return res.status(401).json({ message: 'User not found or deactivated' })
+      return res.status(401).json({ message: 'User not found or deactivated' });
     }
 
-    req.user = user
-    next()
-  } catch (err) {
-    return res.status(401).json({ message: 'Invalid or expired token' })
+    req.user = user;
+    next();
+  } catch (_err) {
+    return res.status(401).json({ message: 'Invalid or expired token' });
   }
-}
+};
 
 const optionalAuthenticate = (req, res, next) => {
-  const header = req.headers.authorization
-  if (!header) return next()
-  authenticate(req, res, next)
-}
+  const header = req.headers.authorization;
+  if (!header) return next();
+  authenticate(req, res, next);
+};
 
 const authorize = (...roles) => {
   return (req, res, next) => {
     if (!roles.includes(req.user.role)) {
-      return res.status(403).json({ message: 'Access denied' })
+      return res.status(403).json({ message: 'Access denied' });
     }
-    next()
-  }
-}
+    next();
+  };
+};
 
-module.exports = { authenticate, authorize, optionalAuthenticate }
+export { authenticate, authorize, optionalAuthenticate };

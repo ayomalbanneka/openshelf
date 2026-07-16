@@ -1,18 +1,22 @@
 // src/workers/notify.worker.js
-const { Worker } = require('bullmq')
-const redis      = require('../config/redis')
-const notifSvc   = require('../services/notification.service')
+import { Worker } from 'bullmq';
+import redis from '../config/redis.js';
+import * as notifSvc from '../services/notification.service.js';
 
-const worker = new Worker('notify', async (job) => {
-  const { userId, type, title, body, link } = job.data
-  await notifSvc.notify({ userId, type, title, body, link })
-}, {
-  connection: redis,
-  concurrency: 10,
-})
+const worker = new Worker(
+  'notify',
+  async (job) => {
+    const { userId, type, title, body, link } = job.data;
+    await notifSvc.notify({ userId, type, title, body, link });
+  },
+  {
+    connection: redis,
+    concurrency: 10,
+  }
+);
 
 worker.on('failed', (job, err) => {
-  console.error(`[notify.worker] Job ${job?.id} failed:`, err.message)
-})
+  console.error(`[notify.worker] Job ${job?.id} failed:`, err.message);
+});
 
-module.exports = worker
+export default worker;

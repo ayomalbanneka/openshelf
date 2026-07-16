@@ -10,6 +10,7 @@ import { SecuritySection } from './sections/SecuritySection'
 import { NotificationsSection } from './sections/NotificationsSection'
 import { SubscriptionSection } from './sections/SubscriptionSection'
 import { AppearanceSection } from './sections/AppearanceSection'
+import { useAuthStore } from '@/store/auth.store'
 
 // ── Nav definition ────────────────────────────────────────────────────────────
 
@@ -186,13 +187,11 @@ export function SettingsShell() {
 // ── Small client helpers (need auth store) ────────────────────────────────────
 
 function UserInitial() {
-    const { useAuthStore } = require('@/store/auth.store')
     const user = useAuthStore((s: any) => s.user)
     return <>{user?.name?.charAt(0)?.toUpperCase() ?? '?'}</>
 }
 
 function UserNameDisplay() {
-    const { useAuthStore } = require('@/store/auth.store')
     const user = useAuthStore((s: any) => s.user)
     return (
         <>

@@ -1,12 +1,12 @@
-import type { Metadata } from 'next'
-import { Inter } from 'next/font/google'
-import { ThemeProvider } from 'next-themes'
-import { ToasterClient } from '@/components/ui/ToasterClient'
-import './globals.css'
-import 'goey-toast/styles.css'
-import { AuthBootstrap } from '@/components/auth/AuthBootstrap'
+import type { Metadata } from 'next';
+import { Inter } from 'next/font/google';
+import { ThemeProvider } from 'next-themes';
+import { ToasterClient } from '@/components/ui/ToasterClient';
+import './globals.css';
+import 'goey-toast/styles.css';
+import { AuthBootstrap } from '@/components/auth/AuthBootstrap';
 
-const inter = Inter({ subsets: ['latin'] })
+const inter = Inter({ subsets: ['latin'] });
 
 const BASE_URL = process.env.NEXT_PUBLIC_APP_URL ?? 'https://openshelf.app';
 

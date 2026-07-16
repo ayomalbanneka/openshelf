@@ -1,7 +1,7 @@
-import { MetadataRoute } from 'next'
+import { MetadataRoute } from 'next';
 
-const BASE_URL = process.env.NEXT_PUBLIC_APP_URL ?? 'https://openshelf.app'
-const API_URL = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:4000/api'
+const BASE_URL = process.env.NEXT_PUBLIC_APP_URL ?? 'https://openshelf.app';
+const API_URL = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:4000/api';
 
 // Static routes with their change frequency and priority
 const staticRoutes: MetadataRoute.Sitemap = [

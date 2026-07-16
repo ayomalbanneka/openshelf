@@ -1,24 +1,24 @@
 'use client'
-import { useState, useRef } from 'react'
-import { useRouter } from 'next/navigation'
-import { useAuthStore } from '@/store/auth.store'
-import { http } from '@/lib/api'
-import Link from 'next/link'
-import { Shield } from 'lucide-react'
-import { getErrorMessage } from '@/lib/errors'
+import { useState, useRef } from 'react';
+import { useRouter } from 'next/navigation';
+import { useAuthStore } from '@/store/auth.store';
+import { http } from '@/lib/api';
+import Link from 'next/link';
+import { Shield } from 'lucide-react';
+import { getErrorMessage } from '@/lib/errors';
 
 export default function AdminLoginPage() {
-  const router  = useRouter()
-  const { setUser } = useAuthStore()
+  const router  = useRouter();
+  const { setUser } = useAuthStore();
 
-  const [step, setStep]         = useState<'credentials' | 'code'>('credentials')
-  const [userId, setUserId]     = useState('')
-  const [email, setEmail]       = useState('')
-  const [password, setPassword] = useState('')
-  const [code, setCode]         = useState(['', '', '', '', '', ''])
-  const [loading, setLoading]   = useState(false)
-  const [error, setError]       = useState('')
-  const inputs = useRef<(HTMLInputElement | null)[]>([])
+  const [step, setStep]         = useState<'credentials' | 'code'>('credentials');
+  const [userId, setUserId]     = useState('');
+  const [email, setEmail]       = useState('');
+  const [password, setPassword] = useState('');
+  const [code, setCode]         = useState(['', '', '', '', '', '']);
+  const [loading, setLoading]   = useState(false);
+  const [error, setError]       = useState('');
+  const inputs = useRef<(HTMLInputElement | null)[]>([]);
 
   const inputStyle = {
     border: '1px solid var(--admin-border)',
@@ -28,65 +28,65 @@ export default function AdminLoginPage() {
 
   const handleCodeChange = (i: number, val: string) => {
     if (!/^\d*$/.test(val)) return
-    const next = [...code]
-    next[i] = val.slice(-1)
-    setCode(next)
-    if (val && i < 5) inputs.current[i + 1]?.focus()
+    const next = [...code];
+    next[i] = val.slice(-1);
+    setCode(next);
+    if (val && i < 5) inputs.current[i + 1]?.focus();
   }
 
   const handleKeyDown = (i: number, e: React.KeyboardEvent) => {
     if (e.key === 'Backspace' && !code[i] && i > 0) {
-      inputs.current[i - 1]?.focus()
+      inputs.current[i - 1]?.focus();
     }
   }
 
   const handlePaste = (e: React.ClipboardEvent) => {
-    e.preventDefault()
+    e.preventDefault();
     const pasted = e.clipboardData.getData('text').replace(/\D/g, '').slice(0, 6)
     if (pasted.length === 6) {
-      setCode(pasted.split(''))
-      inputs.current[5]?.focus()
+      setCode(pasted.split(''));
+      inputs.current[5]?.focus();
     }
   }
 
   // Step 1 — credentials
   const handleCredentials = async (e: React.FormEvent) => {
-    e.preventDefault()
-    setLoading(true)
-    setError('')
+    e.preventDefault();
+    setLoading(true);
+    setError('');
     try {
-      const { data } = await http.post('/auth/admin/login', { email, password })
-      setUserId(data.userId)
-      setStep('code')
+      const { data } = await http.post('/auth/admin/login', { email, password });
+      setUserId(data.userId);
+      setStep('code');
     } catch (err: unknown) {
-      setError(getErrorMessage(err, 'Invalid credentials'))
+      setError(getErrorMessage(err, 'Invalid credentials'));
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
   }
 
   // Step 2 — 2FA code
   const handleCode = async (e: React.FormEvent) => {
-    e.preventDefault()
-    const fullCode = code.join('')
+    e.preventDefault();
+    const fullCode = code.join('');
     if (fullCode.length < 6) { setError('Enter all 6 digits'); return }
-    setLoading(true)
-    setError('')
+    setLoading(true);
+    setError('');
     try {
       const { data } = await http.post('/auth/admin/verify', {
         userId,
         code: fullCode,
       })
-      localStorage.setItem('accessToken',  data.accessToken)
-      localStorage.setItem('refreshToken', data.refreshToken)
-      setUser(data.user)
-      router.replace('/admin')
+      localStorage.setItem('accessToken',  data.accessToken);
+      localStorage.setItem('refreshToken', data.refreshToken);
+      setUser(data.user);
+      router.replace('/admin');
     } catch (err: unknown) {
-      setError(getErrorMessage(err, 'Invalid or expired code'))
+      setError(getErrorMessage(err, 'Invalid or expired code'));
       setCode(['', '', '', '', '', ''])
       inputs.current[0]?.focus()
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
   }
 

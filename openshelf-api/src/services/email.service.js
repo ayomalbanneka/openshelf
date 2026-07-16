@@ -1,41 +1,41 @@
-const { Resend } = require('resend')
+import { Resend } from 'resend';
 
-const FROM = process.env.EMAIL_FROM || 'onboarding@resend.dev'
+const FROM = process.env.EMAIL_FROM || 'onboarding@resend.dev';
 
-let resend
+let resend;
 
 const getResendClient = () => {
   if (!process.env.RESEND_API_KEY) {
-    const err = new Error('Email service is not configured. Set RESEND_API_KEY.')
-    err.status = 500
-    throw err
+    const err = new Error('Email service is not configured. Set RESEND_API_KEY.');
+    err.status = 500;
+    throw err;
   }
 
   if (!resend) {
-    resend = new Resend(process.env.RESEND_API_KEY)
+    resend = new Resend(process.env.RESEND_API_KEY);
   }
 
-  return resend
-}
+  return resend;
+};
 
 const sendEmail = async ({ to, subject, html }) => {
-  const client = getResendClient()
+  const client = getResendClient();
   const { data, error } = await client.emails.send({
     from: FROM,
     to,
     subject,
     html,
-  })
+  });
 
   if (error) {
-    const message = error.message || 'Email provider rejected the request'
-    const err = new Error(`Failed to send email: ${message}`)
-    err.status = 502
-    throw err
+    const message = error.message || 'Email provider rejected the request';
+    const err = new Error(`Failed to send email: ${message}`);
+    err.status = 502;
+    throw err;
   }
 
-  return data
-}
+  return data;
+};
 
 // Send verification code
 const sendVerificationCode = async ({ to, name, code }) => {
@@ -59,8 +59,8 @@ const sendVerificationCode = async ({ to, name, code }) => {
         </p>
       </div>
     `,
-  })
-}
+  });
+};
 
 // Send password reset code
 const sendPasswordResetCode = async ({ to, name, code }) => {
@@ -85,8 +85,8 @@ const sendPasswordResetCode = async ({ to, name, code }) => {
         </p>
       </div>
     `,
-  })
-}
+  });
+};
 
 // Send account blocked notification
 const sendAccountBlockedEmail = async ({ to, name, reason }) => {
@@ -112,8 +112,8 @@ const sendAccountBlockedEmail = async ({ to, name, reason }) => {
         </p>
       </div>
     `,
-  })
-}
+  });
+};
 
 // Send admin login code (2FA for admin dashboard)
 const sendAdminLoginCode = async ({ to, name, code }) => {
@@ -139,15 +139,15 @@ const sendAdminLoginCode = async ({ to, name, code }) => {
         </p>
       </div>
     `,
-  })
-}
+  });
+};
 
 // Send staff invite email
 const sendStaffInvite = async ({ to, role, token, inviterName }) => {
-  const inviteUrl = `${process.env.WEB_URL}/admin/accept-invite?token=${token}`
-  const roleLabel = role === 'ADMIN' ? 'Administrator' : 'Moderator'
-  const roleColor = role === 'ADMIN' ? '#991b1b' : '#92400e'
-  const roleBg = role === 'ADMIN' ? '#fee2e2' : '#fef3c7'
+  const inviteUrl = `${process.env.WEB_URL}/admin/accept-invite?token=${token}`;
+  const roleLabel = role === 'ADMIN' ? 'Administrator' : 'Moderator';
+  const roleColor = role === 'ADMIN' ? '#991b1b' : '#92400e';
+  const roleBg = role === 'ADMIN' ? '#fee2e2' : '#fef3c7';
 
   await sendEmail({
     to,
@@ -191,8 +191,8 @@ const sendStaffInvite = async ({ to, role, token, inviterName }) => {
         </p>
       </div>
     `,
-  })
-}
+  });
+};
 
 // Notify uploader when their resource is published
 const sendResourcePublished = async ({ to, title }) => {
@@ -225,8 +225,8 @@ const sendResourcePublished = async ({ to, title }) => {
         </p>
       </div>
     `,
-  })
-}
+  });
+};
 
 // Notify uploader when their resource is rejected
 const sendResourceRejected = async ({ to, title, reason }) => {
@@ -241,7 +241,9 @@ const sendResourceRejected = async ({ to, title, reason }) => {
           After review, our team was unable to publish this submission at this time.
         </p>
 
-        ${reason ? `
+        ${
+          reason
+            ? `
         <div style="background:#fef3c7;border:1px solid #fcd34d;border-radius:12px;
                     padding:14px 16px;margin-bottom:20px">
           <p style="color:#92400e;font-size:13px;font-weight:600;margin-bottom:4px">
@@ -249,7 +251,9 @@ const sendResourceRejected = async ({ to, title, reason }) => {
           </p>
           <p style="color:#92400e;font-size:14px;margin:0">${reason}</p>
         </div>
-        ` : ''}
+        `
+            : ''
+        }
 
         <p style="color:#374151;font-size:14px;margin-bottom:20px">
           You're welcome to make changes and resubmit. If you have questions,
@@ -270,8 +274,8 @@ const sendResourceRejected = async ({ to, title, reason }) => {
         </p>
       </div>
     `,
-  })
-}
+  });
+};
 
 // Send message from admin to user
 const sendAdminMessage = async ({ to, userName, subject, message, senderName }) => {
@@ -301,12 +305,12 @@ const sendAdminMessage = async ({ to, userName, subject, message, senderName }) 
         </p>
       </div>
     `,
-  })
-}
+  });
+};
 
 const sendThresholdAlert = async ({ to, metric, value, limit, unit }) => {
   return resend.emails.send({
-    from: EMAIL_FROM,
+    from: FROM,
     to,
     subject: `⚠️ OpenShelf alert: ${metric} threshold breached`,
     html: `
@@ -314,10 +318,10 @@ const sendThresholdAlert = async ({ to, metric, value, limit, unit }) => {
       above the configured threshold of <strong>${limit}${unit}</strong>.</p>
       <p>Check the <a href="${process.env.WEB_URL}/admin/monitoring">monitoring dashboard</a> for details.</p>
     `,
-  })
-}
+  });
+};
 
-module.exports = {
+export {
   sendVerificationCode,
   sendPasswordResetCode,
   sendAccountBlockedEmail,
@@ -327,4 +331,4 @@ module.exports = {
   sendResourceRejected,
   sendAdminMessage,
   sendThresholdAlert,
-}
+};

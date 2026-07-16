@@ -1,12 +1,14 @@
-const router     = require('express').Router()
-const controller = require('../controllers/progress.controller')
-const { authenticate } = require('../middleware/auth')
+import { Router } from 'express';
+import * as controller from '../controllers/progress.controller.js';
+import { authenticate } from '../middleware/auth.js';
 
-router.use(authenticate)
+const router = Router();
 
-router.get('/mine',                      controller.getMyProgress)
-router.get('/completed',                 controller.getCompleted)
-router.get('/:resourceId',              controller.getProgress)
-router.put('/:resourceId',              controller.updateProgress)
+router.use(authenticate);
 
-module.exports = router
+router.get('/mine', controller.getMyProgress);
+router.get('/completed', controller.getCompleted);
+router.get('/:resourceId', controller.getProgress);
+router.put('/:resourceId', controller.updateProgress);
+
+export default router;

@@ -1,12 +1,14 @@
-const router = require('express').Router()
-const { body } = require('express-validator')
-const controller = require('../controllers/resource.controller')
-const validate = require('../middleware/validate')
-const { authenticate } = require('../middleware/auth')
-const upload = require('../middleware/upload')
-const reviewController = require('../controllers/review.controller')
-const resourceService = require('../services/resource.service')
-const searchService = require('../services/search.service')
+import { Router } from 'express';
+import { body } from 'express-validator';
+import * as controller from '../controllers/resource.controller.js';
+import validate from '../middleware/validate.js';
+import { authenticate } from '../middleware/auth.js';
+import upload from '../middleware/upload.js';
+import * as reviewController from '../controllers/review.controller.js';
+import * as resourceService from '../services/resource.service.js';
+import * as searchService from '../services/search.service.js';
+
+const router = Router();
 
 // Search endpoint
 router.get('/search', async (req, res, next) => {
@@ -16,11 +18,11 @@ router.get('/search', async (req, res, next) => {
     if (!q || q.trim().length < 2) {
       return res.json({
         data: [],
-        meta: { total: 0, page: 1, limit: 10, pages: 0 }
-      })
+        meta: { total: 0, page: 1, limit: 10, pages: 0 },
+      });
     }
 
-    let result
+    let result;
 
     try {
       // Try Meilisearch first — fast, typo-tolerant
@@ -30,28 +32,28 @@ router.get('/search', async (req, res, next) => {
         language,
         page: page || 1,
         limit: limit || 20,
-      })
+      });
     } catch (meiliErr) {
       // Fall back to PostgreSQL if Meilisearch is down
-      console.warn('Meilisearch unavailable, falling back to PostgreSQL:', meiliErr.message)
+      console.warn('Meilisearch unavailable, falling back to PostgreSQL:', meiliErr.message);
       result = await resourceService.list({
         search: q,
         type,
         language,
         page: page || 1,
         limit: limit || 20,
-      })
+      });
     }
 
-    res.json(result)
+    res.json(result);
   } catch (err) {
-    next(err)
+    next(err);
   }
-})
+});
 
 // Public Endpoints
-router.get('/', controller.list)
-router.get('/:slug', controller.getOne)
+router.get('/', controller.list);
+router.get('/:slug', controller.getOne);
 
 // Authenticated
 router.post(
@@ -67,28 +69,20 @@ router.post(
   ],
   validate,
   controller.create
-)
+);
 
-router.patch(
-  '/:slug',
-  authenticate,
-  controller.update
-)
+router.patch('/:slug', authenticate, controller.update);
 
 // Admin / Moderator only
 // Reviews
-router.get('/:slug/reviews', reviewController.getReviews)
-router.post('/:slug/reviews', authenticate, reviewController.createReview)
+router.get('/:slug/reviews', reviewController.getReviews);
+router.post('/:slug/reviews', authenticate, reviewController.createReview);
 
 // Bookmarks
-router.post('/:slug/bookmark', authenticate, reviewController.addBookmark)
-router.delete('/:slug/bookmark', authenticate, reviewController.removeBookmark)
-router.get('/:slug/bookmark', authenticate, reviewController.getBookmarkStatus)
+router.post('/:slug/bookmark', authenticate, reviewController.addBookmark);
+router.delete('/:slug/bookmark', authenticate, reviewController.removeBookmark);
+router.get('/:slug/bookmark', authenticate, reviewController.getBookmarkStatus);
 
-router.delete(
-  '/:slug',
-  authenticate,
-  controller.remove
-)
+router.delete('/:slug', authenticate, controller.remove);
 
-module.exports = router
+export default router;

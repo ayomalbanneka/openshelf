@@ -1,26 +1,26 @@
-const prisma = require('../config/prisma');
-const { Prisma } = require('@prisma/client');
-const slugify = require('../utils/slugify');
-const { uploadFile, deleteFile } = require('./storage.service');
-const { validateFileBytes } = require('../utils/validateFileBytes');
-const { paginate, paginateMeta } = require('../utils/pagination');
-const { emailQueue, searchQueue, thumbnailQueue, notifyQueue, scanQueue } = require('../queues');
-const badgeService = require('./badge.service')
+import prisma from '../config/prisma.js';
+import { Prisma } from '@prisma/client';
+import slugify from '../utils/slugify.js';
+import { uploadFile, deleteFile } from './storage.service.js';
+import { validateFileBytes } from '../utils/validateFileBytes.js';
+import { paginate, paginateMeta } from '../utils/pagination.js';
+import { emailQueue, searchQueue, thumbnailQueue, notifyQueue, scanQueue } from '../queues/queues.js';
+import * as badgeService from './badge.service.js';
 
 // List
 const list = async ({ type, category, language, search, page = 1, limit = 20 }) => {
-  const { page: safePage, limit: safeLimit, skip, take } = paginate({ page, limit })
+  const { page: safePage, limit: safeLimit, skip, take } = paginate({ page, limit });
 
   // ── Full-text search path
   if (search && search.trim().length > 0) {
-    const term = search.trim()
+    const term = search.trim();
 
     // Build optional filter fragments
-    const typeFilter = type ? Prisma.sql`AND r.type::text = ${type}` : Prisma.empty
-    const langFilter = language ? Prisma.sql`AND r.language = ${language}` : Prisma.empty
+    const typeFilter = type ? Prisma.sql`AND r.type::text = ${type}` : Prisma.empty;
+    const langFilter = language ? Prisma.sql`AND r.language = ${language}` : Prisma.empty;
     const categoryFilter = category
       ? Prisma.sql`AND r."categoryId" = (SELECT id FROM categories WHERE slug = ${category} LIMIT 1)`
-      : Prisma.empty
+      : Prisma.empty;
 
     // Use raw SQL for full-text search with ranking
     const searchResults = await prisma.$queryRaw`
@@ -71,12 +71,12 @@ const list = async ({ type, category, language, search, page = 1, limit = 20 }) 
         ${typeFilter}
         ${langFilter}
         ${categoryFilter}
-    `
+    `;
 
-    const total = Number(countResult[0]?.total ?? 0)
+    const total = Number(countResult[0]?.total ?? 0);
 
     // Enrich results with relations
-    const ids = searchResults.map((r) => r.id)
+    const ids = searchResults.map((r) => r.id);
     const enriched = await prisma.resource.findMany({
       where: { id: { in: ids } },
       include: {
@@ -85,17 +85,15 @@ const list = async ({ type, category, language, search, page = 1, limit = 20 }) 
         tags: { include: { tag: true } },
         _count: { select: { reviews: true, bookmarks: true } },
       },
-    })
+    });
 
     // Re-sort enriched results to match the rank order from the raw query
-    const ranked = ids
-      .map((id) => enriched.find((r) => r.id === id))
-      .filter(Boolean)
+    const ranked = ids.map((id) => enriched.find((r) => r.id === id)).filter(Boolean);
 
     return {
       data: ranked,
       meta: paginateMeta(total, safePage, safeLimit),
-    }
+    };
   }
 
   // Standard filter path (no search term)
@@ -104,7 +102,7 @@ const list = async ({ type, category, language, search, page = 1, limit = 20 }) 
     ...(type && { type }),
     ...(language && { language }),
     ...(category && { category: { slug: category } }),
-  }
+  };
 
   const [data, total] = await Promise.all([
     prisma.resource.findMany({
@@ -120,13 +118,13 @@ const list = async ({ type, category, language, search, page = 1, limit = 20 }) 
       },
     }),
     prisma.resource.count({ where }),
-  ])
+  ]);
 
   return {
     data,
     meta: paginateMeta(total, safePage, safeLimit),
-  }
-}
+  };
+};
 
 // ── Get one ───────────────────────────────────────────────────
 const getOne = async (slug) => {
@@ -140,84 +138,108 @@ const getOne = async (slug) => {
       lessons: { orderBy: { sortOrder: 'asc' } },
       _count: { select: { reviews: true, bookmarks: true } },
     },
-  })
+  });
 
   if (!resource) {
-    const err = new Error('Resource not found')
-    err.status = 404
-    throw err
+    const err = new Error('Resource not found');
+    err.status = 404;
+    throw err;
   }
 
-  prisma.resource.update({
-    where: { id: resource.id },
-    data: { viewCount: { increment: 1 } },
-  }).catch(() => { })
+  prisma.resource
+    .update({
+      where: { id: resource.id },
+      data: { viewCount: { increment: 1 } },
+    })
+    .catch(() => {});
 
-  return resource
-}
+  return resource;
+};
 
 // ── Create ────────────────────────────────────────────────────
 const create = async (data, files, userId) => {
   const {
-    title, description, type, language = 'en',
-    pageCount, duration, author, publisher,
-    isbn, edition, publicationYear, categoryId,
-    tagIds = [], lessons,
-  } = data
+    title,
+    description,
+    type,
+    language = 'en',
+    pageCount,
+    duration,
+    author,
+    publisher,
+    isbn,
+    edition,
+    publicationYear,
+    categoryId,
+    tagIds = [],
+    lessons,
+  } = data;
 
-  const isCourse = type === 'COURSE'
-  const uploadedFiles = Array.isArray(files) ? files : []
+  const isCourse = type === 'COURSE';
+  const uploadedFiles = Array.isArray(files) ? files : [];
 
-  const thumbnailFile = uploadedFiles.find((f) => f.fieldname === 'thumbnail')
-  const mainFile = uploadedFiles.find((f) => f.fieldname === 'file')
+  const thumbnailFile = uploadedFiles.find((f) => f.fieldname === 'thumbnail');
+  const mainFile = uploadedFiles.find((f) => f.fieldname === 'file');
 
   if (!isCourse && !mainFile) {
-    const err = new Error('File is required'); err.status = 400; throw err
+    const err = new Error('File is required');
+    err.status = 400;
+    throw err;
   }
 
-  if (mainFile) await validateFileBytes(mainFile.buffer, 'file')
-  if (thumbnailFile) await validateFileBytes(thumbnailFile.buffer, 'thumbnail')
+  if (mainFile) await validateFileBytes(mainFile.buffer, 'file');
+  if (thumbnailFile) await validateFileBytes(thumbnailFile.buffer, 'thumbnail');
 
   if (isCourse && lessons) {
-    const lessonFiles = uploadedFiles.filter((f) => f.fieldname.startsWith('lessonFile_'))
-    await Promise.all(lessonFiles.map((f) => validateFileBytes(f.buffer, f.fieldname)))
+    const lessonFiles = uploadedFiles.filter((f) => f.fieldname.startsWith('lessonFile_'));
+    await Promise.all(lessonFiles.map((f) => validateFileBytes(f.buffer, f.fieldname)));
   }
   if (isCourse && !lessons) {
-    const err = new Error('Course must have at least one lesson'); err.status = 400; throw err
+    const err = new Error('Course must have at least one lesson');
+    err.status = 400;
+    throw err;
   }
 
   // Upload thumbnail raw — worker will compress and replace it
-  let thumbnailUrl = null
+  let thumbnailUrl = null;
   if (thumbnailFile) {
-    thumbnailUrl = await uploadFile(thumbnailFile, 'resources/thumbnails')
+    thumbnailUrl = await uploadFile(thumbnailFile, 'resources/thumbnails');
   }
 
-  let fileUrl = 'course-content'
-  let fileSize = 0
-  let mimeType = 'application/octet-stream'
+  let fileUrl = 'course-content';
+  let fileSize = 0;
+  let mimeType = 'application/octet-stream';
 
   if (mainFile) {
-    fileUrl = await uploadFile(mainFile, `resources/${type.toLowerCase()}`)
-    fileSize = mainFile.size
-    mimeType = mainFile.mimetype
+    fileUrl = await uploadFile(mainFile, `resources/${type.toLowerCase()}`);
+    fileSize = mainFile.size;
+    mimeType = mainFile.mimetype;
   }
 
-  let slug = slugify(title)
-  const existing = await prisma.resource.findUnique({ where: { slug } })
-  if (existing) slug = `${slug}-${Date.now().toString(36)}`
+  let slug = slugify(title);
+  const existing = await prisma.resource.findUnique({ where: { slug } });
+  if (existing) slug = `${slug}-${Date.now().toString(36)}`;
 
-  const parsedTagIds = Array.isArray(tagIds)
-    ? tagIds
-    : tagIds ? JSON.parse(tagIds) : []
+  const parsedTagIds = Array.isArray(tagIds) ? tagIds : tagIds ? JSON.parse(tagIds) : [];
 
   const resource = await prisma.resource.create({
     data: {
-      title, slug, description, type, language,
-      fileUrl, fileSize, mimeType, thumbnailUrl,
+      title,
+      slug,
+      description,
+      type,
+      language,
+      fileUrl,
+      fileSize,
+      mimeType,
+      thumbnailUrl,
       pageCount: pageCount ? Number(pageCount) : null,
       duration: duration ? Number(duration) : null,
       publicationYear: publicationYear ? Number(publicationYear) : null,
-      author, publisher, isbn, edition,
+      author,
+      publisher,
+      isbn,
+      edition,
       uploadedById: userId,
       categoryId,
       isPublished: false,
@@ -230,19 +252,23 @@ const create = async (data, files, userId) => {
       uploadedBy: { select: { id: true, name: true } },
       tags: { include: { tag: true } },
     },
-  })
+  });
 
   // Queue search indexing — non-blocking
-  await searchQueue.add('upsert', { type: 'UPSERT', resourceId: resource.id })
+  await searchQueue.add('upsert', { type: 'UPSERT', resourceId: resource.id });
 
   if (mainFile) {
-    await scanQueue.add('scan-upload', {
-      resourceId: resource.id,
-      fileUrl: fileUrl,
-    }, {
-      attempts: 3,
-      backoff: { type: 'exponential', delay: 5000 },
-    })
+    await scanQueue.add(
+      'scan-upload',
+      {
+        resourceId: resource.id,
+        fileUrl: fileUrl,
+      },
+      {
+        attempts: 3,
+        backoff: { type: 'exponential', delay: 5000 },
+      }
+    );
   }
 
   // Queue thumbnail compression — non-blocking
@@ -251,62 +277,74 @@ const create = async (data, files, userId) => {
       resourceId: resource.id,
       buffer: Array.from(thumbnailFile.buffer),
       originalName: thumbnailFile.originalname,
-    })
+    });
   }
 
   if (isCourse && lessons) {
-    const lessonsMeta = JSON.parse(lessons)
+    const lessonsMeta = JSON.parse(lessons);
     await Promise.all(
       lessonsMeta.map(async (meta, i) => {
-        const lessonFile = uploadedFiles.find((f) => f.fieldname === `lessonFile_${i}`)
+        const lessonFile = uploadedFiles.find((f) => f.fieldname === `lessonFile_${i}`);
         if (!lessonFile) {
           return prisma.lesson.create({
             data: {
               title: meta.title || `Lesson ${i + 1}`,
-              sortOrder: i, duration: meta.duration || null,
-              fileUrl: 'pending', resourceId: resource.id,
+              sortOrder: i,
+              duration: meta.duration || null,
+              fileUrl: 'pending',
+              resourceId: resource.id,
             },
-          })
+          });
         }
-        const lessonFileUrl = await uploadFile(lessonFile, 'resources/course/lessons')
+        const lessonFileUrl = await uploadFile(lessonFile, 'resources/course/lessons');
         return prisma.lesson.create({
           data: {
             title: meta.title || `Lesson ${i + 1}`,
-            sortOrder: i, duration: meta.duration || null,
-            fileUrl: lessonFileUrl, fileSize: lessonFile.size,
-            mimeType: lessonFile.mimetype, resourceId: resource.id,
+            sortOrder: i,
+            duration: meta.duration || null,
+            fileUrl: lessonFileUrl,
+            fileSize: lessonFile.size,
+            mimeType: lessonFile.mimetype,
+            resourceId: resource.id,
           },
-        })
+        });
       })
-    )
+    );
   }
 
-  return resource
-}
+  return resource;
+};
 
 // ── Update ────────────────────────────────────────────────────
 const update = async (slug, data, requestingUser) => {
-  const resource = await prisma.resource.findUnique({ where: { slug } })
+  const resource = await prisma.resource.findUnique({ where: { slug } });
 
   if (!resource) {
-    const err = new Error('Resource not found')
-    err.status = 404
-    throw err
+    const err = new Error('Resource not found');
+    err.status = 404;
+    throw err;
   }
 
-  const isOwner = resource.uploadedById === requestingUser.id
-  const isPrivileged = ['ADMIN', 'MODERATOR'].includes(requestingUser.role)
+  const isOwner = resource.uploadedById === requestingUser.id;
+  const isPrivileged = ['ADMIN', 'MODERATOR'].includes(requestingUser.role);
 
   if (!isOwner && !isPrivileged) {
-    const err = new Error('Access denied')
-    err.status = 403
-    throw err
+    const err = new Error('Access denied');
+    err.status = 403;
+    throw err;
   }
 
   const {
-    title, description, language, categoryId,
-    author, publisher, isbn, edition, publicationYear,
-  } = data
+    title,
+    description,
+    language,
+    categoryId,
+    author,
+    publisher,
+    isbn,
+    edition,
+    publicationYear,
+  } = data;
 
   const updated = await prisma.resource.update({
     where: { id: resource.id },
@@ -321,16 +359,18 @@ const update = async (slug, data, requestingUser) => {
       edition,
       publicationYear: publicationYear ? Number(publicationYear) : undefined,
     },
-  })
+  });
 
-  return updated
-}
+  return updated;
+};
 
 // ── Publish ───────────────────────────────────────────────────
 const publishById = async (id) => {
-  const resource = await prisma.resource.findUnique({ where: { id } })
+  const resource = await prisma.resource.findUnique({ where: { id } });
   if (!resource) {
-    const err = new Error('Resource not found'); err.status = 404; throw err
+    const err = new Error('Resource not found');
+    err.status = 404;
+    throw err;
   }
 
   const updated = await prisma.resource.update({
@@ -341,17 +381,17 @@ const publishById = async (id) => {
       tags: { include: { tag: true } },
       uploadedBy: { select: { email: true, name: true } },
     },
-  })
+  });
 
   // Queue search index update
-  await searchQueue.add('upsert', { type: 'UPSERT', resourceId: updated.id })
+  await searchQueue.add('upsert', { type: 'UPSERT', resourceId: updated.id });
 
   // Queue email notification
   if (updated.uploadedBy?.email) {
     await emailQueue.add('resource-published', {
       type: 'RESOURCE_PUBLISHED',
       payload: { to: updated.uploadedBy.email, title: updated.title },
-    })
+    });
   }
 
   // Queue in-app notification
@@ -361,45 +401,49 @@ const publishById = async (id) => {
     title: 'Your resource was published 🎉',
     body: `"${resource.title}" is now live on OpenShelf.`,
     link: `/resources/${resource.slug}`,
-  })
+  });
 
-  await badgeService.evaluateAndAward(resource.uploadedById)
+  await badgeService.evaluateAndAward(resource.uploadedById);
 
-  return updated
-}
+  return updated;
+};
 
 const publish = async (slug) => {
-  const resource = await prisma.resource.findUnique({ where: { slug } })
+  const resource = await prisma.resource.findUnique({ where: { slug } });
 
   if (!resource) {
-    const err = new Error('Resource not found')
-    err.status = 404
-    throw err
+    const err = new Error('Resource not found');
+    err.status = 404;
+    throw err;
   }
 
-  return publishById(resource.id)
-}
+  return publishById(resource.id);
+};
 
 // ── Delete ────────────────────────────────────────────────────
 const remove = async (slug, requestingUser) => {
-  const resource = await prisma.resource.findUnique({ where: { slug } })
+  const resource = await prisma.resource.findUnique({ where: { slug } });
   if (!resource) {
-    const err = new Error('Resource not found'); err.status = 404; throw err
+    const err = new Error('Resource not found');
+    err.status = 404;
+    throw err;
   }
 
-  const isOwner = resource.uploadedById === requestingUser.id
-  const isPrivileged = ['ADMIN', 'MODERATOR'].includes(requestingUser.role)
+  const isOwner = resource.uploadedById === requestingUser.id;
+  const isPrivileged = ['ADMIN', 'MODERATOR'].includes(requestingUser.role);
 
   if (!isOwner && !isPrivileged) {
-    const err = new Error('Access denied'); err.status = 403; throw err
+    const err = new Error('Access denied');
+    err.status = 403;
+    throw err;
   }
 
-  await deleteFile(resource.fileUrl)
-  await prisma.resource.delete({ where: { id: resource.id } })
+  await deleteFile(resource.fileUrl);
+  await prisma.resource.delete({ where: { id: resource.id } });
 
-  await searchQueue.add('delete', { type: 'DELETE', resourceId: resource.id })
+  await searchQueue.add('delete', { type: 'DELETE', resourceId: resource.id });
 
-  return { message: 'Resource deleted' }
-}
+  return { message: 'Resource deleted' };
+};
 
-module.exports = { list, getOne, create, update, publish, publishById, remove }
+export { list, getOne, create, update, publish, publishById, remove };

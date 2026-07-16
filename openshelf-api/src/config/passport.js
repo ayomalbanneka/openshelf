@@ -1,17 +1,17 @@
-const passport = require('passport')
-const { Strategy: GoogleStrategy } = require('passport-google-oauth20')
-const { Strategy: GitHubStrategy } = require('passport-github2')
-const oauthService = require('../services/oauth.service')
+import passport from 'passport';
+import { Strategy as GoogleStrategy } from 'passport-google-oauth20';
+import { Strategy as GitHubStrategy } from 'passport-github2';
+import * as oauthService from '../services/oauth.service.js';
 
-const API_URL = process.env.API_URL || 'http://localhost:4000'
+const API_URL = process.env.API_URL || 'http://localhost:4000';
 
 passport.use(
   'google',
   new GoogleStrategy(
     {
-      clientID:     process.env.GOOGLE_CLIENT_ID,
+      clientID: process.env.GOOGLE_CLIENT_ID,
       clientSecret: process.env.GOOGLE_CLIENT_SECRET,
-      callbackURL:  `${API_URL}/api/auth/google/callback`,
+      callbackURL: `${API_URL}/api/auth/google/callback`,
     },
     async (accessToken, refreshToken, profile, done) => {
       try {
@@ -21,28 +21,28 @@ passport.use(
           email: profile.emails?.[0]?.value,
           name: profile.displayName,
           avatarUrl: profile.photos?.[0]?.value,
-        })
-        done(null, user)
+        });
+        done(null, user);
       } catch (err) {
-        done(err, null)
+        done(err, null);
       }
     }
   )
-)
+);
 
 passport.use(
   'github',
   new GitHubStrategy(
     {
-      clientID:     process.env.GITHUB_CLIENT_ID,
+      clientID: process.env.GITHUB_CLIENT_ID,
       clientSecret: process.env.GITHUB_CLIENT_SECRET,
-      callbackURL:  `${API_URL}/api/auth/github/callback`,
-      scope:        ['user:email'],
+      callbackURL: `${API_URL}/api/auth/github/callback`,
+      scope: ['user:email'],
     },
     async (accessToken, refreshToken, profile, done) => {
       try {
         // GitHub doesn't always return email on the profile — fall back to the emails array
-        const email = profile.emails?.[0]?.value || profile._json?.email
+        const email = profile.emails?.[0]?.value || profile._json?.email;
 
         const user = await oauthService.findOrCreateUser({
           provider: 'GITHUB',
@@ -50,13 +50,13 @@ passport.use(
           email,
           name: profile.displayName || profile.username,
           avatarUrl: profile.photos?.[0]?.value,
-        })
-        done(null, user)
+        });
+        done(null, user);
       } catch (err) {
-        done(err, null)
+        done(err, null);
       }
     }
   )
-)
+);
 
-module.exports = passport
+export default passport;
