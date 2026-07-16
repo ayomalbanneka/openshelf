@@ -1,5 +1,19 @@
 # Changelog
 
+## [0.12.0](https://github.com/ayomalbanneka/openshelf/compare/v0.11.0...v0.12.0) (2026-07-16)
+
+
+### Features
+
+* add alert thresholds and health checks for Meilisearch and email services ([479c889](https://github.com/ayomalbanneka/openshelf/commit/479c889b89e985dec9080ab69ed326a1ce898ead))
+* add OAuth authentication with Google and GitHub ([a6424b4](https://github.com/ayomalbanneka/openshelf/commit/a6424b46ec92a40d12e7cb435268f5a0a384ebb9))
+* add support page and subscription settings components ([cd5f271](https://github.com/ayomalbanneka/openshelf/commit/cd5f27164c036c5e7bca4a57962dda28176bc5c4))
+* add virus scanning functionality with ClamAV integration ([8d3fd63](https://github.com/ayomalbanneka/openshelf/commit/8d3fd6315b222ee3198cf32bafd3276745197beb))
+* enhance metadata generation and add sitemap/robots support ([dda217d](https://github.com/ayomalbanneka/openshelf/commit/dda217d0df9051c0d311523398f0376e7f7a6b64))
+* implement user badges system with evaluation and display ([5ffc6da](https://github.com/ayomalbanneka/openshelf/commit/5ffc6da50bd43c263525e0653785a812d164eb3f))
+* integrate BullMQ for background job processing ([619f5cf](https://github.com/ayomalbanneka/openshelf/commit/619f5cfa7fe90ab91cf1f6ae8279ef7a56645c11))
+* Redesign settings and add notif prefs ([addb2b1](https://github.com/ayomalbanneka/openshelf/commit/addb2b15b11c8405a6341504a72ceda69bc86e46))
+
 ## [0.11.0](https://github.com/ayomalbanneka/openshelf/compare/v0.10.0...v0.11.0) (2026-05-28)
 
 
