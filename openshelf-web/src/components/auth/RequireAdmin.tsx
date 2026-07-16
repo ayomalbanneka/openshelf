@@ -1,29 +1,29 @@
-'use client'
-import { useEffect } from 'react'
-import { useRouter } from 'next/navigation'
-import { useAuthStore } from '@/store/auth.store'
-import { useHydrated } from '@/hooks/useHydrated'
+'use client';
+import { useEffect } from 'react';
+import { useRouter } from 'next/navigation';
+import { useAuthStore } from '@/store/auth.store';
+import { useHydrated } from '@/hooks/useHydrated';
 
 export function RequireAdmin({ children }: { children: React.ReactNode }) {
-  const { user }       = useAuthStore()
-  const storeHydrated  = useAuthStore((s) => s.hasHydrated)
-  const router         = useRouter()
-  const reactHydrated  = useHydrated()
+  const { user } = useAuthStore();
+  const storeHydrated = useAuthStore((s) => s.hasHydrated);
+  const router = useRouter();
+  const reactHydrated = useHydrated();
 
-  const ready = reactHydrated && storeHydrated
+  const ready = reactHydrated && storeHydrated;
 
   useEffect(() => {
-    if (!ready) return
+    if (!ready) return;
     if (!user) {
-      router.replace('/admin/login')
+      router.replace('/admin/login');
     } else if (user.role !== 'ADMIN' && user.role !== 'MODERATOR') {
-      router.replace('/')
+      router.replace('/');
     }
-  }, [ready, user, router])
+  }, [ready, user, router]);
 
-  if (!ready) return null
-  if (!user) return null
-  if (user.role !== 'ADMIN' && user.role !== 'MODERATOR') return null
+  if (!ready) return null;
+  if (!user) return null;
+  if (user.role !== 'ADMIN' && user.role !== 'MODERATOR') return null;
 
-  return <>{children}</>
+  return <>{children}</>;
 }

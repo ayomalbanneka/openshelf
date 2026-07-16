@@ -1,22 +1,23 @@
 // src/components/settings/sections/ProfileSection.tsx
-'use client'
-import { useState, useRef } from 'react'
-import { useAuthStore } from '@/store/auth.store'
-import { api } from '@/lib/api'
-import { toast } from '@/lib/toast'
-import { useForm } from 'react-hook-form'
-import { zodResolver } from '@hookform/resolvers/zod'
-import { z } from 'zod'
-import { Trash2, CheckCircle, AlertTriangle } from 'lucide-react'
+'use client';
+import { useState, useRef } from 'react';
+import { useAuthStore } from '@/store/auth.store';
+import { api } from '@/lib/api';
+import { toast } from '@/lib/toast';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { z } from 'zod';
+import { Trash2, CheckCircle, AlertTriangle } from 'lucide-react';
+import Image from 'next/image';
 
 const profileSchema = z.object({
-  name:              z.string().min(2, 'Name must be at least 2 characters'),
-  bio:               z.string().max(300, 'Bio must be under 300 characters').optional(),
-  website:           z.string().url('Enter a valid URL').or(z.literal('')).optional(),
-  country:           z.string().optional(),
+  name: z.string().min(2, 'Name must be at least 2 characters'),
+  bio: z.string().max(300, 'Bio must be under 300 characters').optional(),
+  website: z.string().url('Enter a valid URL').or(z.literal('')).optional(),
+  country: z.string().optional(),
   preferredLanguage: z.string().optional(),
-})
-type ProfileData = z.infer<typeof profileSchema>
+});
+type ProfileData = z.infer<typeof profileSchema>;
 
 const LANGUAGES = [
   { value: 'en', label: 'English' },
@@ -27,31 +28,41 @@ const LANGUAGES = [
   { value: 'es', label: 'Spanish' },
   { value: 'zh', label: 'Chinese' },
   { value: 'ar', label: 'Arabic' },
-]
+];
 
 const COUNTRIES = [
-  'Sri Lanka', 'India', 'United Kingdom', 'United States',
-  'Australia', 'Canada', 'Germany', 'France', 'Japan', 'Singapore', 'Other',
-]
+  'Sri Lanka',
+  'India',
+  'United Kingdom',
+  'United States',
+  'Australia',
+  'Canada',
+  'Germany',
+  'France',
+  'Japan',
+  'Singapore',
+  'Other',
+];
 
 const ROLE_COLOURS: Record<string, { bg: string; text: string }> = {
-  ADMIN:     { bg: '#fee2e2', text: '#991b1b' },
+  ADMIN: { bg: '#fee2e2', text: '#991b1b' },
   MODERATOR: { bg: '#fef3c7', text: '#92400e' },
-  USER:      { bg: '#eff6ff', text: '#1e40af' },
-}
+  USER: { bg: '#eff6ff', text: '#1e40af' },
+};
 
-const inputClass = 'w-full h-10 rounded-xl px-3 text-sm outline-none focus:ring-2 focus:ring-blue-500 transition-all'
+const inputClass =
+  'w-full h-10 rounded-xl px-3 text-sm outline-none focus:ring-2 focus:ring-blue-500 transition-all';
 const inputStyle = {
-  border:          '1px solid hsl(var(--border))',
+  border: '1px solid hsl(var(--border))',
   backgroundColor: 'hsl(var(--background))',
-  color:           'hsl(var(--foreground))',
-}
+  color: 'hsl(var(--foreground))',
+};
 
 export function ProfileSection() {
-  const { user, setUser }   = useAuthStore()
-  const fileInputRef         = useRef<HTMLInputElement>(null)
-  const [uploading, setUploading] = useState(false)
-  const [preview, setPreview]     = useState<string | null>(null)
+  const { user, setUser } = useAuthStore();
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [uploading, setUploading] = useState(false);
+  const [preview, setPreview] = useState<string | null>(null);
 
   const {
     register,
@@ -60,71 +71,80 @@ export function ProfileSection() {
   } = useForm<ProfileData>({
     resolver: zodResolver(profileSchema),
     defaultValues: {
-      name:              user?.name              || '',
-      bio:               (user as any)?.bio      || '',
-      website:           (user as any)?.website  || '',
-      country:           (user as any)?.country  || '',
-      preferredLanguage: (user as any)?.preferredLanguage || 'en',
+      name: user?.name || '',
+      bio: user?.bio || '',
+      website: user?.website || '',
+      country: user?.country || '',
+      preferredLanguage: user?.preferredLanguage || 'en',
     },
-  })
+  });
 
   const onSubmit = async (data: ProfileData) => {
     try {
-      const updated = await api.users.updateProfile(data as Record<string, string>)
-      setUser({ ...user!, ...updated })
-      toast.success('Profile updated')
-    } catch (err: any) {
-      toast.error(err?.response?.data?.message || 'Failed to update profile')
+      const updated = await api.users.updateProfile(data as Record<string, string>);
+      setUser({ ...user!, ...updated });
+      toast.success('Profile updated');
+    } catch (err: unknown) {
+      const message =
+        typeof err === 'object' && err !== null && 'response' in err
+          ? ((err as { response?: { data?: { message?: string } } }).response?.data?.message ??
+            'Failed to update profile')
+          : 'Failed to update profile';
+      toast.error(message);
     }
-  }
+  };
 
   const handleAvatarChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0]
-    if (!file) return
-    if (file.size > 5 * 1024 * 1024) { toast.error('Avatar must be under 5 MB'); return }
-    const reader = new FileReader()
-    reader.onload = () => setPreview(reader.result as string)
-    reader.readAsDataURL(file)
-    setUploading(true)
-    try {
-      const updated = await api.users.uploadAvatar(file)
-      setUser({ ...user!, avatarUrl: updated.avatarUrl })
-      toast.success('Avatar updated')
-    } catch {
-      toast.error('Failed to upload avatar')
-      setPreview(null)
-    } finally {
-      setUploading(false)
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (file.size > 5 * 1024 * 1024) {
+      toast.error('Avatar must be under 5 MB');
+      return;
     }
-  }
+    const reader = new FileReader();
+    reader.onload = () => setPreview(reader.result as string);
+    reader.readAsDataURL(file);
+    setUploading(true);
+    try {
+      const updated = await api.users.uploadAvatar(file);
+      setUser({ ...user!, avatarUrl: updated.avatarUrl });
+      toast.success('Avatar updated');
+    } catch {
+      toast.error('Failed to upload avatar');
+      setPreview(null);
+    } finally {
+      setUploading(false);
+    }
+  };
 
   const handleRemoveAvatar = async () => {
     try {
-      const updated = await api.users.updateProfile({ avatarUrl: '' })
-      setUser({ ...user!, avatarUrl: updated.avatarUrl })
-      setPreview(null)
-      toast.success('Profile photo removed')
+      const updated = await api.users.updateProfile({ avatarUrl: '' });
+      setUser({ ...user!, avatarUrl: updated.avatarUrl });
+      setPreview(null);
+      toast.success('Profile photo removed');
     } catch {
-      toast.error('Failed to remove photo')
+      toast.error('Failed to remove photo');
     }
-  }
+  };
 
-  if (!user) return null
-  const roleColour   = ROLE_COLOURS[user.role] || ROLE_COLOURS.USER
-  const displayAvatar = preview || user.avatarUrl
+  if (!user) return null;
+  const roleColour = ROLE_COLOURS[user.role] || ROLE_COLOURS.USER;
+  const displayAvatar = preview || user.avatarUrl;
 
   return (
     <div className="flex flex-col gap-8">
-
       {/* Account info banner */}
       <div
         className="flex items-center justify-between p-4 rounded-xl"
         style={{ border: '1px solid hsl(var(--border))', background: 'hsl(var(--muted) / 0.4)' }}
       >
         <div className="flex items-center gap-2">
-          {user.isEmailVerified
-            ? <CheckCircle  size={15} style={{ color: 'hsl(142 71% 45%)' }} />
-            : <AlertTriangle size={15} style={{ color: 'hsl(38 92% 50%)' }} />}
+          {user.isEmailVerified ? (
+            <CheckCircle size={15} style={{ color: 'hsl(142 71% 45%)' }} />
+          ) : (
+            <AlertTriangle size={15} style={{ color: 'hsl(38 92% 50%)' }} />
+          )}
           <p className="text-sm" style={{ color: 'hsl(var(--muted-foreground))' }}>
             {user.isEmailVerified ? 'Email verified' : 'Email not verified'} · {user.email}
           </p>
@@ -145,9 +165,17 @@ export function ProfileSection() {
             className="h-20 w-20 rounded-2xl flex items-center justify-center text-2xl font-bold text-white shrink-0 overflow-hidden"
             style={{ background: '#2563eb' }}
           >
-            {displayAvatar
-              ? <img src={displayAvatar} alt="Avatar" className="h-20 w-20 object-cover" />
-              : user.name.charAt(0).toUpperCase()}
+            {displayAvatar ? (
+              <Image
+                src={displayAvatar}
+                alt="Avatar"
+                width={80}
+                height={80}
+                className="h-20 w-20 object-cover"
+              />
+            ) : (
+              user.name.charAt(0).toUpperCase()
+            )}
           </div>
           <div className="flex flex-col gap-2">
             <button
@@ -163,7 +191,10 @@ export function ProfileSection() {
               type="button"
               onClick={handleRemoveAvatar}
               className="px-4 py-2 rounded-lg text-sm font-medium transition-colors inline-flex items-center gap-2"
-              style={{ border: '1px solid hsl(var(--border))', color: 'hsl(var(--muted-foreground))' }}
+              style={{
+                border: '1px solid hsl(var(--border))',
+                color: 'hsl(var(--muted-foreground))',
+              }}
             >
               <Trash2 size={14} /> Remove
             </button>
@@ -184,7 +215,9 @@ export function ProfileSection() {
       {/* Profile form */}
       <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-4">
         <div className="flex flex-col gap-1.5">
-          <label className="text-sm font-medium">Full name <span className="text-red-500">*</span></label>
+          <label className="text-sm font-medium">
+            Full name <span className="text-red-500">*</span>
+          </label>
           <input {...register('name')} className={inputClass} style={inputStyle} />
           {errors.name && <p className="text-xs text-red-500">{errors.name.message}</p>}
         </div>
@@ -215,13 +248,21 @@ export function ProfileSection() {
             <label className="text-sm font-medium">Country</label>
             <select {...register('country')} className={inputClass} style={inputStyle}>
               <option value="">Select country</option>
-              {COUNTRIES.map((c) => <option key={c} value={c}>{c}</option>)}
+              {COUNTRIES.map((c) => (
+                <option key={c} value={c}>
+                  {c}
+                </option>
+              ))}
             </select>
           </div>
           <div className="flex flex-col gap-1.5">
             <label className="text-sm font-medium">Preferred language</label>
             <select {...register('preferredLanguage')} className={inputClass} style={inputStyle}>
-              {LANGUAGES.map((l) => <option key={l.value} value={l.value}>{l.label}</option>)}
+              {LANGUAGES.map((l) => (
+                <option key={l.value} value={l.value}>
+                  {l.label}
+                </option>
+              ))}
             </select>
           </div>
         </div>
@@ -236,5 +277,5 @@ export function ProfileSection() {
         </div>
       </form>
     </div>
-  )
+  );
 }

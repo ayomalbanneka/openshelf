@@ -1,4 +1,4 @@
-"use client";
+'use client';
 
 import { motion, useInView } from 'framer-motion';
 import { useRef } from 'react';
@@ -63,8 +63,8 @@ export default function Community() {
                 transition={{ delay: 0.2 }}
                 className="text-muted-foreground text-lg mb-8 leading-relaxed"
               >
-                OpenShelf is maintained by a passionate community of developers, educators, 
-                and students from around the world. Join us and help make education accessible.
+                OpenShelf is maintained by a passionate community of developers, educators, and
+                students from around the world. Join us and help make education accessible.
               </motion.p>
 
               {/* Avatar stack */}

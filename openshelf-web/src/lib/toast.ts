@@ -9,10 +9,7 @@ export const toast = {
 
   info: (message: string) => gooeyToast.info(message),
 
-  promise: <T>(
-    promise: Promise<T>,
-    message: { loading: string; success: string; error: string }
-  ) =>
+  promise: <T>(promise: Promise<T>, message: { loading: string; success: string; error: string }) =>
     gooeyToast.promise(promise, {
       loading: message.loading,
       success: message.success,

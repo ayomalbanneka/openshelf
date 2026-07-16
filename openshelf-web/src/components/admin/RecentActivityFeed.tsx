@@ -1,28 +1,29 @@
-'use client'
+'use client';
 
-import Link from 'next/link'
-import { useEffect, useState } from 'react'
-import { api } from '@/lib/api'
-import { ActionBadge } from '@/components/admin/ActionBadge' // reuse from /admin/audit if it exists as a standalone component
+import Link from 'next/link';
+import { useEffect, useState } from 'react';
+import { api } from '@/lib/api';
+import { ActionBadge } from '@/components/admin/ActionBadge'; // reuse from /admin/audit if it exists as a standalone component
 
 type AuditEntry = {
-  id: string
-  action: string
-  targetType: string
-  targetName: string | null
-  actor: { name: string; avatarUrl: string | null; role: string }
-  createdAt: string
-}
+  id: string;
+  action: string;
+  targetType: string;
+  targetName: string | null;
+  actor: { name: string; avatarUrl: string | null; role: string };
+  createdAt: string;
+};
 
 export function RecentActivityFeed() {
-  const [entries, setEntries] = useState<AuditEntry[]>([])
-  const [loading, setLoading] = useState(true)
+  const [entries, setEntries] = useState<AuditEntry[]>([]);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    api.get('/admin/audit', { params: { limit: 6 } })
+    api
+      .get('/admin/audit', { params: { limit: 6 } })
       .then((res) => setEntries(res.data.entries ?? res.data.data ?? []))
-      .finally(() => setLoading(false))
-  }, [])
+      .finally(() => setLoading(false));
+  }, []);
 
   return (
     <div className="rounded-lg border border-slate-200 p-4">
@@ -54,5 +55,5 @@ export function RecentActivityFeed() {
         </ul>
       )}
     </div>
-  )
+  );
 }

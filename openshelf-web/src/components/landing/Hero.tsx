@@ -1,13 +1,41 @@
-"use client";
+'use client';
 
 import { motion } from 'framer-motion';
 import { ArrowRight, BookOpen, GraduationCap, FileText, Sparkles } from 'lucide-react';
 
 const floatingItems = [
-  { icon: BookOpen, label: 'Books', color: 'from-blue-500 to-cyan-500', x: -280, y: -120, delay: 0 },
-  { icon: GraduationCap, label: 'Courses', color: 'from-violet-500 to-purple-500', x: 260, y: -80, delay: 0.3 },
-  { icon: FileText, label: 'Papers', color: 'from-amber-500 to-orange-500', x: -220, y: 100, delay: 0.6 },
-  { icon: Sparkles, label: 'More', color: 'from-emerald-500 to-teal-500', x: 240, y: 120, delay: 0.9 },
+  {
+    icon: BookOpen,
+    label: 'Books',
+    color: 'from-blue-500 to-cyan-500',
+    x: -280,
+    y: -120,
+    delay: 0,
+  },
+  {
+    icon: GraduationCap,
+    label: 'Courses',
+    color: 'from-violet-500 to-purple-500',
+    x: 260,
+    y: -80,
+    delay: 0.3,
+  },
+  {
+    icon: FileText,
+    label: 'Papers',
+    color: 'from-amber-500 to-orange-500',
+    x: -220,
+    y: 100,
+    delay: 0.6,
+  },
+  {
+    icon: Sparkles,
+    label: 'More',
+    color: 'from-emerald-500 to-teal-500',
+    x: 240,
+    y: 120,
+    delay: 0.9,
+  },
 ];
 
 export default function Hero() {
@@ -45,7 +73,9 @@ export default function Hero() {
               transition={{ duration: 5 + i, repeat: Infinity, ease: 'easeInOut' }}
               className="flex flex-col items-center gap-2"
             >
-              <div className={`w-14 h-14 bg-linear-to-br ${item.color} rounded-2xl flex items-center justify-center shadow-lg`}>
+              <div
+                className={`w-14 h-14 bg-linear-to-br ${item.color} rounded-2xl flex items-center justify-center shadow-lg`}
+              >
                 <item.icon className="w-7 h-7 text-white" />
               </div>
               <span className="text-xs font-medium text-muted-foreground">{item.label}</span>
@@ -97,8 +127,8 @@ export default function Hero() {
               transition={{ delay: 1.2, duration: 0.8, ease: 'easeOut' }}
               className="absolute -bottom-1 left-0 right-0 h-1 bg-linear-to-r from-blue-500 to-violet-500 rounded-full origin-left"
             />
-          </span>
-          {' '}for everyone
+          </span>{' '}
+          for everyone
         </motion.h1>
 
         {/* Subtitle */}
@@ -108,8 +138,8 @@ export default function Hero() {
           transition={{ delay: 0.6, duration: 0.7 }}
           className="text-lg sm:text-xl text-muted-foreground max-w-2xl mb-10 leading-relaxed"
         >
-          Access thousands of books, courses, exam papers, and educational resources — 
-          completely free. Built by the community, for the community.
+          Access thousands of books, courses, exam papers, and educational resources — completely
+          free. Built by the community, for the community.
         </motion.p>
 
         {/* CTA Buttons */}

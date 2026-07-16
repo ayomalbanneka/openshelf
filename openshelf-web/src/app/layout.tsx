@@ -18,7 +18,15 @@ export const metadata: Metadata = {
   },
   description:
     'OpenShelf is an open-source global e-library. Discover, read, and share free books, papers, audio, and courses — contributed by the community.',
-  keywords: ['ebooks', 'free library', 'open source', 'books', 'research papers', 'audiobooks', 'courses'],
+  keywords: [
+    'ebooks',
+    'free library',
+    'open source',
+    'books',
+    'research papers',
+    'audiobooks',
+    'courses',
+  ],
   authors: [{ name: 'OpenShelf' }],
   creator: 'OpenShelf',
   openGraph: {
@@ -29,7 +37,7 @@ export const metadata: Metadata = {
     url: BASE_URL,
     images: [
       {
-        url: '/og-default.png',  // 1200×630 static fallback
+        url: '/og-default.png', // 1200×630 static fallback
         width: 1200,
         height: 630,
         alt: 'OpenShelf — Free Global E-Library',
@@ -54,13 +62,9 @@ export const metadata: Metadata = {
   alternates: {
     canonical: BASE_URL,
   },
-}
+};
 
-export default function RootLayout({
-  children,
-}: {
-  children: React.ReactNode
-}) {
+export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en" suppressHydrationWarning>
       <body className={inter.className}>
@@ -71,5 +75,5 @@ export default function RootLayout({
         </ThemeProvider>
       </body>
     </html>
-  )
+  );
 }

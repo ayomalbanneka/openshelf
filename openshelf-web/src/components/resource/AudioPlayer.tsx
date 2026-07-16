@@ -1,107 +1,117 @@
-'use client'
-import { useEffect, useRef, useState } from 'react'
-import {
-  Play, Pause, Volume2, VolumeX,
-  SkipBack, SkipForward, Loader2,
-} from 'lucide-react'
+'use client';
+import { useEffect, useRef, useState } from 'react';
+import { Play, Pause, Volume2, VolumeX, SkipBack, SkipForward, Loader2 } from 'lucide-react';
 
 interface AudioPlayerProps {
-  url:   string
-  title: string
+  url: string;
+  title: string;
 }
 
 const fmt = (s: number) => {
-  if (!isFinite(s)) return '0:00'
-  const m = Math.floor(s / 60)
-  const sec = Math.floor(s % 60)
-  return `${m}:${sec.toString().padStart(2, '0')}`
-}
+  if (!isFinite(s)) return '0:00';
+  const m = Math.floor(s / 60);
+  const sec = Math.floor(s % 60);
+  return `${m}:${sec.toString().padStart(2, '0')}`;
+};
 
 export function AudioPlayer({ url, title }: AudioPlayerProps) {
-  const audioRef          = useRef<HTMLAudioElement>(null)
-  const progressRef       = useRef<HTMLDivElement>(null)
-  const [playing, setPlaying]     = useState(false)
-  const [current, setCurrent]     = useState(0)
-  const [duration, setDuration]   = useState(0)
-  const [muted, setMuted]         = useState(false)
-  const [volume, setVolume]       = useState(1)
-  const [loading, setLoading]     = useState(true)
-  const [error, setError]         = useState(false)
+  const audioRef = useRef<HTMLAudioElement>(null);
+  const progressRef = useRef<HTMLDivElement>(null);
+  const [playing, setPlaying] = useState(false);
+  const [current, setCurrent] = useState(0);
+  const [duration, setDuration] = useState(0);
+  const [muted, setMuted] = useState(false);
+  const [volume, setVolume] = useState(1);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(false);
 
   useEffect(() => {
-    const audio = audioRef.current
-    if (!audio) return
+    const audio = audioRef.current;
+    if (!audio) return;
 
-    const onLoaded  = () => { setDuration(audio.duration); setLoading(false) }
-    const onTime    = () => setCurrent(audio.currentTime)
-    const onEnded   = () => setPlaying(false)
-    const onError   = () => { setError(true); setLoading(false) }
-    const onWaiting = () => setLoading(true)
-    const onPlaying = () => setLoading(false)
+    const onLoaded = () => {
+      setDuration(audio.duration);
+      setLoading(false);
+    };
+    const onTime = () => setCurrent(audio.currentTime);
+    const onEnded = () => setPlaying(false);
+    const onError = () => {
+      setError(true);
+      setLoading(false);
+    };
+    const onWaiting = () => setLoading(true);
+    const onPlaying = () => setLoading(false);
 
-    audio.addEventListener('loadedmetadata', onLoaded)
-    audio.addEventListener('timeupdate',     onTime)
-    audio.addEventListener('ended',          onEnded)
-    audio.addEventListener('error',          onError)
-    audio.addEventListener('waiting',        onWaiting)
-    audio.addEventListener('playing',        onPlaying)
+    audio.addEventListener('loadedmetadata', onLoaded);
+    audio.addEventListener('timeupdate', onTime);
+    audio.addEventListener('ended', onEnded);
+    audio.addEventListener('error', onError);
+    audio.addEventListener('waiting', onWaiting);
+    audio.addEventListener('playing', onPlaying);
 
     return () => {
-      audio.removeEventListener('loadedmetadata', onLoaded)
-      audio.removeEventListener('timeupdate',     onTime)
-      audio.removeEventListener('ended',          onEnded)
-      audio.removeEventListener('error',          onError)
-      audio.removeEventListener('waiting',        onWaiting)
-      audio.removeEventListener('playing',        onPlaying)
-    }
-  }, [])
+      audio.removeEventListener('loadedmetadata', onLoaded);
+      audio.removeEventListener('timeupdate', onTime);
+      audio.removeEventListener('ended', onEnded);
+      audio.removeEventListener('error', onError);
+      audio.removeEventListener('waiting', onWaiting);
+      audio.removeEventListener('playing', onPlaying);
+    };
+  }, []);
 
   const togglePlay = () => {
-    const audio = audioRef.current
-    if (!audio) return
-    if (playing) { audio.pause(); setPlaying(false) }
-    else         { audio.play().then(() => setPlaying(true)).catch(() => setError(true)) }
-  }
+    const audio = audioRef.current;
+    if (!audio) return;
+    if (playing) {
+      audio.pause();
+      setPlaying(false);
+    } else {
+      audio
+        .play()
+        .then(() => setPlaying(true))
+        .catch(() => setError(true));
+    }
+  };
 
   const seek = (e: React.MouseEvent<HTMLDivElement>) => {
-    const bar  = progressRef.current
-    const audio = audioRef.current
-    if (!bar || !audio || !duration) return
-    const rect  = bar.getBoundingClientRect()
-    const pct   = (e.clientX - rect.left) / rect.width
-    audio.currentTime = pct * duration
-    setCurrent(audio.currentTime)
-  }
+    const bar = progressRef.current;
+    const audio = audioRef.current;
+    if (!bar || !audio || !duration) return;
+    const rect = bar.getBoundingClientRect();
+    const pct = (e.clientX - rect.left) / rect.width;
+    audio.currentTime = pct * duration;
+    setCurrent(audio.currentTime);
+  };
 
   const skip = (secs: number) => {
-    const audio = audioRef.current
-    if (!audio) return
-    audio.currentTime = Math.max(0, Math.min(duration, audio.currentTime + secs))
-  }
+    const audio = audioRef.current;
+    if (!audio) return;
+    audio.currentTime = Math.max(0, Math.min(duration, audio.currentTime + secs));
+  };
 
   const handleVolume = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const v = parseFloat(e.target.value)
-    setVolume(v)
-    if (audioRef.current) audioRef.current.volume = v
-    setMuted(v === 0)
-  }
+    const v = parseFloat(e.target.value);
+    setVolume(v);
+    if (audioRef.current) audioRef.current.volume = v;
+    setMuted(v === 0);
+  };
 
   const toggleMute = () => {
-    if (!audioRef.current) return
-    const next = !muted
-    setMuted(next)
-    audioRef.current.muted = next
-  }
+    if (!audioRef.current) return;
+    const next = !muted;
+    setMuted(next);
+    audioRef.current.muted = next;
+  };
 
-  const pct = duration ? (current / duration) * 100 : 0
+  const pct = duration ? (current / duration) * 100 : 0;
 
   return (
     <div
       className="rounded-2xl p-5 flex flex-col gap-4"
       style={{
         backgroundColor: 'hsl(var(--background))',
-        border:          '1px solid hsl(var(--border))',
-        boxShadow:       '0 2px 8px rgba(0,0,0,0.06)',
+        border: '1px solid hsl(var(--border))',
+        boxShadow: '0 2px 8px rgba(0,0,0,0.06)',
       }}
     >
       <audio ref={audioRef} src={url} preload="metadata" />
@@ -143,8 +153,10 @@ export function AudioPlayer({ url, title }: AudioPlayerProps) {
                 style={{ width: `${pct}%`, backgroundColor: '#2563eb' }}
               />
             </div>
-            <div className="flex justify-between text-[10px]"
-              style={{ color: 'hsl(var(--muted-foreground))' }}>
+            <div
+              className="flex justify-between text-[10px]"
+              style={{ color: 'hsl(var(--muted-foreground))' }}
+            >
               <span>{fmt(current)}</span>
               <span>{fmt(duration)}</span>
             </div>
@@ -153,10 +165,12 @@ export function AudioPlayer({ url, title }: AudioPlayerProps) {
           {/* Controls */}
           <div className="flex items-center gap-3">
             {/* Skip back */}
-            <button onClick={() => skip(-10)}
+            <button
+              onClick={() => skip(-10)}
               className="p-2 rounded-xl transition-colors"
               style={{ color: 'hsl(var(--muted-foreground))' }}
-              title="Back 10s">
+              title="Back 10s"
+            >
               <SkipBack className="w-5 h-5" />
             </button>
 
@@ -167,33 +181,44 @@ export function AudioPlayer({ url, title }: AudioPlayerProps) {
               className="w-12 h-12 rounded-full flex items-center justify-center transition-colors disabled:opacity-60"
               style={{ backgroundColor: '#2563eb', color: '#ffffff' }}
             >
-              {loading
-                ? <Loader2 className="w-5 h-5 animate-spin" />
-                : playing
-                  ? <Pause className="w-5 h-5" />
-                  : <Play className="w-5 h-5 ml-0.5" />}
+              {loading ? (
+                <Loader2 className="w-5 h-5 animate-spin" />
+              ) : playing ? (
+                <Pause className="w-5 h-5" />
+              ) : (
+                <Play className="w-5 h-5 ml-0.5" />
+              )}
             </button>
 
             {/* Skip forward */}
-            <button onClick={() => skip(10)}
+            <button
+              onClick={() => skip(10)}
               className="p-2 rounded-xl transition-colors"
               style={{ color: 'hsl(var(--muted-foreground))' }}
-              title="Forward 10s">
+              title="Forward 10s"
+            >
               <SkipForward className="w-5 h-5" />
             </button>
 
             <div className="flex-1" />
 
             {/* Volume */}
-            <button onClick={toggleMute}
+            <button
+              onClick={toggleMute}
               className="p-1.5 rounded-lg"
-              style={{ color: 'hsl(var(--muted-foreground))' }}>
-              {muted || volume === 0
-                ? <VolumeX className="w-4 h-4" />
-                : <Volume2 className="w-4 h-4" />}
+              style={{ color: 'hsl(var(--muted-foreground))' }}
+            >
+              {muted || volume === 0 ? (
+                <VolumeX className="w-4 h-4" />
+              ) : (
+                <Volume2 className="w-4 h-4" />
+              )}
             </button>
             <input
-              type="range" min="0" max="1" step="0.05"
+              type="range"
+              min="0"
+              max="1"
+              step="0.05"
               value={muted ? 0 : volume}
               onChange={handleVolume}
               className="w-20 accent-blue-600"
@@ -202,5 +227,5 @@ export function AudioPlayer({ url, title }: AudioPlayerProps) {
         </>
       )}
     </div>
-  )
+  );
 }

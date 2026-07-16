@@ -1,15 +1,15 @@
 type ApiError = {
   response?: {
     data?: {
-      message?: string
-    }
-  }
-}
+      message?: string;
+    };
+  };
+};
 
 export function getErrorMessage(error: unknown, fallback: string) {
   if (typeof error === 'object' && error) {
-    const message = (error as ApiError).response?.data?.message
-    if (message) return message
+    const message = (error as ApiError).response?.data?.message;
+    if (message) return message;
   }
-  return fallback
+  return fallback;
 }

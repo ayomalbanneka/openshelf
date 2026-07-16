@@ -1,112 +1,118 @@
-'use client'
-import { useState, useRef, useEffect } from 'react'
-import { useRouter } from 'next/navigation'
-import Link from 'next/link'
-import { http } from '@/lib/api'
-import { CheckCircle } from 'lucide-react'
-import { getErrorMessage } from '@/lib/errors'
-import { PasswordStrength } from '@/components/auth/PasswordStrength'
-import { checkPwned } from '@/lib/hibp'
+'use client';
+import { useState, useRef, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
+import Link from 'next/link';
+import { http } from '@/lib/api';
+import { CheckCircle } from 'lucide-react';
+import { getErrorMessage } from '@/lib/errors';
+import { PasswordStrength } from '@/components/auth/PasswordStrength';
+import { checkPwned } from '@/lib/hibp';
 
 export default function ResetPasswordPage() {
-  const router  = useRouter()
-  const [email, setEmail]       = useState('')
-  const [code, setCode]         = useState(['', '', '', '', '', ''])
-  const [password, setPassword] = useState('')
-  const [confirm, setConfirm]   = useState('')
-  const [step, setStep]         = useState<'code' | 'password'>('code')
-  const [loading, setLoading]   = useState(false)
-  const [error, setError]       = useState('')
-  const [success, setSuccess]   = useState(false)
-  const [pwned, setPwned] = useState<boolean | undefined>(undefined)
-  const [checking, setChecking] = useState(false)
-  const inputs = useRef<(HTMLInputElement | null)[]>([])
-  const debounceRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined)
+  const router = useRouter();
+  const [email, setEmail] = useState('');
+  const [code, setCode] = useState(['', '', '', '', '', '']);
+  const [password, setPassword] = useState('');
+  const [confirm, setConfirm] = useState('');
+  const [step, setStep] = useState<'code' | 'password'>('code');
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
+  const [success, setSuccess] = useState(false);
+  const [pwned, setPwned] = useState<boolean | undefined>(undefined);
+  const [checking, setChecking] = useState(false);
+  const inputs = useRef<(HTMLInputElement | null)[]>([]);
+  const debounceRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
 
   const inputStyle = {
     border: '1px solid hsl(var(--border))',
     backgroundColor: 'hsl(var(--background))',
     color: 'hsl(var(--foreground))',
-  }
+  };
 
   const handleCodeChange = (i: number, val: string) => {
-    if (!/^\d*$/.test(val)) return
-    const next = [...code]
-    next[i] = val.slice(-1)
-    setCode(next)
-    if (val && i < 5) inputs.current[i + 1]?.focus()
-  }
+    if (!/^\d*$/.test(val)) return;
+    const next = [...code];
+    next[i] = val.slice(-1);
+    setCode(next);
+    if (val && i < 5) inputs.current[i + 1]?.focus();
+  };
 
   const handleKeyDown = (i: number, e: React.KeyboardEvent) => {
     if (e.key === 'Backspace' && !code[i] && i > 0) {
-      inputs.current[i - 1]?.focus()
+      inputs.current[i - 1]?.focus();
     }
-  }
+  };
 
   const handlePaste = (e: React.ClipboardEvent) => {
-    e.preventDefault()
-    const pasted = e.clipboardData.getData('text').replace(/\D/g, '').slice(0, 6)
+    e.preventDefault();
+    const pasted = e.clipboardData.getData('text').replace(/\D/g, '').slice(0, 6);
     if (pasted.length === 6) {
-      setCode(pasted.split(''))
-      inputs.current[5]?.focus()
+      setCode(pasted.split(''));
+      inputs.current[5]?.focus();
     }
-  }
+  };
 
   const handleCodeSubmit = (e: React.FormEvent) => {
-    e.preventDefault()
-    if (!email) { setError('Enter your email'); return }
-    if (code.join('').length < 6) { setError('Enter all 6 digits'); return }
-    setError('')
-    setStep('password')
-  }
+    e.preventDefault();
+    if (!email) {
+      setError('Enter your email');
+      return;
+    }
+    if (code.join('').length < 6) {
+      setError('Enter all 6 digits');
+      return;
+    }
+    setError('');
+    setStep('password');
+  };
 
   useEffect(() => {
     if (password.length < 8) {
-      setPwned(undefined)
-      return
+      setPwned(undefined);
+      return;
     }
-    clearTimeout(debounceRef.current)
-    setChecking(true)
+    clearTimeout(debounceRef.current);
+    setChecking(true);
     debounceRef.current = setTimeout(async () => {
-      const result = await checkPwned(password)
-      setPwned(result)
-      setChecking(false)
-    }, 600)
-    return () => clearTimeout(debounceRef.current)
-  }, [password])
+      const result = await checkPwned(password);
+      setPwned(result);
+      setChecking(false);
+    }, 600);
+    return () => clearTimeout(debounceRef.current);
+  }, [password]);
 
   const handlePasswordSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
+    e.preventDefault();
     if (password.length < 8) {
-      setError('Password must be at least 8 characters')
-      return
+      setError('Password must be at least 8 characters');
+      return;
     }
     if (pwned) {
-      setError('This password has appeared in data breaches. Please choose a different one.')
-      return
+      setError('This password has appeared in data breaches. Please choose a different one.');
+      return;
     }
     if (password !== confirm) {
-      setError('Passwords do not match')
-      return
+      setError('Passwords do not match');
+      return;
     }
-    setLoading(true)
-    setError('')
+    setLoading(true);
+    setError('');
     try {
       await http.post('/auth/reset-password', {
         email,
         code: code.join(''),
         newPassword: password,
-      })
-      setSuccess(true)
-      setTimeout(() => router.replace('/login'), 2500)
+      });
+      setSuccess(true);
+      setTimeout(() => router.replace('/login'), 2500);
     } catch (err: unknown) {
-      setError(getErrorMessage(err, 'Invalid or expired code'))
-      setStep('code')
-      setCode(['', '', '', '', '', ''])
+      setError(getErrorMessage(err, 'Invalid or expired code'));
+      setStep('code');
+      setCode(['', '', '', '', '', '']);
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
-  }
+  };
 
   if (success) {
     return (
@@ -117,7 +123,7 @@ export default function ResetPasswordPage() {
           Redirecting you to login…
         </p>
       </div>
-    )
+    );
   }
 
   return (
@@ -151,7 +157,9 @@ export default function ResetPasswordPage() {
               {code.map((digit, i) => (
                 <input
                   key={i}
-                  ref={(el) => { inputs.current[i] = el }}
+                  ref={(el) => {
+                    inputs.current[i] = el;
+                  }}
                   type="text"
                   inputMode="numeric"
                   maxLength={1}
@@ -233,5 +241,5 @@ export default function ResetPasswordPage() {
         </form>
       )}
     </>
-  )
+  );
 }

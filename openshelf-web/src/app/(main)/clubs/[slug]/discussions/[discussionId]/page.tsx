@@ -1,40 +1,34 @@
-import { notFound } from 'next/navigation'
-import { serverApi } from '@/lib/server-api'
-import { DiscussionChat } from '@/components/clubs/DiscussionChat'
-import type { Metadata } from 'next'
+import { notFound } from 'next/navigation';
+import { serverApi } from '@/lib/server-api';
+import { DiscussionChat } from '@/components/clubs/DiscussionChat';
+import type { Metadata } from 'next';
 
 interface Props {
-  params: Promise<{ slug: string; discussionId: string }>
+  params: Promise<{ slug: string; discussionId: string }>;
 }
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   try {
-    const { slug, discussionId } = await params
-    const discussion = await serverApi.clubs.getDiscussion(slug, discussionId)
+    const { slug, discussionId } = await params;
+    const discussion = await serverApi.clubs.getDiscussion(slug, discussionId);
     return {
       title: discussion.title,
       description: discussion.body.slice(0, 120),
-    }
+    };
   } catch {
-    return { title: 'Discussion' }
+    return { title: 'Discussion' };
   }
 }
 
 export default async function DiscussionPage({ params }: Props) {
-  const { slug, discussionId } = await params
+  const { slug, discussionId } = await params;
 
-  let discussion
+  let discussion;
   try {
-    discussion = await serverApi.clubs.getDiscussion(slug, discussionId)
+    discussion = await serverApi.clubs.getDiscussion(slug, discussionId);
   } catch {
-    notFound()
+    notFound();
   }
 
-  return (
-    <DiscussionChat
-      clubSlug={slug}
-      discussionId={discussionId}
-      discussion={discussion}
-    />
-  )
+  return <DiscussionChat clubSlug={slug} discussionId={discussionId} discussion={discussion} />;
 }

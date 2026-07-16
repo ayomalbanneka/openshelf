@@ -1,55 +1,55 @@
-'use client'
-import { useState, useRef, useEffect } from 'react'
-import { useRouter, useSearchParams } from 'next/navigation'
-import { X } from 'lucide-react'
+'use client';
+import { useState, useRef, useEffect } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
+import { X } from 'lucide-react';
 
 export function SearchBar() {
-  const router       = useRouter()
-  const searchParams = useSearchParams()
-  const inputRef     = useRef<HTMLInputElement>(null)
-  const timerRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined)
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const inputRef = useRef<HTMLInputElement>(null);
+  const timerRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
 
-  const [value, setValue]   = useState(searchParams.get('q') || '')
-  const [focused, setFocused] = useState(false)
+  const [value, setValue] = useState(searchParams.get('q') || '');
+  const [focused, setFocused] = useState(false);
 
   // ⌘K / Ctrl+K focuses the search bar from anywhere
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
       if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
-        e.preventDefault()
-        inputRef.current?.focus()
-        inputRef.current?.select()
+        e.preventDefault();
+        inputRef.current?.focus();
+        inputRef.current?.select();
       }
-    }
-    window.addEventListener('keydown', handler)
-    return () => window.removeEventListener('keydown', handler)
-  }, [])
+    };
+    window.addEventListener('keydown', handler);
+    return () => window.removeEventListener('keydown', handler);
+  }, []);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const q = e.target.value
-    setValue(q)
+    const q = e.target.value;
+    setValue(q);
 
-    clearTimeout(timerRef.current)
+    clearTimeout(timerRef.current);
     timerRef.current = setTimeout(() => {
       if (q.trim().length >= 2) {
-        router.push(`/search?q=${encodeURIComponent(q.trim())}`)
+        router.push(`/search?q=${encodeURIComponent(q.trim())}`);
       } else if (q.trim().length === 0) {
-        router.push('/search')
+        router.push('/search');
       }
-    }, 400)
-  }
+    }, 400);
+  };
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter' && value.trim().length >= 2) {
-      clearTimeout(timerRef.current)
-      router.push(`/search?q=${encodeURIComponent(value.trim())}`)
-      inputRef.current?.blur()
+      clearTimeout(timerRef.current);
+      router.push(`/search?q=${encodeURIComponent(value.trim())}`);
+      inputRef.current?.blur();
     }
     if (e.key === 'Escape') {
-      inputRef.current?.blur()
-      setFocused(false)
+      inputRef.current?.blur();
+      setFocused(false);
     }
-  }
+  };
 
   return (
     <div className="relative flex-1 max-w-sm">
@@ -105,9 +105,9 @@ export function SearchBar() {
         {value && (
           <button
             onMouseDown={(e) => {
-              e.preventDefault()
-              setValue('')
-              router.push('/search')
+              e.preventDefault();
+              setValue('');
+              router.push('/search');
             }}
             aria-label="Clear search"
             className="text-xs hover:opacity-70 transition-opacity shrink-0"
@@ -118,5 +118,5 @@ export function SearchBar() {
         )}
       </div>
     </div>
-  )
+  );
 }

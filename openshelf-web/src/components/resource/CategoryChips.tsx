@@ -1,41 +1,46 @@
-'use client'
-import { useRouter, usePathname } from 'next/navigation'
+'use client';
+import { useRouter, usePathname } from 'next/navigation';
 
 interface Category {
-  id: string
-  name: string
-  slug: string
+  id: string;
+  name: string;
+  slug: string;
 }
 
 interface Props {
-  categories: Category[]
-  activeCategory: string
-  searchParams: Record<string, string | undefined>
+  categories: Category[];
+  activeCategory: string;
+  searchParams: Record<string, string | undefined>;
 }
 
 export function CategoryChips({ categories, activeCategory, searchParams }: Props) {
-  const router   = useRouter()
-  const pathname = usePathname()
+  const router = useRouter();
+  const pathname = usePathname();
 
   const setCategory = (slug: string) => {
-    const params = new URLSearchParams(searchParams as Record<string, string>)
-    if (slug) params.set('category', slug)
-    else params.delete('category')
-    params.delete('page')
-    router.push(`${pathname}?${params.toString()}`)
-  }
+    const params = new URLSearchParams(searchParams as Record<string, string>);
+    if (slug) params.set('category', slug);
+    else params.delete('category');
+    params.delete('page');
+    router.push(`${pathname}?${params.toString()}`);
+  };
 
   return (
     <div className="relative">
       {/* Fade edges */}
-      <div className="absolute left-0 top-0 bottom-0 w-4 z-10 pointer-events-none"
-        style={{ background: 'linear-gradient(to right, hsl(var(--background)), transparent)' }} />
-      <div className="absolute right-0 top-0 bottom-0 w-4 z-10 pointer-events-none"
-        style={{ background: 'linear-gradient(to left, hsl(var(--background)), transparent)' }} />
+      <div
+        className="absolute left-0 top-0 bottom-0 w-4 z-10 pointer-events-none"
+        style={{ background: 'linear-gradient(to right, hsl(var(--background)), transparent)' }}
+      />
+      <div
+        className="absolute right-0 top-0 bottom-0 w-4 z-10 pointer-events-none"
+        style={{ background: 'linear-gradient(to left, hsl(var(--background)), transparent)' }}
+      />
 
-      <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-hide px-1"
-        style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
-
+      <div
+        className="flex gap-2 overflow-x-auto pb-2 scrollbar-hide px-1"
+        style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
+      >
         {/* All chip */}
         <button
           onClick={() => setCategory('')}
@@ -54,7 +59,7 @@ export function CategoryChips({ categories, activeCategory, searchParams }: Prop
         </button>
 
         {categories.map((c) => {
-          const active = activeCategory === c.slug
+          const active = activeCategory === c.slug;
           return (
             <button
               key={c.id}
@@ -72,9 +77,9 @@ export function CategoryChips({ categories, activeCategory, searchParams }: Prop
             >
               {c.name}
             </button>
-          )
+          );
         })}
       </div>
     </div>
-  )
+  );
 }

@@ -1,119 +1,124 @@
-'use client'
-import { useState, useEffect, useRef } from 'react'
-import { BookOpen, CheckCircle } from 'lucide-react'
-import { useAuthStore } from '@/store/auth.store'
-import { api } from '@/lib/api'
-import { toast } from '@/lib/toast'
-import type { Resource } from '@/types'
+'use client';
+import { useState, useEffect, useRef } from 'react';
+import { BookOpen, CheckCircle } from 'lucide-react';
+import { useAuthStore } from '@/store/auth.store';
+import { api } from '@/lib/api';
+import { toast } from '@/lib/toast';
+import type { Resource } from '@/types';
 
 interface Progress {
-  id: string
-  currentPage: number
-  totalPages?: number
-  percentage: number
-  isCompleted: boolean
-  lastReadAt: string
+  id: string;
+  currentPage: number;
+  totalPages?: number;
+  percentage: number;
+  isCompleted: boolean;
+  lastReadAt: string;
 }
 
 interface Props {
-  resource: Resource
+  resource: Resource;
 }
 
 export function ReadingProgress({ resource }: Props) {
-  const { user }    = useAuthStore()
-  const [progress, setProgress]   = useState<Progress | null>(null)
-  const [loading, setLoading]     = useState(true)
-  const [saving, setSaving]       = useState(false)
-  const [currentPage, setCurrentPage] = useState(0)
-  const [totalPages, setTotalPages]   = useState(resource.pageCount || 0)
-  const [currentTime, setCurrentTime] = useState(0)
-  const [totalTime, setTotalTime]     = useState(resource.duration || 0)
-  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const { user } = useAuthStore();
+  const [progress, setProgress] = useState<Progress | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [currentPage, setCurrentPage] = useState(0);
+  const [totalPages, setTotalPages] = useState(resource.pageCount || 0);
+  const [currentTime, setCurrentTime] = useState(0);
+  const [totalTime, setTotalTime] = useState(resource.duration || 0);
+  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  const isPageBased = ['BOOK', 'DOCUMENT', 'EXAM_PAPER', 'COURSE'].includes(resource.type)
-  const isTimeBased = resource.type === 'AUDIO'
+  const isPageBased = ['BOOK', 'DOCUMENT', 'EXAM_PAPER', 'COURSE'].includes(resource.type);
+  const isTimeBased = resource.type === 'AUDIO';
 
   // Load existing progress
   useEffect(() => {
-    if (!user) { setLoading(false); return }
-    api.progress.get(resource.id)
+    if (!user) {
+      setLoading(false);
+      return;
+    }
+    api.progress
+      .get(resource.id)
       .then((data) => {
         if (data) {
-          setProgress(data)
-          setCurrentPage(data.currentPage || 0)
-          setTotalPages(data.totalPages || resource.pageCount || 0)
+          setProgress(data);
+          setCurrentPage(data.currentPage || 0);
+          setTotalPages(data.totalPages || resource.pageCount || 0);
         }
       })
       .catch(() => {})
-      .finally(() => setLoading(false))
-  }, [user, resource.id])
+      .finally(() => setLoading(false));
+  }, [user, resource.id]);
 
   // Auto-save with debounce
   const saveProgress = (page?: number, time?: number) => {
-    if (debounceRef.current) clearTimeout(debounceRef.current)
+    if (debounceRef.current) clearTimeout(debounceRef.current);
     debounceRef.current = setTimeout(async () => {
-      setSaving(true)
+      setSaving(true);
       try {
-        const payload: Record<string, number> = {}
+        const payload: Record<string, number> = {};
         if (isPageBased) {
-          payload.currentPage = page ?? currentPage
-          payload.totalPages  = totalPages
+          payload.currentPage = page ?? currentPage;
+          payload.totalPages = totalPages;
         }
         if (isTimeBased) {
-          payload.currentTime = time ?? currentTime
-          payload.totalTime   = totalTime
+          payload.currentTime = time ?? currentTime;
+          payload.totalTime = totalTime;
         }
 
-        const updated = await api.progress.update(resource.id, payload)
-        setProgress(updated)
+        const updated = await api.progress.update(resource.id, payload);
+        setProgress(updated);
 
         if (updated.isCompleted && !progress?.isCompleted) {
-          toast.success('Marked as complete!')
+          toast.success('Marked as complete!');
         }
       } catch {
         // silent fail — progress saving is non-critical
       } finally {
-        setSaving(false)
+        setSaving(false);
       }
-    }, 800)
-  }
+    }, 800);
+  };
 
   const handleMarkComplete = async () => {
-    setSaving(true)
+    setSaving(true);
     try {
       const payload = isPageBased
         ? { currentPage: totalPages, totalPages }
-        : { currentTime: totalTime, totalTime }
-      const updated = await api.progress.update(resource.id, payload)
-      setProgress(updated)
-      if (isPageBased) setCurrentPage(totalPages)
-      if (isTimeBased) setCurrentTime(totalTime)
-      toast.success('Marked as complete!')
+        : { currentTime: totalTime, totalTime };
+      const updated = await api.progress.update(resource.id, payload);
+      setProgress(updated);
+      if (isPageBased) setCurrentPage(totalPages);
+      if (isTimeBased) setCurrentTime(totalTime);
+      toast.success('Marked as complete!');
     } catch {
-      toast.error('Failed to update progress')
+      toast.error('Failed to update progress');
     } finally {
-      setSaving(false)
+      setSaving(false);
     }
-  }
+  };
 
   const formatTime = (seconds: number) => {
-    const h = Math.floor(seconds / 3600)
-    const m = Math.floor((seconds % 3600) / 60)
-    const s = seconds % 60
-    if (h > 0) return `${h}h ${m}m`
-    return `${m}m ${s}s`
-  }
+    const h = Math.floor(seconds / 3600);
+    const m = Math.floor((seconds % 3600) / 60);
+    const s = seconds % 60;
+    if (h > 0) return `${h}h ${m}m`;
+    return `${m}m ${s}s`;
+  };
 
-  if (!user) return null
-  if (loading) return (
-    <div
-      className="h-24 rounded-2xl animate-pulse"
-      style={{ backgroundColor: 'hsl(var(--muted))' }}
-    />
-  )
+  if (!user) return null;
+  if (loading)
+    return (
+      <div
+        className="h-24 rounded-2xl animate-pulse"
+        style={{ backgroundColor: 'hsl(var(--muted))' }}
+      />
+    );
 
-  const pct = progress?.percentage ?? 0
-  const completed = progress?.isCompleted ?? pct >= 100
+  const pct = progress?.percentage ?? 0;
+  const completed = progress?.isCompleted ?? pct >= 100;
 
   return (
     <div
@@ -133,26 +138,19 @@ export function ReadingProgress({ resource }: Props) {
               <BookOpen size={18} style={{ color: 'hsl(var(--ring))' }} />
             )}
           </span>
-          <p className="text-sm font-semibold">
-            {completed ? 'Completed!' : 'Your progress'}
-          </p>
+          <p className="text-sm font-semibold">{completed ? 'Completed!' : 'Your progress'}</p>
           {saving && (
-            <span
-              className="text-xs"
-              style={{ color: 'hsl(var(--muted-foreground))' }}
-            >
+            <span className="text-xs" style={{ color: 'hsl(var(--muted-foreground))' }}>
               Saving…
             </span>
           )}
         </div>
         {progress?.lastReadAt && (
-          <p
-            className="text-xs"
-            style={{ color: 'hsl(var(--muted-foreground))' }}
-          >
+          <p className="text-xs" style={{ color: 'hsl(var(--muted-foreground))' }}>
             Last read{' '}
             {new Date(progress.lastReadAt).toLocaleDateString('en-US', {
-              month: 'short', day: 'numeric',
+              month: 'short',
+              day: 'numeric',
             })}
           </p>
         )}
@@ -172,10 +170,7 @@ export function ReadingProgress({ resource }: Props) {
             }}
           />
         </div>
-        <p
-          className="text-xs mt-1 text-right"
-          style={{ color: 'hsl(var(--muted-foreground))' }}
-        >
+        <p className="text-xs mt-1 text-right" style={{ color: 'hsl(var(--muted-foreground))' }}>
           {Math.round(pct)}% complete
         </p>
       </div>
@@ -192,9 +187,9 @@ export function ReadingProgress({ resource }: Props) {
             max={totalPages || undefined}
             value={currentPage || ''}
             onChange={(e) => {
-              const val = Number(e.target.value)
-              setCurrentPage(val)
-              saveProgress(val)
+              const val = Number(e.target.value);
+              setCurrentPage(val);
+              saveProgress(val);
             }}
             placeholder="0"
             className="w-20 h-9 rounded-lg px-3 text-sm outline-none focus:ring-2 focus:ring-blue-500 text-center"
@@ -212,9 +207,9 @@ export function ReadingProgress({ resource }: Props) {
             min={1}
             value={totalPages || ''}
             onChange={(e) => {
-              const val = Number(e.target.value)
-              setTotalPages(val)
-              saveProgress(undefined)
+              const val = Number(e.target.value);
+              setTotalPages(val);
+              saveProgress(undefined);
             }}
             placeholder={resource.pageCount ? String(resource.pageCount) : 'total'}
             className="w-20 h-9 rounded-lg px-3 text-sm outline-none focus:ring-2 focus:ring-blue-500 text-center"
@@ -233,8 +228,10 @@ export function ReadingProgress({ resource }: Props) {
       {/* Time-based tracker (audio) */}
       {isTimeBased && !completed && (
         <div className="flex flex-col gap-2">
-          <div className="flex items-center justify-between text-xs"
-            style={{ color: 'hsl(var(--muted-foreground))' }}>
+          <div
+            className="flex items-center justify-between text-xs"
+            style={{ color: 'hsl(var(--muted-foreground))' }}
+          >
             <span>{formatTime(currentTime)}</span>
             <span>{totalTime ? formatTime(totalTime) : 'unknown duration'}</span>
           </div>
@@ -244,16 +241,15 @@ export function ReadingProgress({ resource }: Props) {
             max={totalTime || 100}
             value={currentTime}
             onChange={(e) => {
-              const val = Number(e.target.value)
-              setCurrentTime(val)
-              saveProgress(undefined, val)
+              const val = Number(e.target.value);
+              setCurrentTime(val);
+              saveProgress(undefined, val);
             }}
             className="w-full accent-blue-600"
           />
           {!resource.duration && (
             <div className="flex items-center gap-2">
-              <p className="text-xs shrink-0"
-                style={{ color: 'hsl(var(--muted-foreground))' }}>
+              <p className="text-xs shrink-0" style={{ color: 'hsl(var(--muted-foreground))' }}>
                 Total duration (seconds):
               </p>
               <input
@@ -291,19 +287,19 @@ export function ReadingProgress({ resource }: Props) {
         ) : (
           <button
             onClick={async () => {
-              setSaving(true)
+              setSaving(true);
               try {
                 const updated = await api.progress.update(resource.id, {
                   currentPage: 0,
                   totalPages,
-                })
-                setProgress(updated)
-                setCurrentPage(0)
-                toast.info('Progress reset')
+                });
+                setProgress(updated);
+                setCurrentPage(0);
+                toast.info('Progress reset');
               } catch {
-                toast.error('Failed to reset progress')
+                toast.error('Failed to reset progress');
               } finally {
-                setSaving(false)
+                setSaving(false);
               }
             }}
             disabled={saving}
@@ -318,5 +314,5 @@ export function ReadingProgress({ resource }: Props) {
         )}
       </div>
     </div>
-  )
+  );
 }

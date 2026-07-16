@@ -1,37 +1,47 @@
-import { Suspense } from 'react'
-import { redirect } from 'next/navigation'
-import { serverApi } from '@/lib/server-api'
-import { ClubCard } from '@/components/clubs/ClubCard'
-import { CreateClubButton } from '@/components/clubs/CreateClubButton'
-import { ClubSearch } from '@/components/clubs/ClubSearch'
-import { Pagination } from '@/components/ui/Pagination'
-import type { Metadata } from 'next'
+import { Suspense } from 'react';
+import { redirect } from 'next/navigation';
+import { serverApi } from '@/lib/server-api';
+import { ClubCard } from '@/components/clubs/ClubCard';
+import { CreateClubButton } from '@/components/clubs/CreateClubButton';
+import { ClubSearch } from '@/components/clubs/ClubSearch';
+import { Pagination } from '@/components/ui/Pagination';
+import type { Metadata } from 'next';
 
-export const metadata: Metadata = { title: 'Reading clubs' }
+interface Club {
+  id: string;
+  name: string;
+  slug: string;
+  description?: string;
+  isPublic: boolean;
+  createdBy: { id: string; name: string };
+  _count: { members: number; discussions: number };
+}
 
-const LIMIT = 9
+export const metadata: Metadata = { title: 'Reading clubs' };
+
+const LIMIT = 9;
 
 interface Props {
-  searchParams: Promise<{ page?: string; search?: string }>
+  searchParams: Promise<{ page?: string; search?: string }>;
 }
 
 async function ClubsList({ searchParams }: Props) {
-  const { page, search } = await searchParams
-  const currentPage = Number(page) || 1
+  const { page, search } = await searchParams;
+  const currentPage = Number(page) || 1;
 
   const result = await serverApi.clubs.list({
     page: currentPage,
     limit: LIMIT,
     search,
-  })
+  });
 
-  const totalPages = result.meta.pages ?? Math.ceil(result.meta.total / LIMIT)
+  const totalPages = result.meta.pages ?? Math.ceil(result.meta.total / LIMIT);
 
   if (totalPages > 0 && currentPage > totalPages) {
-    const params = new URLSearchParams()
-    if (search) params.set('search', search)
-    params.set('page', String(totalPages))
-    redirect(`/clubs?${params.toString()}`)
+    const params = new URLSearchParams();
+    if (search) params.set('search', search);
+    params.set('page', String(totalPages));
+    redirect(`/clubs?${params.toString()}`);
   }
 
   if (result.data.length === 0 && totalPages === 0) {
@@ -46,7 +56,7 @@ async function ClubsList({ searchParams }: Props) {
         <p className="text-lg font-medium mb-1">No clubs yet</p>
         <p className="text-sm">Be the first to start one.</p>
       </div>
-    )
+    );
   }
 
   return (
@@ -58,7 +68,7 @@ async function ClubsList({ searchParams }: Props) {
 
       {/* Grid */}
       <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
-        {result.data.map((club: any) => (
+        {result.data.map((club: Club) => (
           <ClubCard key={club.id} club={club} />
         ))}
       </div>
@@ -69,15 +79,15 @@ async function ClubsList({ searchParams }: Props) {
           currentPage={result.meta.page ?? currentPage}
           totalPages={totalPages}
           buildUrl={(p) => {
-            const params = new URLSearchParams()
-            if (search) params.set('search', search)
-            params.set('page', String(p))
-            return `/clubs?${params.toString()}`
+            const params = new URLSearchParams();
+            if (search) params.set('search', search);
+            params.set('page', String(p));
+            return `/clubs?${params.toString()}`;
           }}
         />
       )}
     </div>
-  )
+  );
 }
 
 // function ClubsPagination({
@@ -206,7 +216,7 @@ function ClubsSkeleton() {
         />
       ))}
     </div>
-  )
+  );
 }
 
 export default async function ClubsPage({ searchParams }: Props) {
@@ -229,5 +239,5 @@ export default async function ClubsPage({ searchParams }: Props) {
         <ClubsList searchParams={searchParams} />
       </Suspense>
     </div>
-  )
+  );
 }

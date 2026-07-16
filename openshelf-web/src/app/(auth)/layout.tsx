@@ -1,18 +1,18 @@
-'use client'
+'use client';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 
 export default function AuthLayout({ children }: { children: React.ReactNode }) {
-  const pathname = usePathname()
-  const isAdminLogin = pathname.startsWith('/admin/login') || pathname.startsWith('/admin/accept-invite')
+  const pathname = usePathname();
+  const isAdminLogin =
+    pathname.startsWith('/admin/login') || pathname.startsWith('/admin/accept-invite');
 
   if (isAdminLogin) {
-    return <>{children}</>
+    return <>{children}</>;
   }
 
   return (
     <div className="min-h-screen flex">
-
       {/* Left panel — branding */}
       <div
         className="hidden lg:flex lg:w-150 xl:w-120 shrink-0 flex-col justify-between p-12"
@@ -24,10 +24,18 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
             className="w-9 h-9 rounded-xl flex items-center justify-center"
             style={{ backgroundColor: '#2563eb' }}
           >
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5"
-              strokeLinecap="round" strokeLinejoin="round">
-              <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/>
-              <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/>
+            <svg
+              width="18"
+              height="18"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="white"
+              strokeWidth="2.5"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            >
+              <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20" />
+              <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z" />
             </svg>
           </div>
           <span className="text-xl font-bold tracking-tight text-white">
@@ -37,22 +45,29 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
 
         {/* Center quote */}
         <div>
-          <blockquote className="text-2xl font-medium leading-relaxed mb-4" style={{ color: '#e2e8f0' }}>
+          <blockquote
+            className="text-2xl font-medium leading-relaxed mb-4"
+            style={{ color: '#e2e8f0' }}
+          >
             &ldquo;A library is not a luxury but one of the necessities of life.&rdquo;
           </blockquote>
-          <p className="text-sm" style={{ color: '#64748b' }}>— Henry Ward Beecher</p>
+          <p className="text-sm" style={{ color: '#64748b' }}>
+            — Henry Ward Beecher
+          </p>
         </div>
 
         {/* Bottom stats */}
         <div className="flex gap-8">
           {[
             { value: '10K+', label: 'Resources' },
-            { value: '2K+',  label: 'Members' },
-            { value: '50+',  label: 'Languages' },
+            { value: '2K+', label: 'Members' },
+            { value: '50+', label: 'Languages' },
           ].map((s) => (
             <div key={s.label}>
               <p className="text-2xl font-bold text-white">{s.value}</p>
-              <p className="text-xs mt-0.5" style={{ color: '#64748b' }}>{s.label}</p>
+              <p className="text-xs mt-0.5" style={{ color: '#64748b' }}>
+                {s.label}
+              </p>
             </div>
           ))}
         </div>
@@ -74,7 +89,6 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
           {children}
         </div>
       </div>
-
     </div>
-  )
+  );
 }

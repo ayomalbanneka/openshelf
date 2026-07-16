@@ -1,34 +1,36 @@
-'use client'
-import { useEffect, useState } from 'react'
-import { Moon, Sun } from 'lucide-react'
-import { AdminSidebar } from '@/components/admin/AdminSidebar'
-import { http } from '@/lib/api'
+'use client';
+import { useEffect, useState } from 'react';
+import { Moon, Sun } from 'lucide-react';
+import { AdminSidebar } from '@/components/admin/AdminSidebar';
+import { http } from '@/lib/api';
 
 export function AdminClientLayout({ children }: { children: React.ReactNode }) {
-  const [pendingCount,    setPendingCount]    = useState(0)
-  const [quarantineCount, setQuarantineCount] = useState(0)
-  const [theme, setTheme]                     = useState<'light' | 'dark'>('light')
+  const [pendingCount, setPendingCount] = useState(0);
+  const [quarantineCount, setQuarantineCount] = useState(0);
+  const [theme, setTheme] = useState<'light' | 'dark'>('light');
 
   useEffect(() => {
-    http.get('/admin/pending?limit=1')
+    http
+      .get('/admin/pending?limit=1')
       .then((r) => setPendingCount(r.data.meta.total))
-      .catch(() => {})
+      .catch(() => {});
 
-    http.get('/admin/quarantine')
+    http
+      .get('/admin/quarantine')
       .then((r) => setQuarantineCount(r.data.length))
-      .catch(() => {})
-  }, [])
+      .catch(() => {});
+  }, []);
 
   useEffect(() => {
-    const saved = localStorage.getItem('adminTheme')
-    if (saved === 'dark' || saved === 'light') setTheme(saved)
-  }, [])
+    const saved = localStorage.getItem('adminTheme');
+    if (saved === 'dark' || saved === 'light') setTheme(saved);
+  }, []);
 
   const toggleTheme = () => {
-    const next = theme === 'dark' ? 'light' : 'dark'
-    setTheme(next)
-    localStorage.setItem('adminTheme', next)
-  }
+    const next = theme === 'dark' ? 'light' : 'dark';
+    setTheme(next);
+    localStorage.setItem('adminTheme', next);
+  };
 
   return (
     <div
@@ -42,10 +44,7 @@ export function AdminClientLayout({ children }: { children: React.ReactNode }) {
     >
       {/* Fixed sidebar */}
       <div className="hidden lg:block w-56 shrink-0 sticky top-0 h-screen">
-        <AdminSidebar
-          pendingCount={pendingCount}
-          quarantineCount={quarantineCount}
-        />
+        <AdminSidebar pendingCount={pendingCount} quarantineCount={quarantineCount} />
       </div>
 
       {/* Main content */}
@@ -56,19 +55,25 @@ export function AdminClientLayout({ children }: { children: React.ReactNode }) {
             className="text-xs px-3 py-2 rounded-xl font-semibold transition-colors flex items-center gap-2"
             style={{
               backgroundColor: 'var(--admin-soft)',
-              color:           'var(--admin-text)',
-              border:          '1px solid var(--admin-border)',
+              color: 'var(--admin-text)',
+              border: '1px solid var(--admin-border)',
             }}
           >
             {theme === 'dark' ? (
-              <><Sun className="w-4 h-4" />Light mode</>
+              <>
+                <Sun className="w-4 h-4" />
+                Light mode
+              </>
             ) : (
-              <><Moon className="w-4 h-4" />Dark mode</>
+              <>
+                <Moon className="w-4 h-4" />
+                Dark mode
+              </>
             )}
           </button>
         </div>
         {children}
       </div>
     </div>
-  )
+  );
 }

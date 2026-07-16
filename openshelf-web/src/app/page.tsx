@@ -19,5 +19,5 @@ export default function HomePage() {
       <CTA />
       <Footer />
     </div>
-  )
+  );
 }
