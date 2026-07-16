@@ -1,17 +1,17 @@
-'use client'
-import { useEffect, useState, type FormEvent } from 'react'
-import { useAuthStore } from '@/store/auth.store'
-import { http } from '@/lib/api'
-import { Resource } from '@/types'
-import Link from 'next/link'
-import { api } from '@/lib/api'
-import { getErrorMessage } from '@/lib/errors'
-import { toast } from '@/lib/toast'
-import { ReadingProgress } from './ReadingProgress'
-import { CommentsSection } from './CommentsSection'
-import { ReportButton } from '@/components/resource/ReportButton'
-import { PdfViewer } from '@/components/resource/PdfViewer'
-import { AudioPlayer } from '@/components/resource/AudioPlayer'
+'use client';
+import { useEffect, useState, type FormEvent } from 'react';
+import { useAuthStore } from '@/store/auth.store';
+import { http } from '@/lib/api';
+import { Resource } from '@/types';
+import Link from 'next/link';
+import { api } from '@/lib/api';
+import { getErrorMessage } from '@/lib/errors';
+import { toast } from '@/lib/toast';
+import { ReadingProgress } from './ReadingProgress';
+import { CommentsSection } from './CommentsSection';
+import { ReportButton } from '@/components/resource/ReportButton';
+import { PdfViewer } from '@/components/resource/PdfViewer';
+import { AudioPlayer } from '@/components/resource/AudioPlayer';
 import {
   BookOpen,
   GraduationCap,
@@ -22,7 +22,7 @@ import {
   X,
   Star,
   type LucideIcon,
-} from 'lucide-react'
+} from 'lucide-react';
 
 const TYPE_LABELS: Record<string, string> = {
   BOOK: 'Book',
@@ -30,7 +30,7 @@ const TYPE_LABELS: Record<string, string> = {
   EXAM_PAPER: 'Exam paper',
   DOCUMENT: 'Document',
   AUDIO: 'Audio',
-}
+};
 
 const TYPE_ICONS: Record<string, LucideIcon> = {
   BOOK: BookOpen,
@@ -38,103 +38,105 @@ const TYPE_ICONS: Record<string, LucideIcon> = {
   EXAM_PAPER: ClipboardList,
   DOCUMENT: FileText,
   AUDIO: Headphones,
-}
+};
 
 function formatBytes(bytes: number) {
-  if (bytes < 1024) return `${bytes} B`
-  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`
-  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`
+  if (bytes < 1024) return `${bytes} B`;
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
 }
 
 export function ResourceDetail({ resource }: { resource: Resource }) {
-  const { user } = useAuthStore()
-  const [bookmarked, setBookmarked] = useState(false)
-  const [bookmarkLoading, setBookmarkLoading] = useState(false)
-  const [lists, setLists] = useState<{ id: string; title: string }[]>([])
-  const [showListPicker, setShowListPicker] = useState(false)
-  const [savingToList, setSavingToList] = useState(false)
-  const [savedMsg, setSavedMsg] = useState('')
-  const [showPreview, setShowPreview] = useState(false)
-  const isVerified = user?.isEmailVerified ?? false
-  const TypeIcon = TYPE_ICONS[resource.type] || FileText
+  const { user } = useAuthStore();
+  const [bookmarked, setBookmarked] = useState(false);
+  const [bookmarkLoading, setBookmarkLoading] = useState(false);
+  const [lists, setLists] = useState<{ id: string; title: string }[]>([]);
+  const [showListPicker, setShowListPicker] = useState(false);
+  const [savingToList, setSavingToList] = useState(false);
+  const [savedMsg, setSavedMsg] = useState('');
+  const [showPreview, setShowPreview] = useState(false);
+  const isVerified = user?.isEmailVerified ?? false;
+  const TypeIcon = TYPE_ICONS[resource.type] || FileText;
 
   useEffect(() => {
-    let isActive = true
+    let isActive = true;
 
     const loadBookmark = async () => {
       if (!user) {
-        if (isActive) setBookmarked(false)
-        return
+        if (isActive) setBookmarked(false);
+        return;
       }
 
       try {
-        const { data } = await http.get(`/resources/${resource.slug}/bookmark`)
-        if (isActive) setBookmarked(Boolean(data.bookmarked))
+        const { data } = await http.get(`/resources/${resource.slug}/bookmark`);
+        if (isActive) setBookmarked(Boolean(data.bookmarked));
       } catch {
         // Leave the current state if the status call fails.
       }
-    }
+    };
 
-    loadBookmark()
-    return () => { isActive = false }
-  }, [user?.id, resource.slug])
+    loadBookmark();
+    return () => {
+      isActive = false;
+    };
+  }, [user?.id, resource.slug]);
 
-  const isPdf = resource.mimeType === 'application/pdf' ||
-    resource.fileUrl?.toLowerCase().endsWith('.pdf')
-  const isAudio = resource.type === 'AUDIO' ||
-    resource.mimeType?.startsWith('audio/')
+  const isPdf =
+    resource.mimeType === 'application/pdf' || resource.fileUrl?.toLowerCase().endsWith('.pdf');
+  const isAudio = resource.type === 'AUDIO' || resource.mimeType?.startsWith('audio/');
 
-  const canPreview = isPdf || isAudio
+  const canPreview = isPdf || isAudio;
 
   // Load lists when picker opens
   const openListPicker = async () => {
-    if (!user) return
+    if (!user) return;
     try {
-      const data = await api.lists.getMine()
-      setLists(data)
-      setShowListPicker(true)
-    } catch { }
-  }
+      const data = await api.lists.getMine();
+      setLists(data);
+      setShowListPicker(true);
+    } catch {}
+  };
 
   const saveToList = async (listId: string) => {
-    setSavingToList(true)
+    setSavingToList(true);
     try {
-      await api.lists.addItem(listId, resource.id)
-      toast.success('Saved to list!')
-      setShowListPicker(false)
-      setTimeout(() => setSavedMsg(''), 2000)
+      await api.lists.addItem(listId, resource.id);
+      toast.success('Saved to list!');
+      setShowListPicker(false);
+      setTimeout(() => setSavedMsg(''), 2000);
     } catch (err: unknown) {
-      toast.error(getErrorMessage(err, 'Failed to save to list'))
-      setTimeout(() => setSavedMsg(''), 2000)
+      toast.error(getErrorMessage(err, 'Failed to save to list'));
+      setTimeout(() => setSavedMsg(''), 2000);
     } finally {
-      setSavingToList(false)
+      setSavingToList(false);
     }
-  }
+  };
 
   const handleBookmark = async () => {
-    if (!user) return
-    setBookmarkLoading(true)
+    if (!user) return;
+    setBookmarkLoading(true);
     try {
       if (bookmarked) {
-        await http.delete(`/resources/${resource.slug}/bookmark`)
+        await http.delete(`/resources/${resource.slug}/bookmark`);
       } else {
-        await http.post(`/resources/${resource.slug}/bookmark`)
+        await http.post(`/resources/${resource.slug}/bookmark`);
       }
-      setBookmarked(!bookmarked)
-      toast.success(bookmarked ? 'Bookmark removed' : 'Bookmarked!')
+      setBookmarked(!bookmarked);
+      toast.success(bookmarked ? 'Bookmark removed' : 'Bookmarked!');
     } catch {
-      toast.error('Failed to update bookmark')
+      toast.error('Failed to update bookmark');
     } finally {
-      setBookmarkLoading(false)
+      setBookmarkLoading(false);
     }
-  }
+  };
 
   return (
     <div className="max-w-5xl mx-auto px-4 py-10">
-
       {/* Breadcrumb */}
-      <nav className="flex items-center gap-2 text-sm mb-8"
-        style={{ color: 'hsl(var(--muted-foreground))' }}>
+      <nav
+        className="flex items-center gap-2 text-sm mb-8"
+        style={{ color: 'hsl(var(--muted-foreground))' }}
+      >
         <Link href="/browse" className="hover:text-blue-600 transition-colors">
           Browse
         </Link>
@@ -152,7 +154,6 @@ export function ResourceDetail({ resource }: { resource: Resource }) {
       </nav>
 
       <div className="flex flex-col md:flex-row gap-10">
-
         {/* Cover */}
         <div className="shrink-0 w-full md:w-52">
           <div
@@ -170,25 +171,19 @@ export function ResourceDetail({ resource }: { resource: Resource }) {
                 className="absolute inset-0 w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
               />
             ) : (
-              <TypeIcon
-                className="w-12 h-12"
-                style={{ color: 'hsl(var(--muted-foreground))' }}
-              />
+              <TypeIcon className="w-12 h-12" style={{ color: 'hsl(var(--muted-foreground))' }} />
             )}
           </div>
         </div>
 
         {/* Info */}
         <div className="flex-1 flex flex-col gap-4">
-
           {/* Type + title */}
           <div>
             <span className="text-xs font-semibold uppercase tracking-wider text-blue-600">
               {TYPE_LABELS[resource.type]}
             </span>
-            <h1 className="text-3xl font-bold mt-1 leading-tight">
-              {resource.title}
-            </h1>
+            <h1 className="text-3xl font-bold mt-1 leading-tight">{resource.title}</h1>
             {resource.author && (
               <p className="mt-1" style={{ color: 'hsl(var(--muted-foreground))' }}>
                 by {resource.author}
@@ -198,8 +193,10 @@ export function ResourceDetail({ resource }: { resource: Resource }) {
 
           {/* Description */}
           {resource.description && (
-            <p className="text-sm leading-relaxed"
-              style={{ color: 'hsl(var(--muted-foreground))' }}>
+            <p
+              className="text-sm leading-relaxed"
+              style={{ color: 'hsl(var(--muted-foreground))' }}
+            >
               {resource.description}
             </p>
           )}
@@ -264,8 +261,8 @@ export function ResourceDetail({ resource }: { resource: Resource }) {
 
               <div className="flex flex-col gap-2">
                 {resource.lessons.map((lesson, i) => (
-
-                  <a key={lesson.id}
+                  <a
+                    key={lesson.id}
                     href={lesson.fileUrl}
                     target="_blank"
                     rel="noopener noreferrer"
@@ -303,7 +300,9 @@ export function ResourceDetail({ resource }: { resource: Resource }) {
           {/* Tags */}
           {resource.tags.length > 0 && (
             <div className="flex flex-col gap-2">
-              <p className="text-xs font-medium" style={{ color: 'hsl(var(--muted-foreground))' }}>Tags</p>
+              <p className="text-xs font-medium" style={{ color: 'hsl(var(--muted-foreground))' }}>
+                Tags
+              </p>
               <div className="flex flex-wrap gap-1.5">
                 {resource.tags.map(({ tag }) => (
                   <a
@@ -312,7 +311,14 @@ export function ResourceDetail({ resource }: { resource: Resource }) {
                     className="inline-flex items-center gap-1 text-xs px-2.5 py-1 rounded-full font-medium transition-all hover:opacity-80"
                     style={{ backgroundColor: '#dbeafe', color: '#1d4ed8' }}
                   >
-                    <svg width="10" height="10" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                    <svg
+                      width="10"
+                      height="10"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      stroke="currentColor"
+                      strokeWidth={2}
+                    >
                       <path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z" />
                       <line x1="7" y1="7" x2="7.01" y2="7" />
                     </svg>
@@ -325,7 +331,6 @@ export function ResourceDetail({ resource }: { resource: Resource }) {
 
           {/* Action buttons */}
           <div className="flex flex-wrap gap-3 pt-2">
-
             {/* Preview button — PDF and audio only */}
             {canPreview && resource.type !== 'COURSE' && (
               <button
@@ -410,8 +415,10 @@ export function ResourceDetail({ resource }: { resource: Resource }) {
                       boxShadow: '0 4px 20px rgba(0,0,0,0.08)',
                     }}
                   >
-                    <div className="flex items-center justify-between px-3 py-2 border-b"
-                      style={{ borderColor: 'hsl(var(--border))' }}>
+                    <div
+                      className="flex items-center justify-between px-3 py-2 border-b"
+                      style={{ borderColor: 'hsl(var(--border))' }}
+                    >
                       <p className="text-xs font-semibold">Save to list</p>
                       <button
                         onClick={() => setShowListPicker(false)}
@@ -425,8 +432,10 @@ export function ResourceDetail({ resource }: { resource: Resource }) {
 
                     {lists.length === 0 ? (
                       <div className="px-3 py-4 text-center">
-                        <p className="text-xs mb-2"
-                          style={{ color: 'hsl(var(--muted-foreground))' }}>
+                        <p
+                          className="text-xs mb-2"
+                          style={{ color: 'hsl(var(--muted-foreground))' }}
+                        >
                           No lists yet
                         </p>
                         <Link
@@ -487,13 +496,11 @@ export function ResourceDetail({ resource }: { resource: Resource }) {
           </div>
 
           {/* Stats */}
-          <p className="text-xs pt-1"
-            style={{ color: 'hsl(var(--muted-foreground))' }}>
+          <p className="text-xs pt-1" style={{ color: 'hsl(var(--muted-foreground))' }}>
             {resource.viewCount.toLocaleString()} views
             {resource._count && ` · ${resource._count.reviews} reviews`}
             {resource._count && ` · ${resource._count.bookmarks} bookmarks`}
           </p>
-
         </div>
       </div>
 
@@ -501,15 +508,9 @@ export function ResourceDetail({ resource }: { resource: Resource }) {
       {showPreview && canPreview && (
         <div className="mt-8">
           {isPdf ? (
-            <PdfViewer
-              url={resource.fileUrl}
-              onClose={() => setShowPreview(false)}
-            />
+            <PdfViewer url={resource.fileUrl} onClose={() => setShowPreview(false)} />
           ) : isAudio ? (
-            <AudioPlayer
-              url={resource.fileUrl}
-              title={resource.title}
-            />
+            <AudioPlayer url={resource.fileUrl} title={resource.title} />
           ) : null}
         </div>
       )}
@@ -527,28 +528,21 @@ export function ResourceDetail({ resource }: { resource: Resource }) {
 
       {/* Comments */}
       <CommentsSection slug={resource.slug} />
-
     </div>
-  )
+  );
 }
 
 // Reviews
 
 interface Review {
-  id: string
-  rating: number
-  comment?: string
-  createdAt: string
-  user: { id: string; name: string }
+  id: string;
+  rating: number;
+  comment?: string;
+  createdAt: string;
+  user: { id: string; name: string };
 }
 
-function StarRating({
-  value,
-  onChange,
-}: {
-  value: number
-  onChange?: (v: number) => void
-}) {
+function StarRating({ value, onChange }: { value: number; onChange?: (v: number) => void }) {
   return (
     <div className="flex gap-1">
       {[1, 2, 3, 4, 5].map((star) => (
@@ -560,55 +554,53 @@ function StarRating({
           className={`text-xl transition-transform ${onChange ? 'hover:scale-110 cursor-pointer' : 'cursor-default'}`}
           style={{ color: star <= value ? '#F59E0B' : 'hsl(var(--border))' }}
         >
-          <Star
-            className="w-5 h-5"
-            fill={star <= value ? 'currentColor' : 'none'}
-          />
+          <Star className="w-5 h-5" fill={star <= value ? 'currentColor' : 'none'} />
         </button>
       ))}
     </div>
-  )
+  );
 }
 
 function ReviewsSection({ slug }: { slug: string }) {
-  const { user } = useAuthStore()
-  const [reviews, setReviews] = useState<Review[]>([])
-  const [loading, setLoading] = useState(true)
-  const [rating, setRating] = useState(0)
-  const [comment, setComment] = useState('')
-  const [submitting, setSubmitting] = useState(false)
-  const [error, setError] = useState('')
+  const { user } = useAuthStore();
+  const [reviews, setReviews] = useState<Review[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [rating, setRating] = useState(0);
+  const [comment, setComment] = useState('');
+  const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState('');
 
   // Load reviews on mount
   useEffect(() => {
-    http.get(`/resources/${slug}/reviews`)
+    http
+      .get(`/resources/${slug}/reviews`)
       .then((r) => setReviews(r.data))
-      .catch(() => { })
-      .finally(() => setLoading(false))
-  }, [slug])
+      .catch(() => {})
+      .finally(() => setLoading(false));
+  }, [slug]);
 
   const handleSubmit = async (e: FormEvent) => {
-    e.preventDefault()
+    e.preventDefault();
     if (rating === 0) {
-      setError('Please select a rating')
-      return
+      setError('Please select a rating');
+      return;
     }
-    setSubmitting(true)
-    setError('')
+    setSubmitting(true);
+    setError('');
     try {
       const { data } = await http.post(`/resources/${slug}/reviews`, {
         rating,
         comment,
-      })
-      setReviews((prev) => [data, ...prev])
-      setRating(0)
-      setComment('')
+      });
+      setReviews((prev) => [data, ...prev]);
+      setRating(0);
+      setComment('');
     } catch (err: unknown) {
-      setError(getErrorMessage(err, 'Failed to submit review'))
+      setError(getErrorMessage(err, 'Failed to submit review'));
     } finally {
-      setSubmitting(false)
+      setSubmitting(false);
     }
-  }
+  };
 
   return (
     <div className="mt-14">
@@ -665,8 +657,7 @@ function ReviewsSection({ slug }: { slug: string }) {
           ))}
         </div>
       ) : reviews.length === 0 ? (
-        <p className="text-sm py-8 text-center"
-          style={{ color: 'hsl(var(--muted-foreground))' }}>
+        <p className="text-sm py-8 text-center" style={{ color: 'hsl(var(--muted-foreground))' }}>
           No reviews yet.{user ? ' Be the first!' : ' Sign in to leave one.'}
         </p>
       ) : (
@@ -693,15 +684,18 @@ function ReviewsSection({ slug }: { slug: string }) {
                 <StarRating value={review.rating} />
               </div>
               {review.comment && (
-                <p className="text-sm mt-1 leading-relaxed"
-                  style={{ color: 'hsl(var(--muted-foreground))' }}>
+                <p
+                  className="text-sm mt-1 leading-relaxed"
+                  style={{ color: 'hsl(var(--muted-foreground))' }}
+                >
                   {review.comment}
                 </p>
               )}
-              <p className="text-xs mt-2"
-                style={{ color: 'hsl(var(--muted-foreground))' }}>
+              <p className="text-xs mt-2" style={{ color: 'hsl(var(--muted-foreground))' }}>
                 {new Date(review.createdAt).toLocaleDateString('en-US', {
-                  year: 'numeric', month: 'long', day: 'numeric',
+                  year: 'numeric',
+                  month: 'long',
+                  day: 'numeric',
                 })}
               </p>
             </div>
@@ -709,5 +703,5 @@ function ReviewsSection({ slug }: { slug: string }) {
         </div>
       )}
     </div>
-  )
+  );
 }

@@ -1,97 +1,101 @@
-'use client'
-import { useState, useEffect } from 'react'
-import { api } from '@/lib/api'
-import { toast } from '@/lib/toast'
-import Link from 'next/link'
-import { Pagination } from '@/components/ui/Pagination'
+'use client';
+import { useState, useEffect } from 'react';
+import { api } from '@/lib/api';
+import { toast } from '@/lib/toast';
+import Link from 'next/link';
+import { Pagination } from '@/components/ui/Pagination';
 
 interface ReadingList {
-  id: string
-  title: string
-  description?: string
-  isPublic: boolean
-  createdAt: string
-  updatedAt: string
-  _count: { items: number }
+  id: string;
+  title: string;
+  description?: string;
+  isPublic: boolean;
+  createdAt: string;
+  updatedAt: string;
+  _count: { items: number };
 }
 
-const LIMIT = 10
+const LIMIT = 10;
 
 export function MyLists() {
-  const [lists, setLists] = useState<ReadingList[]>([])
-  const [total, setTotal] = useState(0)
-  const [totalPages, setTotalPages] = useState(1)
-  const [page, setPage] = useState(1)
-  const [loading, setLoading] = useState(true)
-  const [showForm, setShowForm] = useState(false)
-  const [title, setTitle] = useState('')
-  const [description, setDescription] = useState('')
-  const [isPublic, setIsPublic] = useState(true)
-  const [creating, setCreating] = useState(false)
-  const [formError, setFormError] = useState('')
+  const [lists, setLists] = useState<ReadingList[]>([]);
+  const [total, setTotal] = useState(0);
+  const [totalPages, setTotalPages] = useState(1);
+  const [page, setPage] = useState(1);
+  const [loading, setLoading] = useState(true);
+  const [showForm, setShowForm] = useState(false);
+  const [title, setTitle] = useState('');
+  const [description, setDescription] = useState('');
+  const [isPublic, setIsPublic] = useState(true);
+  const [creating, setCreating] = useState(false);
+  const [formError, setFormError] = useState('');
 
   const fetchLists = async (p: number) => {
-    setLoading(true)
+    setLoading(true);
     try {
-      const result = await api.lists.getMine(p, LIMIT)
-      setLists(result.data)
-      setTotal(result.meta.total)
-      setTotalPages(result.meta.pages)
+      const result = await api.lists.getMine(p, LIMIT);
+      setLists(result.data);
+      setTotal(result.meta.total);
+      setTotalPages(result.meta.pages);
     } catch {
-      toast.error('Failed to load lists')
+      toast.error('Failed to load lists');
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
-  }
+  };
 
-  useEffect(() => { fetchLists(page) }, [page])
+  useEffect(() => {
+    fetchLists(page);
+  }, [page]);
 
   const handleCreate = async (e: React.FormEvent) => {
-    e.preventDefault()
-    if (!title.trim()) { setFormError('Title is required'); return }
-    setCreating(true)
-    setFormError('')
-    try {
-      await api.lists.create({ title, description, isPublic })
-      toast.success('List created')
-      setTitle('')
-      setDescription('')
-      setIsPublic(true)
-      setShowForm(false)
-      // Refresh back to page 1
-      setPage(1)
-      fetchLists(1)
-    } catch {
-      toast.error('Failed to create list')
-    } finally {
-      setCreating(false)
+    e.preventDefault();
+    if (!title.trim()) {
+      setFormError('Title is required');
+      return;
     }
-  }
+    setCreating(true);
+    setFormError('');
+    try {
+      await api.lists.create({ title, description, isPublic });
+      toast.success('List created');
+      setTitle('');
+      setDescription('');
+      setIsPublic(true);
+      setShowForm(false);
+      // Refresh back to page 1
+      setPage(1);
+      fetchLists(1);
+    } catch {
+      toast.error('Failed to create list');
+    } finally {
+      setCreating(false);
+    }
+  };
 
   const handleDelete = async (id: string) => {
-    if (!confirm('Delete this list?')) return
+    if (!confirm('Delete this list?')) return;
     try {
-      await api.lists.remove(id)
-      toast.success('List deleted')
+      await api.lists.remove(id);
+      toast.success('List deleted');
       // If deleting the last item on a page, go back
-      const newTotal = total - 1
-      const newPage = Math.min(page, Math.ceil(newTotal / LIMIT)) || 1
-      setPage(newPage)
-      fetchLists(newPage)
+      const newTotal = total - 1;
+      const newPage = Math.min(page, Math.ceil(newTotal / LIMIT)) || 1;
+      setPage(newPage);
+      fetchLists(newPage);
     } catch {
-      toast.error('Failed to delete list')
+      toast.error('Failed to delete list');
     }
-  }
+  };
 
   const inputStyle = {
     border: '1px solid hsl(var(--border))',
     backgroundColor: 'hsl(var(--background))',
     color: 'hsl(var(--foreground))',
-  }
+  };
 
   return (
     <div className="flex flex-col gap-6">
-
       {/* Header row */}
       <div className="flex items-center justify-between">
         <p className="text-sm" style={{ color: 'hsl(var(--muted-foreground))' }}>
@@ -152,9 +156,7 @@ export function MyLists() {
             Make this list public
           </label>
 
-          {formError && (
-            <p className="text-xs text-red-500">{formError}</p>
-          )}
+          {formError && <p className="text-xs text-red-500">{formError}</p>}
 
           <div className="flex gap-2 justify-end">
             <button
@@ -241,15 +243,11 @@ export function MyLists() {
                       {list.description}
                     </p>
                   )}
-                  <p
-                    className="text-xs mt-1"
-                    style={{ color: 'hsl(var(--muted-foreground))' }}
-                  >
-                    {list._count.items}{' '}
-                    {list._count.items === 1 ? 'item' : 'items'} ·{' '}
-                    Updated{' '}
+                  <p className="text-xs mt-1" style={{ color: 'hsl(var(--muted-foreground))' }}>
+                    {list._count.items} {list._count.items === 1 ? 'item' : 'items'} · Updated{' '}
                     {new Date(list.updatedAt).toLocaleDateString('en-US', {
-                      month: 'short', day: 'numeric',
+                      month: 'short',
+                      day: 'numeric',
                     })}
                   </p>
                 </div>
@@ -276,29 +274,26 @@ export function MyLists() {
         </>
       )}
     </div>
-  )
+  );
 }
 
-// ── Pagination component ──────────────────────────────────────
-function ListsPagination({
+// ── Pagination component (reserved for future use) ───────────
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+function _ListsPagination({
   currentPage,
   totalPages,
   onPageChange,
 }: {
-  currentPage: number
-  totalPages: number
-  onPageChange: (page: number) => void
+  currentPage: number;
+  totalPages: number;
+  onPageChange: (page: number) => void;
 }) {
-  const pages: (number | '...')[] = []
+  const pages: (number | '...')[] = [];
   for (let i = 1; i <= totalPages; i++) {
-    if (
-      i === 1 ||
-      i === totalPages ||
-      (i >= currentPage - 1 && i <= currentPage + 1)
-    ) {
-      pages.push(i)
+    if (i === 1 || i === totalPages || (i >= currentPage - 1 && i <= currentPage + 1)) {
+      pages.push(i);
     } else if (i === currentPage - 2 || i === currentPage + 2) {
-      pages.push('...')
+      pages.push('...');
     }
   }
 
@@ -334,9 +329,9 @@ function ListsPagination({
               p === currentPage
                 ? { backgroundColor: '#2563eb', color: '#fff' }
                 : {
-                  border: '1px solid hsl(var(--border))',
-                  color: 'hsl(var(--foreground))',
-                }
+                    border: '1px solid hsl(var(--border))',
+                    color: 'hsl(var(--foreground))',
+                  }
             }
           >
             {p}
@@ -356,5 +351,5 @@ function ListsPagination({
         Next →
       </button>
     </div>
-  )
+  );
 }

@@ -10,12 +10,16 @@ model User {
   id                 String              @id @default(cuid())
   name               String
   email              String              @unique
-  passwordHash       String
+  passwordHash       String?
+  oauthProvider      OAuthProvider?
+  oauthId            String?
   role               Role                @default(USER)
   avatarUrl          String?
   bio                String?
   country            String?
   preferredLanguage  String              @default("en")
+  notificationPrefs  Json                @default("{}") @map("notification_prefs")
+  badges             Json                @default("[]")
   isActive           Boolean             @default(true)
   isEmailVerified    Boolean             @default(false)
   createdAt          DateTime            @default(now())
@@ -40,7 +44,10 @@ model User {
   reports            Report[]            @relation("UserReports")
   auditLogs          AuditLog[]
   notifications      Notification[]
+  subscription       Subscription?
 
+  @@unique([email, oauthProvider])
+  @@index([oauthProvider, oauthId])
   @@index([email])
   @@map("users")
 }
@@ -149,6 +156,8 @@ model Resource {
   fileUrl          String
   fileSize         Int?
   mimeType         String?
+  scanStatus       ScanStatus               @default(PENDING)
+  scanError        String?
   thumbnailUrl     String?
   duration         Int?
   pageCount        Int?
@@ -481,6 +490,47 @@ model Notification {
   @@map("notifications")
 }
 
+model AlertState {
+  id            String    @id @default(cuid())
+  metric        String    @unique // 'error_rate' | 'p95' | 'memory' | 'db_latency'
+  isBreached    Boolean   @default(false)
+  lastAlertedAt DateTime?
+  updatedAt     DateTime  @updatedAt
+
+  @@map("alert_states")
+}
+
+// Support tiers — donation-style subscriptions, not a content paywall.
+model Subscription {
+  id                   String             @id @default(cuid())
+  userId               String             @unique
+  user                 User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+  tier                 SubscriptionTier
+  status               SubscriptionStatus @default(INCOMPLETE)
+  stripeCustomerId     String
+  stripeSubscriptionId String             @unique
+  currentPeriodEnd     DateTime?
+  cancelAtPeriodEnd    Boolean            @default(false)
+  createdAt            DateTime           @default(now())
+  updatedAt            DateTime           @updatedAt
+
+  @@index([stripeCustomerId])
+  @@index([status])
+  @@map("subscriptions")
+}
+
+enum SubscriptionTier {
+  SUPPORTER
+  PATRON
+}
+
+enum SubscriptionStatus {
+  ACTIVE
+  PAST_DUE
+  CANCELED
+  INCOMPLETE
+}
+
 enum ReportReason {
   SPAM
   COPYRIGHT
@@ -562,10 +612,25 @@ enum AuditAction {
   TAG_DELETED
 }
 
+// Notification types for user-facing notifications
 enum NotificationType {
   RESOURCE_PUBLISHED
   RESOURCE_REJECTED
   NEW_FOLLOWER
   COMMENT_ON_RESOURCE
   CLUB_INVITE
+}
+
+// OAuth providers for social login
+enum OAuthProvider {
+  GOOGLE
+  GITHUB
+}
+
+// Scan status for uploaded files, used by the virus scanning service
+enum ScanStatus {
+  PENDING
+  CLEAN
+  INFECTED
+  ERROR
 }

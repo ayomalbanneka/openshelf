@@ -1,29 +1,29 @@
-import { serverApi } from '@/lib/server-api'
-import { ResourceCard } from './ResourceCard'
-import { Resource } from '@/types'
-import { Search } from 'lucide-react'
+import { serverApi } from '@/lib/server-api';
+import { ResourceCard } from './ResourceCard';
+import { Resource } from '@/types';
+import { Search } from 'lucide-react';
 
 interface Props {
   searchParams: Promise<{
-    type?: string
-    language?: string
-    search?: string
-    category?: string
-    page?: string
-  }>
+    type?: string;
+    language?: string;
+    search?: string;
+    category?: string;
+    page?: string;
+  }>;
 }
 
 export async function ResourceGrid({ searchParams }: Props) {
-  const params = await searchParams
+  const params = await searchParams;
 
   const result = await serverApi.resources.list({
-    type:     params.type,
+    type: params.type,
     language: params.language,
-    search:   params.search,
+    search: params.search,
     category: params.category,
-    page:     params.page || 1,
-    limit:    20,
-  })
+    page: params.page || 1,
+    limit: 20,
+  });
 
   if (result.data.length === 0) {
     return (
@@ -38,7 +38,7 @@ export async function ResourceGrid({ searchParams }: Props) {
         <p className="text-base font-medium mb-1">No resources found</p>
         <p className="text-sm">Try adjusting your filters or search term.</p>
       </div>
-    )
+    );
   }
 
   return (
@@ -64,7 +64,7 @@ export async function ResourceGrid({ searchParams }: Props) {
         />
       )}
     </div>
-  )
+  );
 }
 
 function Pagination({
@@ -72,23 +72,23 @@ function Pagination({
   totalPages,
   searchParams,
 }: {
-  currentPage: number
-  totalPages: number
-  searchParams: Record<string, string | undefined>
+  currentPage: number;
+  totalPages: number;
+  searchParams: Record<string, string | undefined>;
 }) {
   const buildPageUrl = (page: number) => {
-    const params = new URLSearchParams()
+    const params = new URLSearchParams();
     Object.entries(searchParams).forEach(([k, v]) => {
-      if (v && k !== 'page') params.set(k, v)
-    })
-    params.set('page', String(page))
-    return `/browse?${params.toString()}`
-  }
+      if (v && k !== 'page') params.set(k, v);
+    });
+    params.set('page', String(page));
+    return `/browse?${params.toString()}`;
+  };
 
-  const pages = Array.from({ length: totalPages }, (_, i) => i + 1)
+  const pages = Array.from({ length: totalPages }, (_, i) => i + 1);
   const visible = pages.filter(
     (p) => p === 1 || p === totalPages || Math.abs(p - currentPage) <= 1
-  )
+  );
 
   return (
     <div className="flex items-center justify-center gap-1.5 pt-6">
@@ -98,20 +98,29 @@ function Pagination({
           className="flex items-center gap-1 px-3 py-1.5 rounded-lg text-sm font-medium transition-colors"
           style={{ border: '1px solid hsl(var(--border))', color: 'hsl(var(--foreground))' }}
         >
-          <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-            <path d="M15 18l-6-6 6-6" strokeLinecap="round" strokeLinejoin="round"/>
+          <svg
+            width="14"
+            height="14"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+            strokeWidth={2}
+          >
+            <path d="M15 18l-6-6 6-6" strokeLinecap="round" strokeLinejoin="round" />
           </svg>
           Prev
         </a>
       )}
 
       {visible.map((page, i) => {
-        const prev = visible[i - 1]
-        const showEllipsis = prev && page - prev > 1
+        const prev = visible[i - 1];
+        const showEllipsis = prev && page - prev > 1;
         return (
           <span key={page} className="flex items-center gap-1.5">
             {showEllipsis && (
-              <span className="text-sm px-1" style={{ color: 'hsl(var(--muted-foreground))' }}>…</span>
+              <span className="text-sm px-1" style={{ color: 'hsl(var(--muted-foreground))' }}>
+                …
+              </span>
             )}
             <a
               href={buildPageUrl(page)}
@@ -125,7 +134,7 @@ function Pagination({
               {page}
             </a>
           </span>
-        )
+        );
       })}
 
       {currentPage < totalPages && (
@@ -135,11 +144,18 @@ function Pagination({
           style={{ border: '1px solid hsl(var(--border))', color: 'hsl(var(--foreground))' }}
         >
           Next
-          <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-            <path d="M9 18l6-6-6-6" strokeLinecap="round" strokeLinejoin="round"/>
+          <svg
+            width="14"
+            height="14"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+            strokeWidth={2}
+          >
+            <path d="M9 18l6-6-6-6" strokeLinecap="round" strokeLinejoin="round" />
           </svg>
         </a>
       )}
     </div>
-  )
+  );
 }

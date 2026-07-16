@@ -1,4 +1,4 @@
-const prisma = require('../config/prisma')
+import prisma from '../config/prisma.js';
 
 /**
  * Write an audit log entry.
@@ -22,15 +22,18 @@ const audit = async ({ actorId, action, targetType, targetId, targetName, metada
         targetType,
         targetId,
         targetName: targetName ?? null,
-        metadata:   metadata   ?? undefined,
+        metadata: metadata ?? undefined,
       },
-    })
+    });
   } catch (err) {
     // Non-blocking — log to console but never propagate
     console.error('[audit] Failed to write audit log:', err.message, {
-      actorId, action, targetType, targetId,
-    })
+      actorId,
+      action,
+      targetType,
+      targetId,
+    });
   }
-}
+};
 
-module.exports = { audit }
+export { audit };

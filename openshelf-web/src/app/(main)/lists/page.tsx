@@ -1,8 +1,8 @@
-import { RequireAuth } from '@/components/auth/RequireAuth'
-import { MyLists } from '@/components/lists/MyLists'
-import type { Metadata } from 'next'
+import { RequireAuth } from '@/components/auth/RequireAuth';
+import { MyLists } from '@/components/lists/MyLists';
+import type { Metadata } from 'next';
 
-export const metadata: Metadata = { title: 'My reading lists' }
+export const metadata: Metadata = { title: 'My reading lists' };
 
 export default function ListsPage() {
   return (
@@ -17,5 +17,5 @@ export default function ListsPage() {
         <MyLists />
       </div>
     </RequireAuth>
-  )
+  );
 }

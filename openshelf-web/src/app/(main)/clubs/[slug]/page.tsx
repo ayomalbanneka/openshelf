@@ -1,34 +1,34 @@
-import { notFound } from 'next/navigation'
-import { serverApi } from '@/lib/server-api'
-import { ClubDetail } from '@/components/clubs/ClubDetails'
-import type { Metadata } from 'next'
+import { notFound } from 'next/navigation';
+import { serverApi } from '@/lib/server-api';
+import { ClubDetail } from '@/components/clubs/ClubDetails';
+import type { Metadata } from 'next';
 
 interface Props {
-  params: Promise<{ slug: string }>
+  params: Promise<{ slug: string }>;
 }
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   try {
-    const { slug } = await params
-    const club = await serverApi.clubs.getOne(slug)
+    const { slug } = await params;
+    const club = await serverApi.clubs.getOne(slug);
     return {
       title: club.name,
       description: club.description ?? `Join ${club.name} on OpenShelf`,
-    }
+    };
   } catch {
-    return { title: 'Club not found' }
+    return { title: 'Club not found' };
   }
 }
 
 export default async function ClubPage({ params }: Props) {
-  const { slug } = await params
+  const { slug } = await params;
 
-  let club
+  let club;
   try {
-    club = await serverApi.clubs.getOne(slug)
+    club = await serverApi.clubs.getOne(slug);
   } catch {
-    notFound()
+    notFound();
   }
 
-  return <ClubDetail club={club} />
+  return <ClubDetail club={club} />;
 }

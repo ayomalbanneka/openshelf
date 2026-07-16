@@ -1,25 +1,16 @@
-"use client";
+'use client';
 
 import { motion } from 'framer-motion';
 import { useInView } from 'framer-motion';
 import { useRef } from 'react';
-import {
-  Search,
-  Download,
-  Users,
-  Shield,
-  Zap,
-  Globe,
-  BookMarked,
-  Heart,
-  Code,
-} from 'lucide-react';
+import { Search, Download, Users, Shield, Zap, Globe, BookMarked, Heart, Code } from 'lucide-react';
 
 const features = [
   {
     icon: Search,
     title: 'Smart Search',
-    description: 'Find exactly what you need with our powerful search engine. Filter by subject, author, year, or format.',
+    description:
+      'Find exactly what you need with our powerful search engine. Filter by subject, author, year, or format.',
     color: 'from-blue-500 to-cyan-500',
     bgColor: 'bg-blue-500/10',
     iconColor: '#3b82f6',
@@ -27,7 +18,8 @@ const features = [
   {
     icon: Download,
     title: 'Instant Access',
-    description: 'Read online or download for offline use. Support for PDF, EPUB, and more formats.',
+    description:
+      'Read online or download for offline use. Support for PDF, EPUB, and more formats.',
     color: 'from-violet-500 to-purple-500',
     bgColor: 'bg-violet-500/10',
     iconColor: '#8b5cf6',
@@ -35,7 +27,8 @@ const features = [
   {
     icon: Users,
     title: 'Community Driven',
-    description: 'Built by contributors worldwide. Anyone can add resources, review content, and improve the library.',
+    description:
+      'Built by contributors worldwide. Anyone can add resources, review content, and improve the library.',
     color: 'from-amber-500 to-orange-500',
     bgColor: 'bg-amber-500/10',
     iconColor: '#f59e0b',
@@ -43,7 +36,8 @@ const features = [
   {
     icon: Shield,
     title: 'Quality Assured',
-    description: 'Every resource is reviewed and verified by our community moderators for accuracy and relevance.',
+    description:
+      'Every resource is reviewed and verified by our community moderators for accuracy and relevance.',
     color: 'from-emerald-500 to-teal-500',
     bgColor: 'bg-emerald-500/10',
     iconColor: '#10b981',
@@ -51,7 +45,8 @@ const features = [
   {
     icon: Zap,
     title: 'Lightning Fast',
-    description: 'Optimized CDN delivery ensures fast loading times no matter where you are in the world.',
+    description:
+      'Optimized CDN delivery ensures fast loading times no matter where you are in the world.',
     color: 'from-yellow-500 to-amber-500',
     bgColor: 'bg-yellow-500/10',
     iconColor: '#eab308',
@@ -67,7 +62,8 @@ const features = [
   {
     icon: BookMarked,
     title: 'Personal Library',
-    description: 'Save your favorites, create reading lists, and track your learning progress across devices.',
+    description:
+      'Save your favorites, create reading lists, and track your learning progress across devices.',
     color: 'from-indigo-500 to-blue-500',
     bgColor: 'bg-indigo-500/10',
     iconColor: '#6366f1',
@@ -83,14 +79,15 @@ const features = [
   {
     icon: Code,
     title: 'Open Source',
-    description: 'Fully open-source codebase. Audit, fork, or contribute — transparency is our foundation.',
+    description:
+      'Fully open-source codebase. Audit, fork, or contribute — transparency is our foundation.',
     color: 'from-slate-500 to-zinc-500',
     bgColor: 'bg-slate-500/10',
     iconColor: '#64748b',
   },
 ];
 
-function FeatureCard({ feature, index }: { feature: typeof features[0]; index: number }) {
+function FeatureCard({ feature, index }: { feature: (typeof features)[0]; index: number }) {
   const ref = useRef(null);
   const isInView = useInView(ref, { once: true, margin: '-80px' });
 
@@ -104,10 +101,14 @@ function FeatureCard({ feature, index }: { feature: typeof features[0]; index: n
       className="group relative p-6 rounded-2xl border border-border/50 bg-card/50 backdrop-blur-sm hover:border-border hover:shadow-lg hover:shadow-black/5 transition-all duration-300"
     >
       {/* Hover gradient overlay */}
-      <div className={`absolute inset-0 rounded-2xl bg-linear-to-br ${feature.color} opacity-0 group-hover:opacity-[0.03] transition-opacity duration-300`} />
+      <div
+        className={`absolute inset-0 rounded-2xl bg-linear-to-br ${feature.color} opacity-0 group-hover:opacity-[0.03] transition-opacity duration-300`}
+      />
 
       <div className="relative z-10">
-        <div className={`w-12 h-12 ${feature.bgColor} rounded-xl flex items-center justify-center mb-4 group-hover:scale-110 transition-transform duration-300`}>
+        <div
+          className={`w-12 h-12 ${feature.bgColor} rounded-xl flex items-center justify-center mb-4 group-hover:scale-110 transition-transform duration-300`}
+        >
           <feature.icon className="w-6 h-6" style={{ color: feature.iconColor }} />
         </div>
         <h3 className="text-lg font-semibold text-foreground mb-2">{feature.title}</h3>

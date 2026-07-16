@@ -1,139 +1,157 @@
-'use client'
-import { useEffect, useState, useRef } from 'react'
-import { http } from '@/lib/api'
-import Link from 'next/link'
-import { getErrorMessage } from '@/lib/errors'
-import { toast } from '@/lib/toast'
+'use client';
+import { useEffect, useState, useRef } from 'react';
+import { http } from '@/lib/api';
+import Link from 'next/link';
+import { getErrorMessage } from '@/lib/errors';
+import { toast } from '@/lib/toast';
 
 interface AdminUser {
-  id: string; name: string; email: string
-  role: 'ADMIN' | 'MODERATOR' | 'USER'
-  isActive: boolean; isEmailVerified: boolean; createdAt: string; country?: string
-  _count: { uploads: number; reviews: number; followers: number }
+  id: string;
+  name: string;
+  email: string;
+  role: 'ADMIN' | 'MODERATOR' | 'USER';
+  isActive: boolean;
+  isEmailVerified: boolean;
+  createdAt: string;
+  country?: string;
+  _count: { uploads: number; reviews: number; followers: number };
 }
 
 const ROLE_STYLE: Record<string, { backgroundColor: string; color: string }> = {
   ADMIN: { backgroundColor: '#fee2e2', color: '#991b1b' },
   MODERATOR: { backgroundColor: '#fef3c7', color: '#92400e' },
   USER: { backgroundColor: '#eff6ff', color: '#1d4ed8' },
-}
+};
 
 export default function UsersPage() {
-  const [users, setUsers] = useState<AdminUser[]>([])
-  const [total, setTotal] = useState(0)
-  const [page, setPage] = useState(1)
-  const [pages, setPages] = useState(1)
-  const [loading, setLoading] = useState(true)
-  const [search, setSearch] = useState('')
-  const [role, setRole] = useState('')
-  const [acting, setActing] = useState<string | null>(null)
-  const [error, setError] = useState('')
-  const timer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined)
-  const [mailTarget, setMailTarget] = useState<AdminUser | null>(null)
-  const [mailSubject, setMailSubject] = useState('')
-  const [mailBody, setMailBody] = useState('')
-  const [mailing, setMailing] = useState(false)
-  const limit = 20
+  const [users, setUsers] = useState<AdminUser[]>([]);
+  const [total, setTotal] = useState(0);
+  const [page, setPage] = useState(1);
+  const [pages, setPages] = useState(1);
+  const [loading, setLoading] = useState(true);
+  const [search, setSearch] = useState('');
+  const [role, setRole] = useState('');
+  const [acting, setActing] = useState<string | null>(null);
+  const [error, setError] = useState('');
+  const timer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
+  const [mailTarget, setMailTarget] = useState<AdminUser | null>(null);
+  const [mailSubject, setMailSubject] = useState('');
+  const [mailBody, setMailBody] = useState('');
+  const [mailing, setMailing] = useState(false);
+  const limit = 20;
 
   const fetch_ = (q = search, r = role, p = page) => {
-    setLoading(true)
-    setError('')
-    const params = new URLSearchParams()
-    if (q) params.set('search', q)
-    if (r) params.set('role', r)
-    params.set('page', String(p))
-    params.set('limit', String(limit))
-    http.get(`/admin/users?${params}`)
+    setLoading(true);
+    setError('');
+    const params = new URLSearchParams();
+    if (q) params.set('search', q);
+    if (r) params.set('role', r);
+    params.set('page', String(p));
+    params.set('limit', String(limit));
+    http
+      .get(`/admin/users?${params}`)
       .then((res) => {
-        setUsers(res.data.data)
-        setTotal(res.data.meta.total)
-        setPages(res.data.meta.pages)
-        setPage(res.data.meta.page)
+        setUsers(res.data.data);
+        setTotal(res.data.meta.total);
+        setPages(res.data.meta.pages);
+        setPage(res.data.meta.page);
       })
       .catch((err) => setError(getErrorMessage(err, 'Failed to load users')))
-      .finally(() => setLoading(false))
-  }
+      .finally(() => setLoading(false));
+  };
 
-  useEffect(() => { fetch_(search, role, page) }, [page])
+  useEffect(() => {
+    fetch_(search, role, page);
+  }, [page]);
 
   const handleSearch = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const q = e.target.value
-    const shouldFetchNow = page === 1
-    setSearch(q)
-    setPage(1)
-    clearTimeout(timer.current)
+    const q = e.target.value;
+    const shouldFetchNow = page === 1;
+    setSearch(q);
+    setPage(1);
+    clearTimeout(timer.current);
     timer.current = setTimeout(() => {
-      if (shouldFetchNow) fetch_(q, role, 1)
-    }, 350)
-  }
+      if (shouldFetchNow) fetch_(q, role, 1);
+    }, 350);
+  };
 
   const handleRoleChange = async (id: string, newRole: string) => {
-    setActing(id)
+    setActing(id);
     try {
-      const { data } = await http.patch(`/admin/users/${id}/role`, { role: newRole })
-      setUsers((p) => p.map((u) => u.id === id ? { ...u, role: data.role } : u))
-      toast.success('Role updated')
-    } catch (err: unknown) { toast.error(getErrorMessage(err, 'Failed to update role')) }
-    finally { setActing(null) }
-  }
+      const { data } = await http.patch(`/admin/users/${id}/role`, { role: newRole });
+      setUsers((p) => p.map((u) => (u.id === id ? { ...u, role: data.role } : u)));
+      toast.success('Role updated');
+    } catch (err: unknown) {
+      toast.error(getErrorMessage(err, 'Failed to update role'));
+    } finally {
+      setActing(null);
+    }
+  };
 
   const handleToggle = async (id: string, active: boolean) => {
-    let reason = ''
+    let reason = '';
     if (active) {
-      reason = prompt('Reason for blocking (will be emailed):') ?? ''
-      if (reason === null) return
+      reason = prompt('Reason for blocking (will be emailed):') ?? '';
+      if (reason === null) return;
     }
-    setActing(id)
+    setActing(id);
     try {
-      const { data } = await http.patch(`/admin/users/${id}/toggle`, { reason })
-      setUsers((p) => p.map((u) => u.id === id ? { ...u, isActive: data.isActive } : u))
-      toast.success(data.isActive ? 'User activated' : 'User deactivated')
-    } catch (err: unknown) { toast.error(getErrorMessage(err, 'Failed to update status')) }
-    finally { setActing(null) }
-  }
+      const { data } = await http.patch(`/admin/users/${id}/toggle`, { reason });
+      setUsers((p) => p.map((u) => (u.id === id ? { ...u, isActive: data.isActive } : u)));
+      toast.success(data.isActive ? 'User activated' : 'User deactivated');
+    } catch (err: unknown) {
+      toast.error(getErrorMessage(err, 'Failed to update status'));
+    } finally {
+      setActing(null);
+    }
+  };
 
   const handleSendMessage = async () => {
-    if (!mailTarget || !mailSubject.trim() || !mailBody.trim()) return
-    setMailing(true)
+    if (!mailTarget || !mailSubject.trim() || !mailBody.trim()) return;
+    setMailing(true);
     try {
       await http.post(`/admin/users/${mailTarget.id}/message`, {
         subject: mailSubject.trim(),
         message: mailBody.trim(),
-      })
-      toast.success(`Message sent to ${mailTarget.name}`)
-      setMailTarget(null)
-      setMailSubject('')
-      setMailBody('')
+      });
+      toast.success(`Message sent to ${mailTarget.name}`);
+      setMailTarget(null);
+      setMailSubject('');
+      setMailBody('');
     } catch (err: unknown) {
-      toast.error(getErrorMessage(err, 'Failed to send message'))
+      toast.error(getErrorMessage(err, 'Failed to send message'));
     } finally {
-      setMailing(false)
+      setMailing(false);
     }
-  }
+  };
 
   const inputStyle = {
     border: '1px solid var(--admin-border)',
     backgroundColor: 'var(--admin-surface)',
     color: 'var(--admin-text)',
-  }
+  };
 
   return (
     <div className="flex flex-col gap-5">
       {/* Header */}
       <div className="flex items-start justify-between gap-4 flex-wrap">
         <div>
-          <h1 className="text-2xl font-bold" style={{ color: 'var(--admin-text)' }}>Users</h1>
-          <p className="text-sm" style={{ color: 'var(--admin-muted)' }}>{total} registered users</p>
+          <h1 className="text-2xl font-bold" style={{ color: 'var(--admin-text)' }}>
+            Users
+          </h1>
+          <p className="text-sm" style={{ color: 'var(--admin-muted)' }}>
+            {total} registered users
+          </p>
         </div>
         <div className="flex items-center gap-2 flex-wrap">
           <select
             value={role}
             onChange={(e) => {
-              const next = e.target.value
-              const shouldFetchNow = page === 1
-              setRole(next)
-              setPage(1)
-              if (shouldFetchNow) fetch_(search, next, 1)
+              const next = e.target.value;
+              const shouldFetchNow = page === 1;
+              setRole(next);
+              setPage(1);
+              if (shouldFetchNow) fetch_(search, next, 1);
             }}
             className="h-9 rounded-xl px-3 text-sm outline-none"
             style={inputStyle}
@@ -299,9 +317,9 @@ export default function UsersPage() {
                 <div className="flex items-center justify-center gap-1.5">
                   <button
                     onClick={() => {
-                      setMailTarget(user)
-                      setMailSubject('')
-                      setMailBody('')
+                      setMailTarget(user);
+                      setMailSubject('');
+                      setMailBody('');
                     }}
                     className="text-xs px-2.5 py-1.5 rounded-lg font-medium transition-colors whitespace-nowrap"
                     style={{ backgroundColor: '#eff6ff', color: '#1d4ed8' }}
@@ -374,7 +392,8 @@ export default function UsersPage() {
                     <option value="ADMIN">Admin</option>
                   </select>
                   <span className="text-xs" style={{ color: 'var(--admin-muted)' }}>
-                    {user._count.uploads} uploads · {user._count.reviews} reviews · {user._count.followers} followers
+                    {user._count.uploads} uploads · {user._count.reviews} reviews ·{' '}
+                    {user._count.followers} followers
                   </span>
                 </div>
 
@@ -382,9 +401,9 @@ export default function UsersPage() {
                 <div className="flex items-center gap-2">
                   <button
                     onClick={() => {
-                      setMailTarget(user)
-                      setMailSubject('')
-                      setMailBody('')
+                      setMailTarget(user);
+                      setMailSubject('');
+                      setMailBody('');
                     }}
                     className="flex-1 text-xs py-2 rounded-lg font-medium transition-colors"
                     style={{ backgroundColor: '#eff6ff', color: '#1d4ed8' }}
@@ -440,7 +459,9 @@ export default function UsersPage() {
         <div
           className="fixed inset-0 z-50 flex items-center justify-center p-4"
           style={{ backgroundColor: 'rgba(0,0,0,0.5)', backdropFilter: 'blur(4px)' }}
-          onClick={(e) => { if (e.target === e.currentTarget) setMailTarget(null) }}
+          onClick={(e) => {
+            if (e.target === e.currentTarget) setMailTarget(null);
+          }}
         >
           <div
             className="w-full max-w-md rounded-2xl flex flex-col overflow-hidden"
@@ -461,7 +482,10 @@ export default function UsersPage() {
                 {mailTarget.name.charAt(0).toUpperCase()}
               </div>
               <div className="flex-1 min-w-0">
-                <p className="text-sm font-semibold truncate" style={{ color: 'var(--admin-text)' }}>
+                <p
+                  className="text-sm font-semibold truncate"
+                  style={{ color: 'var(--admin-text)' }}
+                >
                   Message {mailTarget.name}
                 </p>
                 <p className="text-xs truncate" style={{ color: 'var(--admin-muted)' }}>
@@ -532,7 +556,8 @@ export default function UsersPage() {
               </div>
 
               <p className="text-xs" style={{ color: 'var(--admin-muted)' }}>
-                This email will be sent from the OpenShelf team address. The user will see your name as the sender.
+                This email will be sent from the OpenShelf team address. The user will see your name
+                as the sender.
               </p>
             </div>
 
@@ -560,5 +585,5 @@ export default function UsersPage() {
         </div>
       )}
     </div>
-  )
+  );
 }

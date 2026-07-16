@@ -1,44 +1,47 @@
-'use client'
-import { useState } from 'react'
-import { useRouter } from 'next/navigation'
-import { useAuthStore } from '@/store/auth.store'
-import { api } from '@/lib/api'
-import Link from 'next/link'
-import { getErrorMessage } from '@/lib/errors'
+'use client';
+import { useState } from 'react';
+import { useRouter } from 'next/navigation';
+import { useAuthStore } from '@/store/auth.store';
+import { api } from '@/lib/api';
+import Link from 'next/link';
+import { getErrorMessage } from '@/lib/errors';
 
 export function CreateClubButton() {
-  const { user }  = useAuthStore()
-  const router    = useRouter()
-  const [open, setOpen]         = useState(false)
-  const [name, setName]         = useState('')
-  const [description, setDesc]  = useState('')
-  const [isPublic, setIsPublic] = useState(true)
-  const [loading, setLoading]   = useState(false)
-  const [error, setError]       = useState('')
+  const { user } = useAuthStore();
+  const router = useRouter();
+  const [open, setOpen] = useState(false);
+  const [name, setName] = useState('');
+  const [description, setDesc] = useState('');
+  const [isPublic, setIsPublic] = useState(true);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
 
   const inputStyle = {
     border: '1px solid hsl(var(--border))',
     backgroundColor: 'hsl(var(--background))',
     color: 'hsl(var(--foreground))',
-  }
+  };
 
   const handleCreate = async (e: React.FormEvent) => {
-    e.preventDefault()
-    if (!name.trim()) { setError('Name is required'); return }
-    setLoading(true)
-    setError('')
-    try {
-      const club = await api.clubs.create({ name, description, isPublic })
-      setOpen(false)
-      setName('')
-      setDesc('')
-      router.push(`/clubs/${club.slug}`)
-    } catch (err: unknown) {
-      setError(getErrorMessage(err, 'Failed to create club'))
-    } finally {
-      setLoading(false)
+    e.preventDefault();
+    if (!name.trim()) {
+      setError('Name is required');
+      return;
     }
-  }
+    setLoading(true);
+    setError('');
+    try {
+      const club = await api.clubs.create({ name, description, isPublic });
+      setOpen(false);
+      setName('');
+      setDesc('');
+      router.push(`/clubs/${club.slug}`);
+    } catch (err: unknown) {
+      setError(getErrorMessage(err, 'Failed to create club'));
+    } finally {
+      setLoading(false);
+    }
+  };
 
   if (!user) {
     return (
@@ -48,7 +51,7 @@ export function CreateClubButton() {
       >
         Start a club
       </Link>
-    )
+    );
   }
 
   return (
@@ -64,7 +67,9 @@ export function CreateClubButton() {
         <div
           className="fixed inset-0 z-50 flex items-center justify-center p-4"
           style={{ backgroundColor: 'rgba(0,0,0,0.5)' }}
-          onClick={(e) => { if (e.target === e.currentTarget) setOpen(false) }}
+          onClick={(e) => {
+            if (e.target === e.currentTarget) setOpen(false);
+          }}
         >
           <div
             className="w-full max-w-md rounded-2xl p-6 flex flex-col gap-4"
@@ -147,5 +152,5 @@ export function CreateClubButton() {
         </div>
       )}
     </>
-  )
+  );
 }

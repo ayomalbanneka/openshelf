@@ -1,35 +1,38 @@
-'use client'
-import { useState } from 'react'
-import Link from 'next/link'
-import { http } from '@/lib/api'
-import { Inbox } from 'lucide-react'
+'use client';
+import { useState } from 'react';
+import Link from 'next/link';
+import { http } from '@/lib/api';
+import { Inbox } from 'lucide-react';
 
 export default function ForgotPasswordPage() {
-  const [email, setEmail]       = useState('')
-  const [submitted, setSubmitted] = useState(false)
-  const [loading, setLoading]   = useState(false)
-  const [error, setError]       = useState('')
+  const [email, setEmail] = useState('');
+  const [submitted, setSubmitted] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
 
   const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-    if (!email) { setError('Enter your email'); return }
-    setLoading(true)
-    setError('')
-    try {
-      await http.post('/auth/forgot-password', { email })
-      setSubmitted(true)
-    } catch {
-      setError('Something went wrong. Try again.')
-    } finally {
-      setLoading(false)
+    e.preventDefault();
+    if (!email) {
+      setError('Enter your email');
+      return;
     }
-  }
+    setLoading(true);
+    setError('');
+    try {
+      await http.post('/auth/forgot-password', { email });
+      setSubmitted(true);
+    } catch {
+      setError('Something went wrong. Try again.');
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const inputStyle = {
     border: '1px solid hsl(var(--border))',
     backgroundColor: 'hsl(var(--background))',
     color: 'hsl(var(--foreground))',
-  }
+  };
 
   if (submitted) {
     return (
@@ -53,7 +56,7 @@ export default function ForgotPasswordPage() {
           Back to login
         </Link>
       </div>
-    )
+    );
   }
 
   return (
@@ -67,7 +70,9 @@ export default function ForgotPasswordPage() {
 
       <form onSubmit={handleSubmit} className="flex flex-col gap-4">
         <div className="flex flex-col gap-1.5">
-          <label htmlFor="email" className="text-sm font-medium">Email</label>
+          <label htmlFor="email" className="text-sm font-medium">
+            Email
+          </label>
           <input
             id="email"
             type="email"
@@ -99,5 +104,5 @@ export default function ForgotPasswordPage() {
         ← Back to login
       </Link>
     </>
-  )
+  );
 }

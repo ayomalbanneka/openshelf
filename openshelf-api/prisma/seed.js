@@ -1,21 +1,21 @@
-require('dotenv').config()
-const { PrismaClient } = require('@prisma/client')
-const bcrypt = require('bcryptjs')
-const { PrismaPg } = require('@prisma/adapter-pg')
+import 'dotenv/config';
+import { PrismaClient } from '@prisma/client';
+import bcrypt from 'bcryptjs';
+import { PrismaPg } from '@prisma/adapter-pg';
 
-const adapter = new PrismaPg({ connectionString: process.env.DATABASE_URL })
-const prisma = new PrismaClient({ adapter })
+const adapter = new PrismaPg({ connectionString: process.env.DATABASE_URL });
+const prisma = new PrismaClient({ adapter });
 
 async function main() {
-  console.log('Seeding...')
+  console.log('Seeding...');
 
-  const adminPassword = process.env.SEED_ADMIN_PASSWORD
-  const demoPassword = process.env.SEED_DEMO_PASSWORD
+  const adminPassword = process.env.SEED_ADMIN_PASSWORD;
+  const demoPassword = process.env.SEED_DEMO_PASSWORD;
 
   if (!adminPassword || !demoPassword) {
     throw new Error(
       'SEED_ADMIN_PASSWORD and SEED_DEMO_PASSWORD must be set in your .env before seeding.'
-    )
+    );
   }
 
   // Users
@@ -29,7 +29,7 @@ async function main() {
       role: 'ADMIN',
       country: 'LK',
     },
-  })
+  });
 
   const user = await prisma.user.upsert({
     where: { email: 'demo@openshelf.dev' },
@@ -42,7 +42,7 @@ async function main() {
       bio: 'A curious reader from Sri Lanka.',
       country: 'LK',
     },
-  })
+  });
 
   // Categories
   const fiction = await prisma.category.upsert({
@@ -53,7 +53,7 @@ async function main() {
       slug: 'fiction',
       description: 'Novels, short stories and literary works',
     },
-  })
+  });
 
   const academic = await prisma.category.upsert({
     where: { slug: 'academic' },
@@ -63,7 +63,7 @@ async function main() {
       slug: 'academic',
       description: 'Textbooks, research papers and courses',
     },
-  })
+  });
 
   // Child category
   await prisma.category.upsert({
@@ -74,16 +74,16 @@ async function main() {
       slug: 'mathematics',
       parentId: academic.id,
     },
-  })
+  });
 
   // Tags
-  const tagNames = ['classic', 'beginner', 'advanced', 'free', 'popular']
+  const tagNames = ['classic', 'beginner', 'advanced', 'free', 'popular'];
   for (const name of tagNames) {
     await prisma.tag.upsert({
       where: { slug: name },
       update: {},
       create: { name, slug: name },
-    })
+    });
   }
 
   // A sample book resource
@@ -106,7 +106,7 @@ async function main() {
       uploadedById: admin.id,
       categoryId: academic.id,
     },
-  })
+  });
 
   // A sample club
   const club = await prisma.club.upsert({
@@ -119,29 +119,29 @@ async function main() {
       isPublic: true,
       createdById: admin.id,
     },
-  })
+  });
 
   // Add both users as members
   await prisma.clubMember.upsert({
     where: { clubId_userId: { clubId: club.id, userId: admin.id } },
     update: {},
     create: { clubId: club.id, userId: admin.id, role: 'OWNER' },
-  })
+  });
 
   await prisma.clubMember.upsert({
     where: { clubId_userId: { clubId: club.id, userId: user.id } },
     update: {},
     create: { clubId: club.id, userId: user.id, role: 'MEMBER' },
-  })
+  });
 
-  console.log('Seed complete.')
-  console.log('  Admin →  admin@openself.dev / admin1234')
-  console.log('  User  →  demo@openself.dev  / demo1234')
+  console.log('Seed complete.');
+  console.log('  Admin →  admin@openself.dev / admin1234');
+  console.log('  User  →  demo@openself.dev  / demo1234');
 }
 
 main()
   .catch((e) => {
-    console.error(e)
-    process.exit(1)
+    console.error(e);
+    process.exit(1);
   })
-  .finally(() => prisma.$disconnect())
+  .finally(() => prisma.$disconnect());

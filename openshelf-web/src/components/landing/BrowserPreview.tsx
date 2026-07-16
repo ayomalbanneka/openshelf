@@ -1,4 +1,4 @@
-"use client";
+'use client';
 
 import { motion, useInView } from 'framer-motion';
 import { useRef, useState } from 'react';
@@ -133,7 +133,9 @@ export default function BrowsePreview() {
                 : 'border-border bg-card/50'
             }`}
           >
-            <Search className={`w-5 h-5 transition-colors ${searchFocused ? 'text-blue-500' : 'text-muted-foreground'}`} />
+            <Search
+              className={`w-5 h-5 transition-colors ${searchFocused ? 'text-blue-500' : 'text-muted-foreground'}`}
+            />
             <input
               type="text"
               placeholder="Search books, courses, papers..."
@@ -142,7 +144,10 @@ export default function BrowsePreview() {
               onFocus={() => setSearchFocused(true)}
               onBlur={() => setSearchFocused(false)}
             />
-            <button aria-label="Open filters" className="p-2 rounded-xl hover:bg-muted text-muted-foreground hover:text-foreground transition-colors">
+            <button
+              aria-label="Open filters"
+              className="p-2 rounded-xl hover:bg-muted text-muted-foreground hover:text-foreground transition-colors"
+            >
               <Filter className="w-4.5 h-4.5" />
             </button>
           </div>
@@ -179,7 +184,7 @@ export default function BrowsePreview() {
             >
               {/* Card top accent */}
               <div className={`h-1.5 bg-linear-to-r ${resource.color}`} />
-              
+
               <div className="p-5">
                 <div className="flex items-start gap-4">
                   <resource.icon className="w-7 h-7 text-muted-foreground" />
@@ -205,7 +210,10 @@ export default function BrowsePreview() {
                       {resource.downloads}
                     </span>
                   </div>
-                  <button aria-label={`View ${resource.title}`} className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-blue-600/10 text-blue-600 text-sm font-medium hover:bg-blue-600 hover:text-white transition-all">
+                  <button
+                    aria-label={`View ${resource.title}`}
+                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-blue-600/10 text-blue-600 text-sm font-medium hover:bg-blue-600 hover:text-white transition-all"
+                  >
                     <Eye className="w-3.5 h-3.5" />
                     View
                   </button>

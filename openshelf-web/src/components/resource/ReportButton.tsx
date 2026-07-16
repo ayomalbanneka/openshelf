@@ -1,65 +1,65 @@
-'use client'
-import { useState } from 'react'
-import { Flag } from 'lucide-react'
-import { http } from '@/lib/api'
-import { useAuthStore } from '@/store/auth.store'
-import { getErrorMessage } from '@/lib/errors'
+'use client';
+import { useState } from 'react';
+import { Flag } from 'lucide-react';
+import { http } from '@/lib/api';
+import { useAuthStore } from '@/store/auth.store';
+import { getErrorMessage } from '@/lib/errors';
 
 const REASONS = [
-  { value: 'SPAM',           label: 'Spam or advertising' },
-  { value: 'COPYRIGHT',      label: 'Copyright violation' },
-  { value: 'INAPPROPRIATE',  label: 'Inappropriate content' },
+  { value: 'SPAM', label: 'Spam or advertising' },
+  { value: 'COPYRIGHT', label: 'Copyright violation' },
+  { value: 'INAPPROPRIATE', label: 'Inappropriate content' },
   { value: 'MISINFORMATION', label: 'Misinformation' },
-  { value: 'BROKEN_FILE',    label: 'Broken or unreadable file' },
-  { value: 'OTHER',          label: 'Other' },
-]
+  { value: 'BROKEN_FILE', label: 'Broken or unreadable file' },
+  { value: 'OTHER', label: 'Other' },
+];
 
 export function ReportButton({
   slug,
   buttonClassName,
   buttonStyle,
 }: {
-  slug: string
-  buttonClassName?: string
-  buttonStyle?: React.CSSProperties
+  slug: string;
+  buttonClassName?: string;
+  buttonStyle?: React.CSSProperties;
 }) {
-  const { user }    = useAuthStore()
-  const [open, setOpen]       = useState(false)
-  const [reason, setReason]   = useState('')
-  const [details, setDetails] = useState('')
-  const [loading, setLoading] = useState(false)
-  const [done, setDone]       = useState(false)
-  const [error, setError]     = useState('')
+  const { user } = useAuthStore();
+  const [open, setOpen] = useState(false);
+  const [reason, setReason] = useState('');
+  const [details, setDetails] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [done, setDone] = useState(false);
+  const [error, setError] = useState('');
 
-  if (!user) return null
+  if (!user) return null;
 
   const handleSubmit = async () => {
-    if (!reason) return setError('Please select a reason')
-    setLoading(true)
-    setError('')
+    if (!reason) return setError('Please select a reason');
+    setLoading(true);
+    setError('');
     try {
-      await http.post(`/resources/${slug}/report`, { reason, details })
-      setDone(true)
+      await http.post(`/resources/${slug}/report`, { reason, details });
+      setDone(true);
     } catch (err: unknown) {
-      setError(getErrorMessage(err, 'Failed to submit report'))
+      setError(getErrorMessage(err, 'Failed to submit report'));
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
-  }
+  };
 
   const handleClose = () => {
-    setOpen(false)
-    setReason('')
-    setDetails('')
-    setError('')
-    setDone(false)
-  }
+    setOpen(false);
+    setReason('');
+    setDetails('');
+    setError('');
+    setDone(false);
+  };
 
   const inputStyle = {
-    border:          '1px solid hsl(var(--border))',
+    border: '1px solid hsl(var(--border))',
     backgroundColor: 'hsl(var(--background))',
-    color:           'hsl(var(--foreground))',
-  }
+    color: 'hsl(var(--foreground))',
+  };
 
   return (
     <>
@@ -76,16 +76,23 @@ export function ReportButton({
         <div
           className="fixed inset-0 z-50 flex items-center justify-center p-4"
           style={{ backgroundColor: 'rgba(0,0,0,0.5)' }}
-          onClick={(e) => { if (e.target === e.currentTarget) handleClose() }}
+          onClick={(e) => {
+            if (e.target === e.currentTarget) handleClose();
+          }}
         >
           <div
             className="w-full max-w-sm rounded-2xl p-6 flex flex-col gap-4"
-            style={{ backgroundColor: 'hsl(var(--background))', border: '1px solid hsl(var(--border))' }}
+            style={{
+              backgroundColor: 'hsl(var(--background))',
+              border: '1px solid hsl(var(--border))',
+            }}
           >
             {done ? (
               <div className="text-center flex flex-col items-center gap-3 py-4">
-                <div className="w-10 h-10 rounded-full flex items-center justify-center"
-                  style={{ backgroundColor: '#dcfce7' }}>
+                <div
+                  className="w-10 h-10 rounded-full flex items-center justify-center"
+                  style={{ backgroundColor: '#dcfce7' }}
+                >
                   <Flag className="w-5 h-5" style={{ color: '#166534' }} />
                 </div>
                 <h3 className="font-semibold" style={{ color: 'hsl(var(--foreground))' }}>
@@ -118,16 +125,20 @@ export function ReportButton({
                 </div>
 
                 {error && (
-                  <div className="text-sm rounded-xl px-3 py-2"
-                    style={{ backgroundColor: '#fef2f2', color: '#991b1b' }}>
+                  <div
+                    className="text-sm rounded-xl px-3 py-2"
+                    style={{ backgroundColor: '#fef2f2', color: '#991b1b' }}
+                  >
                     {error}
                   </div>
                 )}
 
                 {/* Reason selector */}
                 <div className="flex flex-col gap-1.5">
-                  <label className="text-xs font-semibold uppercase tracking-wider"
-                    style={{ color: 'hsl(var(--muted-foreground))' }}>
+                  <label
+                    className="text-xs font-semibold uppercase tracking-wider"
+                    style={{ color: 'hsl(var(--muted-foreground))' }}
+                  >
                     Reason
                   </label>
                   <div className="flex flex-col gap-1">
@@ -137,8 +148,8 @@ export function ReportButton({
                         className="flex items-center gap-2.5 px-3 py-2 rounded-xl cursor-pointer text-sm transition-colors"
                         style={{
                           backgroundColor: reason === r.value ? '#eff6ff' : 'transparent',
-                          color:           reason === r.value ? '#1e40af' : 'hsl(var(--foreground))',
-                          border:          `1px solid ${reason === r.value ? '#bfdbfe' : 'transparent'}`,
+                          color: reason === r.value ? '#1e40af' : 'hsl(var(--foreground))',
+                          border: `1px solid ${reason === r.value ? '#bfdbfe' : 'transparent'}`,
                         }}
                       >
                         <input
@@ -157,8 +168,10 @@ export function ReportButton({
 
                 {/* Optional details */}
                 <div className="flex flex-col gap-1.5">
-                  <label className="text-xs font-semibold uppercase tracking-wider"
-                    style={{ color: 'hsl(var(--muted-foreground))' }}>
+                  <label
+                    className="text-xs font-semibold uppercase tracking-wider"
+                    style={{ color: 'hsl(var(--muted-foreground))' }}
+                  >
                     Additional details <span style={{ fontWeight: 400 }}>(optional)</span>
                   </label>
                   <textarea
@@ -175,7 +188,10 @@ export function ReportButton({
                   <button
                     onClick={handleClose}
                     className="flex-1 h-10 rounded-xl text-sm font-semibold"
-                    style={{ backgroundColor: 'hsl(var(--muted))', color: 'hsl(var(--foreground))' }}
+                    style={{
+                      backgroundColor: 'hsl(var(--muted))',
+                      color: 'hsl(var(--foreground))',
+                    }}
                   >
                     Cancel
                   </button>
@@ -194,5 +210,5 @@ export function ReportButton({
         </div>
       )}
     </>
-  )
+  );
 }

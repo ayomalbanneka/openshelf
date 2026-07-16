@@ -1,18 +1,18 @@
-'use client'
-import { useRouter, usePathname } from 'next/navigation'
-import { cn } from '@/lib/utils'
+'use client';
+import { useRouter, usePathname } from 'next/navigation';
+import { cn } from '@/lib/utils';
 
 const TYPES = [
-  { value: '',           label: 'All types' },
-  { value: 'BOOK',       label: 'Books' },
-  { value: 'COURSE',     label: 'Courses' },
+  { value: '', label: 'All types' },
+  { value: 'BOOK', label: 'Books' },
+  { value: 'COURSE', label: 'Courses' },
   { value: 'EXAM_PAPER', label: 'Exam papers' },
-  { value: 'DOCUMENT',   label: 'Documents' },
-  { value: 'AUDIO',      label: 'Audio' },
-]
+  { value: 'DOCUMENT', label: 'Documents' },
+  { value: 'AUDIO', label: 'Audio' },
+];
 
 const LANGUAGES = [
-  { value: '',   label: 'All languages' },
+  { value: '', label: 'All languages' },
   { value: 'en', label: 'English' },
   { value: 'si', label: 'Sinhala' },
   { value: 'ta', label: 'Tamil' },
@@ -21,25 +21,25 @@ const LANGUAGES = [
   { value: 'es', label: 'Spanish' },
   { value: 'zh', label: 'Chinese' },
   { value: 'ar', label: 'Arabic' },
-]
+];
 
 interface Props {
-  q: string
-  type?: string
-  language?: string
+  q: string;
+  type?: string;
+  language?: string;
 }
 
 export function SearchFilters({ q, type, language }: Props) {
-  const router   = useRouter()
-  const pathname = usePathname()
+  const router = useRouter();
+  const pathname = usePathname();
 
   const setParam = (key: string, value: string) => {
-    const params = new URLSearchParams()
-    if (q) params.set('q', q)
-    if (value) params.set(key, value)
+    const params = new URLSearchParams();
+    if (q) params.set('q', q);
+    if (value) params.set(key, value);
     // Reset page when filter changes
-    router.push(`${pathname}?${params.toString()}`)
-  }
+    router.push(`${pathname}?${params.toString()}`);
+  };
 
   return (
     <div className="flex flex-col gap-6">
@@ -62,11 +62,7 @@ export function SearchFilters({ q, type, language }: Props) {
                   ? 'bg-blue-50 text-blue-700 font-medium'
                   : 'hover:bg-gray-100'
               )}
-              style={
-                (type || '') !== t.value
-                  ? { color: 'hsl(var(--foreground))' }
-                  : undefined
-              }
+              style={(type || '') !== t.value ? { color: 'hsl(var(--foreground))' } : undefined}
             >
               {t.label}
             </button>
@@ -93,11 +89,7 @@ export function SearchFilters({ q, type, language }: Props) {
                   ? 'bg-blue-50 text-blue-700 font-medium'
                   : 'hover:bg-gray-100'
               )}
-              style={
-                (language || '') !== l.value
-                  ? { color: 'hsl(var(--foreground))' }
-                  : undefined
-              }
+              style={(language || '') !== l.value ? { color: 'hsl(var(--foreground))' } : undefined}
             >
               {l.label}
             </button>
@@ -105,5 +97,5 @@ export function SearchFilters({ q, type, language }: Props) {
         </div>
       </div>
     </div>
-  )
+  );
 }

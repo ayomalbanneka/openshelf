@@ -1,9 +1,9 @@
-'use client'
-import { useEffect, useState } from 'react'
-import { useAuthStore } from '@/store/auth.store'
-import { http } from '@/lib/api'
-import { getErrorMessage } from '@/lib/errors'
-import Link from 'next/link'
+'use client';
+import { useEffect, useState } from 'react';
+import { useAuthStore } from '@/store/auth.store';
+import { http } from '@/lib/api';
+import { getErrorMessage } from '@/lib/errors';
+import Link from 'next/link';
 import {
   Users,
   LibraryBig,
@@ -16,31 +16,43 @@ import {
   FileText,
   Files,
   Music4,
-  Clock3,
   ArrowRight,
   ShieldAlert,
-} from 'lucide-react'
+} from 'lucide-react';
 
 interface Stats {
-  totalUsers: number
-  totalResources: number
-  publishedResources: number
-  pendingResources: number
-  totalReviews: number
-  totalClubs: number
-  totalTags: number
+  totalUsers: number;
+  totalResources: number;
+  publishedResources: number;
+  pendingResources: number;
+  totalReviews: number;
+  totalClubs: number;
+  totalTags: number;
 }
 
 interface RecentUpload {
-  id: string; title: string; slug: string; type: string
-  createdAt: string; isPublished: boolean
-  uploadedBy: { id: string; name: string }
-  category: { name: string }
+  id: string;
+  title: string;
+  slug: string;
+  type: string;
+  createdAt: string;
+  isPublished: boolean;
+  uploadedBy: { id: string; name: string };
+  category: { name: string };
 }
 
-interface TypeCount { type: string; _count: number }
-interface RoleCount { role: string; _count: number }
-interface DayCount  { date: string; count: number }
+interface TypeCount {
+  type: string;
+  _count: number;
+}
+interface RoleCount {
+  role: string;
+  _count: number;
+}
+interface DayCount {
+  date: string;
+  count: number;
+}
 
 const TYPE_ICONS: Record<string, typeof BookOpen> = {
   BOOK: BookOpen,
@@ -48,15 +60,29 @@ const TYPE_ICONS: Record<string, typeof BookOpen> = {
   EXAM_PAPER: FileText,
   DOCUMENT: Files,
   AUDIO: Music4,
-}
+};
 const TYPE_COLORS: Record<string, string> = {
-  BOOK: '#0ea5e9', COURSE: '#14b8a6', EXAM_PAPER: '#f59e0b',
-  DOCUMENT: '#22c55e', AUDIO: '#f43f5e',
-}
+  BOOK: '#0ea5e9',
+  COURSE: '#14b8a6',
+  EXAM_PAPER: '#f59e0b',
+  DOCUMENT: '#22c55e',
+  AUDIO: '#f43f5e',
+};
 
-function StatCard({ icon: Icon, label, value, sub, color, href }: {
-  icon: typeof Users; label: string; value: number; sub?: string
-  color: string; href?: string
+function StatCard({
+  icon: Icon,
+  label,
+  value,
+  sub,
+  color,
+  href,
+}: {
+  icon: typeof Users;
+  label: string;
+  value: number;
+  sub?: string;
+  color: string;
+  href?: string;
 }) {
   const card = (
     <div
@@ -74,123 +100,168 @@ function StatCard({ icon: Icon, label, value, sub, color, href }: {
         <Icon className="h-5 w-5" style={{ color }} />
       </div>
       <div className="flex-1 min-w-0">
-        <p className="text-2xl font-bold leading-tight" style={{ color }}>{value.toLocaleString()}</p>
-        <p className="text-sm font-medium mt-0.5" style={{ color: 'var(--admin-muted)' }}>{label}</p>
-        {sub && <p className="text-xs mt-0.5" style={{ color: 'var(--admin-muted)' }}>{sub}</p>}
+        <p className="text-2xl font-bold leading-tight" style={{ color }}>
+          {value.toLocaleString()}
+        </p>
+        <p className="text-sm font-medium mt-0.5" style={{ color: 'var(--admin-muted)' }}>
+          {label}
+        </p>
+        {sub && (
+          <p className="text-xs mt-0.5" style={{ color: 'var(--admin-muted)' }}>
+            {sub}
+          </p>
+        )}
       </div>
-      <div className="h-1 w-full absolute bottom-0 left-0 rounded-b-2xl" style={{ backgroundColor: color, opacity: 0.3 }} />
+      <div
+        className="h-1 w-full absolute bottom-0 left-0 rounded-b-2xl"
+        style={{ backgroundColor: color, opacity: 0.3 }}
+      />
     </div>
-  )
-  return href ? <Link href={href} className="block relative overflow-hidden">{card}</Link>
-    : <div className="relative overflow-hidden">{card}</div>
+  );
+  return href ? (
+    <Link href={href} className="block relative overflow-hidden">
+      {card}
+    </Link>
+  ) : (
+    <div className="relative overflow-hidden">{card}</div>
+  );
 }
 
 // Mini bar chart
 function BarChart({ data, color }: { data: { label: string; value: number }[]; color: string }) {
-  const max = Math.max(...data.map((d) => d.value), 1)
+  const max = Math.max(...data.map((d) => d.value), 1);
   return (
     <div className="flex items-end gap-1.5 h-24">
       {data.map((d) => (
         <div key={d.label} className="flex-1 flex flex-col items-center gap-1">
           <div
             className="w-full rounded-t-md transition-all"
-            style={{ height: `${Math.max((d.value / max) * 96, 4)}px`, backgroundColor: color, opacity: 0.85 }}
+            style={{
+              height: `${Math.max((d.value / max) * 96, 4)}px`,
+              backgroundColor: color,
+              opacity: 0.85,
+            }}
           />
-          <span className="text-[9px] font-medium" style={{ color: 'var(--admin-muted)' }}>{d.label}</span>
+          <span className="text-[9px] font-medium" style={{ color: 'var(--admin-muted)' }}>
+            {d.label}
+          </span>
         </div>
       ))}
     </div>
-  )
+  );
 }
 
 // Donut segment chart (pure SVG)
 function DonutChart({ segments }: { segments: { label: string; value: number; color: string }[] }) {
-  const total = segments.reduce((s, x) => s + x.value, 0) || 1
-  let offset = 0
-  const r = 40, cx = 50, cy = 50, stroke = 14
-  const circumference = 2 * Math.PI * r
+  const total = segments.reduce((s, x) => s + x.value, 0) || 1;
+  const r = 40,
+    cx = 50,
+    cy = 50,
+    stroke = 14;
+  const circumference = 2 * Math.PI * r;
+
+  // Pre-compute offsets to avoid mutation inside render
+  const segmentsWithOffsets = segments.map((seg, i) => {
+    const precedingPct = segments.slice(0, i).reduce((s, x) => s + x.value / total, 0);
+    return { ...seg, pct: seg.value / total, offsetPct: precedingPct };
+  });
+
   return (
     <div className="flex items-center gap-6">
       <svg viewBox="0 0 100 100" className="h-28 w-28 shrink-0 -rotate-90">
-        {segments.map((seg) => {
-          const pct = seg.value / total
-          const dashArray = `${pct * circumference} ${circumference}`
-          const dashOffset = -offset * circumference
-          offset += pct
+        {segmentsWithOffsets.map((seg) => {
+          const dashArray = `${seg.pct * circumference} ${circumference}`;
+          const dashOffset = -seg.offsetPct * circumference;
           return (
             <circle
               key={seg.label}
-              cx={cx} cy={cy} r={r}
+              cx={cx}
+              cy={cy}
+              r={r}
               fill="none"
               stroke={seg.color}
               strokeWidth={stroke}
               strokeDasharray={dashArray}
               strokeDashoffset={dashOffset}
             />
-          )
+          );
         })}
       </svg>
       <div className="flex flex-col gap-2">
         {segments.map((seg) => (
           <div key={seg.label} className="flex items-center gap-2">
-            <div className="h-2.5 w-2.5 rounded-full shrink-0" style={{ backgroundColor: seg.color }} />
+            <div
+              className="h-2.5 w-2.5 rounded-full shrink-0"
+              style={{ backgroundColor: seg.color }}
+            />
             <span className="text-xs" style={{ color: 'var(--admin-muted)' }}>
-              {seg.label} <span className="font-semibold" style={{ color: 'var(--admin-text)' }}>{seg.value}</span>
+              {seg.label}{' '}
+              <span className="font-semibold" style={{ color: 'var(--admin-text)' }}>
+                {seg.value}
+              </span>
             </span>
           </div>
         ))}
       </div>
     </div>
-  )
+  );
 }
 
 export default function AdminPage() {
-  const { user } = useAuthStore()
-  const [stats, setStats]           = useState<Stats | null>(null)
-  const [recent, setRecent]         = useState<RecentUpload[]>([])
-  const [typeData, setTypeData]     = useState<TypeCount[]>([])
-  const [roleData, setRoleData]     = useState<RoleCount[]>([])
-  const [dayData, setDayData]       = useState<DayCount[]>([])
-  const [loading, setLoading]       = useState(true)
-  const [error, setError]           = useState('')
+  const { user } = useAuthStore();
+  const [stats, setStats] = useState<Stats | null>(null);
+  const [recent, setRecent] = useState<RecentUpload[]>([]);
+  const [typeData, setTypeData] = useState<TypeCount[]>([]);
+  const [roleData, setRoleData] = useState<RoleCount[]>([]);
+  const [dayData, setDayData] = useState<DayCount[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
 
   const fetchStats = () => {
-    if (!user) return
-    setLoading(true)
-    setError('')
-    http.get('/admin/stats')
+    if (!user) return;
+    setLoading(true);
+    setError('');
+    http
+      .get('/admin/stats')
       .then((r) => {
-        setStats(r.data.stats)
-        setRecent(r.data.recentUploads)
-        setTypeData(r.data.resourcesByType || [])
-        setRoleData(r.data.usersByRole || [])
-        setDayData(r.data.uploadsByDay || [])
+        setStats(r.data.stats);
+        setRecent(r.data.recentUploads);
+        setTypeData(r.data.resourcesByType || []);
+        setRoleData(r.data.usersByRole || []);
+        setDayData(r.data.uploadsByDay || []);
       })
       .catch((err) => setError(getErrorMessage(err, 'Failed to load dashboard')))
-      .finally(() => setLoading(false))
-  }
+      .finally(() => setLoading(false));
+  };
 
   useEffect(() => {
-    fetchStats()
-  }, [user])
+    fetchStats();
+  }, [user]);
 
   if (loading) {
     return (
       <div className="flex flex-col gap-5">
         <div className="h-8 w-48 rounded-xl animate-pulse" style={{ backgroundColor: '#e2e8f0' }} />
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-          {[1,2,3,4,5,6,7].map((i) => (
-            <div key={i} className="h-24 rounded-2xl animate-pulse" style={{ backgroundColor: '#e2e8f0' }} />
+          {[1, 2, 3, 4, 5, 6, 7].map((i) => (
+            <div
+              key={i}
+              className="h-24 rounded-2xl animate-pulse"
+              style={{ backgroundColor: '#e2e8f0' }}
+            />
           ))}
         </div>
       </div>
-    )
+    );
   }
 
   if (error && !stats) {
     return (
       <div className="flex flex-col gap-4">
-        <div className="text-sm rounded-xl px-4 py-3" style={{ backgroundColor: '#fee2e2', color: '#991b1b' }}>
+        <div
+          className="text-sm rounded-xl px-4 py-3"
+          style={{ backgroundColor: '#fee2e2', color: '#991b1b' }}
+        >
           {error}
         </div>
         <button
@@ -201,45 +272,49 @@ export default function AdminPage() {
           Retry
         </button>
       </div>
-    )
+    );
   }
 
-  if (!stats) return null
+  if (!stats) return null;
 
-  const isAdmin = user?.role === 'ADMIN'
+  const isAdmin = user?.role === 'ADMIN';
 
   // Last 7 days bar chart data
-  const today = new Date()
+  const today = new Date();
   const chartDays = Array.from({ length: 7 }, (_, i) => {
-    const d = new Date(today)
-    d.setDate(d.getDate() - (6 - i))
-    const key = d.toISOString().split('T')[0]
-    const found = dayData.find((x) => String(x.date).startsWith(key))
-    return { label: d.toLocaleDateString('en', { weekday: 'short' }).slice(0, 2), value: Number(found?.count ?? 0) }
-  })
-  const hasUploadsThisWeek = chartDays.some((d) => d.value > 0)
+    const d = new Date(today);
+    d.setDate(d.getDate() - (6 - i));
+    const key = d.toISOString().split('T')[0];
+    const found = dayData.find((x) => String(x.date).startsWith(key));
+    return {
+      label: d.toLocaleDateString('en', { weekday: 'short' }).slice(0, 2),
+      value: Number(found?.count ?? 0),
+    };
+  });
+  const hasUploadsThisWeek = chartDays.some((d) => d.value > 0);
 
   const typeSegments = typeData.map((t) => ({
     label: t.type.replace('_', ' '),
     value: Number(t._count),
     color: TYPE_COLORS[t.type] ?? '#94a3b8',
-  }))
+  }));
 
   const roleSegments = roleData.map((r) => ({
     label: r.role,
     value: Number(r._count),
     color: r.role === 'ADMIN' ? '#dc2626' : r.role === 'MODERATOR' ? '#d97706' : '#2563eb',
-  }))
+  }));
 
   return (
     <div className="flex flex-col gap-6">
-
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold" style={{ color: 'var(--admin-text)' }}>Dashboard</h1>
+          <h1 className="text-2xl font-bold" style={{ color: 'var(--admin-text)' }}>
+            Dashboard
+          </h1>
           <p className="text-sm mt-0.5" style={{ color: 'var(--admin-muted)' }}>
-            Welcome back, {user?.name?.split(' ')[0]}. Here's what's happening.
+            Welcome back, {user?.name?.split(' ')[0]}. Here&apos;s what&apos;s happening.
           </p>
         </div>
         <div
@@ -269,7 +344,8 @@ export default function AdminPage() {
             </div>
             <div>
               <p className="text-sm font-semibold" style={{ color: '#92400e' }}>
-                {stats.pendingResources} resource{stats.pendingResources !== 1 ? 's' : ''} awaiting review
+                {stats.pendingResources} resource{stats.pendingResources !== 1 ? 's' : ''} awaiting
+                review
               </p>
               <p className="text-xs" style={{ color: '#b45309' }}>
                 Review and approve to make them visible to all users.
@@ -288,32 +364,73 @@ export default function AdminPage() {
 
       {/* Stat cards */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        <StatCard icon={Users} label="Total users"     value={stats.totalUsers}          color="#2563eb" href={isAdmin ? '/admin/users' : undefined} />
-        <StatCard icon={LibraryBig} label="Resources"       value={stats.totalResources}      color="#059669" sub={`${stats.publishedResources} published`} href={isAdmin ? '/admin/resources' : undefined} />
-        <StatCard icon={Hourglass} label="Pending review"  value={stats.pendingResources}    color="#d97706" href="/admin/pending" />
-        <StatCard icon={Star} label="Total reviews"   value={stats.totalReviews}        color="#06b6d4" />
+        <StatCard
+          icon={Users}
+          label="Total users"
+          value={stats.totalUsers}
+          color="#2563eb"
+          href={isAdmin ? '/admin/users' : undefined}
+        />
+        <StatCard
+          icon={LibraryBig}
+          label="Resources"
+          value={stats.totalResources}
+          color="#059669"
+          sub={`${stats.publishedResources} published`}
+          href={isAdmin ? '/admin/resources' : undefined}
+        />
+        <StatCard
+          icon={Hourglass}
+          label="Pending review"
+          value={stats.pendingResources}
+          color="#d97706"
+          href="/admin/pending"
+        />
+        <StatCard icon={Star} label="Total reviews" value={stats.totalReviews} color="#06b6d4" />
         {isAdmin && (
           <>
-            <StatCard icon={Building2} label="Reading clubs"   value={stats.totalClubs}     color="#db2777" href="/admin/clubs" />
-            <StatCard icon={Tags} label="Tags"            value={stats.totalTags}      color="#0891b2" href="/admin/tags" />
+            <StatCard
+              icon={Building2}
+              label="Reading clubs"
+              value={stats.totalClubs}
+              color="#db2777"
+              href="/admin/clubs"
+            />
+            <StatCard
+              icon={Tags}
+              label="Tags"
+              value={stats.totalTags}
+              color="#0891b2"
+              href="/admin/tags"
+            />
           </>
         )}
       </div>
 
       {/* Charts row */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
-
         {/* Uploads this week */}
-          <div
-            className="rounded-2xl p-5 lg:col-span-2"
-            style={{ backgroundColor: 'var(--admin-surface)', border: '1px solid var(--admin-border)', boxShadow: 'var(--admin-card-shadow)' }}
-          >
+        <div
+          className="rounded-2xl p-5 lg:col-span-2"
+          style={{
+            backgroundColor: 'var(--admin-surface)',
+            border: '1px solid var(--admin-border)',
+            boxShadow: 'var(--admin-card-shadow)',
+          }}
+        >
           <div className="flex items-center justify-between mb-5">
             <div>
-                <p className="text-sm font-bold" style={{ color: 'var(--admin-text)' }}>Uploads this week</p>
-                <p className="text-xs mt-0.5" style={{ color: 'var(--admin-muted)' }}>New resources uploaded per day</p>
+              <p className="text-sm font-bold" style={{ color: 'var(--admin-text)' }}>
+                Uploads this week
+              </p>
+              <p className="text-xs mt-0.5" style={{ color: 'var(--admin-muted)' }}>
+                New resources uploaded per day
+              </p>
             </div>
-            <span className="text-xs px-2.5 py-1 rounded-full font-medium" style={{ backgroundColor: '#eff6ff', color: '#2563eb' }}>
+            <span
+              className="text-xs px-2.5 py-1 rounded-full font-medium"
+              style={{ backgroundColor: '#eff6ff', color: '#2563eb' }}
+            >
               Last 7 days
             </span>
           </div>
@@ -329,10 +446,18 @@ export default function AdminPage() {
         {typeSegments.length > 0 && (
           <div
             className="rounded-2xl p-5"
-            style={{ backgroundColor: 'var(--admin-surface)', border: '1px solid var(--admin-border)', boxShadow: 'var(--admin-card-shadow)' }}
+            style={{
+              backgroundColor: 'var(--admin-surface)',
+              border: '1px solid var(--admin-border)',
+              boxShadow: 'var(--admin-card-shadow)',
+            }}
           >
-            <p className="text-sm font-bold mb-1" style={{ color: 'var(--admin-text)' }}>Resource types</p>
-            <p className="text-xs mb-4" style={{ color: 'var(--admin-muted)' }}>Published resources by type</p>
+            <p className="text-sm font-bold mb-1" style={{ color: 'var(--admin-text)' }}>
+              Resource types
+            </p>
+            <p className="text-xs mb-4" style={{ color: 'var(--admin-muted)' }}>
+              Published resources by type
+            </p>
             <DonutChart segments={typeSegments} />
           </div>
         )}
@@ -340,24 +465,35 @@ export default function AdminPage() {
 
       {/* Bottom row */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
-
         {/* Recent uploads table */}
         <div
           className="rounded-2xl overflow-hidden lg:col-span-2"
-          style={{ backgroundColor: 'var(--admin-surface)', border: '1px solid var(--admin-border)', boxShadow: 'var(--admin-card-shadow)' }}
+          style={{
+            backgroundColor: 'var(--admin-surface)',
+            border: '1px solid var(--admin-border)',
+            boxShadow: 'var(--admin-card-shadow)',
+          }}
         >
           <div
             className="flex items-center justify-between px-5 py-4"
             style={{ borderBottom: '1px solid var(--admin-border)' }}
           >
-            <p className="text-sm font-bold" style={{ color: 'var(--admin-text)' }}>Recent uploads</p>
-            <Link href="/admin/pending" className="text-xs font-medium" style={{ color: 'var(--admin-link)' }}>
+            <p className="text-sm font-bold" style={{ color: 'var(--admin-text)' }}>
+              Recent uploads
+            </p>
+            <Link
+              href="/admin/pending"
+              className="text-xs font-medium"
+              style={{ color: 'var(--admin-link)' }}
+            >
               View pending →
             </Link>
           </div>
 
           {recent.length === 0 ? (
-            <div className="py-12 text-center text-sm" style={{ color: 'var(--admin-muted)' }}>No uploads yet.</div>
+            <div className="py-12 text-center text-sm" style={{ color: 'var(--admin-muted)' }}>
+              No uploads yet.
+            </div>
           ) : (
             <div className="divide-y" style={{ borderColor: 'var(--admin-border)' }}>
               {recent.map((r) => (
@@ -368,8 +504,13 @@ export default function AdminPage() {
                     style={{ backgroundColor: `${TYPE_COLORS[r.type] ?? '#94a3b8'}15` }}
                   >
                     {(() => {
-                      const Icon = TYPE_ICONS[r.type] ?? FileText
-                      return <Icon className="h-4 w-4" style={{ color: TYPE_COLORS[r.type] ?? '#94a3b8' }} />
+                      const Icon = TYPE_ICONS[r.type] ?? FileText;
+                      return (
+                        <Icon
+                          className="h-4 w-4"
+                          style={{ color: TYPE_COLORS[r.type] ?? '#94a3b8' }}
+                        />
+                      );
                     })()}
                   </div>
                   <div className="flex-1 min-w-0">
@@ -404,10 +545,18 @@ export default function AdminPage() {
         {isAdmin && roleSegments.length > 0 && (
           <div
             className="rounded-2xl p-5"
-            style={{ backgroundColor: 'var(--admin-surface)', border: '1px solid var(--admin-border)', boxShadow: 'var(--admin-card-shadow)' }}
+            style={{
+              backgroundColor: 'var(--admin-surface)',
+              border: '1px solid var(--admin-border)',
+              boxShadow: 'var(--admin-card-shadow)',
+            }}
           >
-            <p className="text-sm font-bold mb-1" style={{ color: 'var(--admin-text)' }}>User roles</p>
-            <p className="text-xs mb-4" style={{ color: 'var(--admin-muted)' }}>Breakdown by account type</p>
+            <p className="text-sm font-bold mb-1" style={{ color: 'var(--admin-text)' }}>
+              User roles
+            </p>
+            <p className="text-xs mb-4" style={{ color: 'var(--admin-muted)' }}>
+              Breakdown by account type
+            </p>
             <DonutChart segments={roleSegments} />
 
             <div
@@ -426,7 +575,6 @@ export default function AdminPage() {
           </div>
         )}
       </div>
-
     </div>
-  )
+  );
 }

@@ -1,66 +1,72 @@
-'use client'
-import { useState, useEffect } from 'react'
-import { useAuthStore } from '@/store/auth.store'
-import { api } from '@/lib/api'
-import { toast } from '@/lib/toast'
-import { Comment } from './Comment'
-import Link from 'next/link'
+'use client';
+import { useState, useEffect } from 'react';
+import { useAuthStore } from '@/store/auth.store';
+import { api } from '@/lib/api';
+import { toast } from '@/lib/toast';
+import { Comment } from './Comment';
+import Link from 'next/link';
 
 interface CommentData {
-  id: string
-  body: string
-  createdAt: string
-  updatedAt: string
-  authorId: string
-  author: { id: string; name: string; avatarUrl?: string }
-  replies: CommentData[]
+  id: string;
+  body: string;
+  createdAt: string;
+  updatedAt: string;
+  authorId: string;
+  author: { id: string; name: string; avatarUrl?: string };
+  replies: CommentData[];
 }
 
 export function CommentsSection({ slug }: { slug: string }) {
-  const { user } = useAuthStore()
-  const [comments, setComments] = useState<CommentData[]>([])
-  const [loading, setLoading] = useState(true)
-  const [body, setBody] = useState('')
-  const [submitting, setSubmitting] = useState(false)
+  const { user } = useAuthStore();
+  const [comments, setComments] = useState<CommentData[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [body, setBody] = useState('');
+  const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
-    api.comments.getForResource(slug)
+    api.comments
+      .getForResource(slug)
       .then(setComments)
-      .catch(() => { })
-      .finally(() => setLoading(false))
-  }, [slug])
+      .catch(() => {})
+      .finally(() => setLoading(false));
+  }, [slug]);
 
   const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-    if (!body.trim()) return
-    setSubmitting(true)
+    e.preventDefault();
+    if (!body.trim()) return;
+    setSubmitting(true);
     try {
-      const comment = await api.comments.create(slug, body)
-      setComments((prev) => [comment, ...prev])
-      setBody('')
-      toast.success('Comment posted')
-    } catch (err: any) {
-      toast.error(err?.response?.data?.message || 'Failed to post comment')
+      const comment = await api.comments.create(slug, body);
+      setComments((prev) => [comment, ...prev]);
+      setBody('');
+      toast.success('Comment posted');
+    } catch (err: unknown) {
+      const message =
+        typeof err === 'object' && err !== null && 'response' in err
+          ? ((err as { response?: { data?: { message?: string } } }).response?.data?.message ??
+            'Failed to post comment')
+          : 'Failed to post comment';
+      toast.error(message);
     } finally {
-      setSubmitting(false)
+      setSubmitting(false);
     }
-  }
+  };
 
   // Add a reply to the correct parent in the tree
   const handleReplyAdded = (parentId: string, reply: CommentData) => {
     const addReplyInTree = (comments: CommentData[]): CommentData[] =>
       comments.map((c) => {
         if (c.id === parentId) {
-          return { ...c, replies: [...(c.replies || []), reply] }
+          return { ...c, replies: [...(c.replies || []), reply] };
         }
         if (c.replies && c.replies.length > 0) {
-          return { ...c, replies: addReplyInTree(c.replies) }
+          return { ...c, replies: addReplyInTree(c.replies) };
         }
-        return c
-      })
+        return c;
+      });
 
-    setComments(addReplyInTree)
-  }
+    setComments(addReplyInTree);
+  };
 
   // Update comment body in the tree
   const handleUpdated = (id: string, newBody: string) => {
@@ -69,39 +75,39 @@ export function CommentsSection({ slug }: { slug: string }) {
         c.id === id
           ? { ...c, body: newBody, updatedAt: new Date().toISOString() }
           : { ...c, replies: updateInTree(c.replies || []) }
-      )
-    setComments(updateInTree)
-  }
+      );
+    setComments(updateInTree);
+  };
 
   // Remove comment or replace with [deleted]
   const handleDeleted = (id: string) => {
     const deleteInTree = (comments: CommentData[]): CommentData[] =>
-      comments.map((c) => {
-        if (c.id === id) {
-          // If it has replies, soft-delete
-          if (c.replies && c.replies.length > 0) {
-            return { ...c, body: '[deleted]' }
+      comments
+        .map((c): CommentData | null => {
+          if (c.id === id) {
+            // If it has replies, soft-delete
+            if (c.replies && c.replies.length > 0) {
+              return { ...c, body: '[deleted]' };
+            }
+            return null;
           }
-          return null as any
-        }
-        return {
-          ...c,
-          replies: deleteInTree(c.replies || []).filter(Boolean),
-        }
-      }).filter(Boolean)
+          return {
+            ...c,
+            replies: deleteInTree(c.replies || []).filter(Boolean),
+          };
+        })
+        .filter((c): c is CommentData => c !== null);
 
-    setComments(deleteInTree)
-  }
+    setComments(deleteInTree);
+  };
 
   const inputStyle = {
     border: '1px solid hsl(var(--border))',
     backgroundColor: 'hsl(var(--background))',
     color: 'hsl(var(--foreground))',
-  }
+  };
 
-  const totalCount = comments.reduce(
-    (acc, c) => acc + 1 + (c.replies?.length || 0), 0
-  )
+  const totalCount = comments.reduce((acc, c) => acc + 1 + (c.replies?.length || 0), 0);
 
   return (
     <div className="mt-14">
@@ -159,8 +165,8 @@ export function CommentsSection({ slug }: { slug: string }) {
             <p className="text-sm text-amber-800">
               <Link href="/verify-email" className="font-medium hover:underline">
                 Verify your email
-              </Link>
-              {' '}to leave a comment.
+              </Link>{' '}
+              to leave a comment.
             </p>
           </div>
         )
@@ -175,8 +181,8 @@ export function CommentsSection({ slug }: { slug: string }) {
           <p className="text-sm" style={{ color: 'hsl(var(--muted-foreground))' }}>
             <Link href="/login" className="text-blue-600 font-medium hover:underline">
               Sign in
-            </Link>
-            {' '}to leave a comment.
+            </Link>{' '}
+            to leave a comment.
           </p>
         </div>
       )}
@@ -204,12 +210,8 @@ export function CommentsSection({ slug }: { slug: string }) {
           ))}
         </div>
       ) : comments.length === 0 ? (
-        <p
-          className="text-sm text-center py-10"
-          style={{ color: 'hsl(var(--muted-foreground))' }}
-        >
-          No comments yet.{' '}
-          {user?.isEmailVerified ? 'Be the first!' : ''}
+        <p className="text-sm text-center py-10" style={{ color: 'hsl(var(--muted-foreground))' }}>
+          No comments yet. {user?.isEmailVerified ? 'Be the first!' : ''}
         </p>
       ) : (
         <div className="flex flex-col gap-6">
@@ -227,5 +229,5 @@ export function CommentsSection({ slug }: { slug: string }) {
         </div>
       )}
     </div>
-  )
+  );
 }

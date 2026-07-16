@@ -1,39 +1,41 @@
-'use client'
-import { useCallback, useEffect, useRef, useState } from 'react'
-import { useForm, useWatch } from 'react-hook-form'
-import { zodResolver } from '@hookform/resolvers/zod'
-import { z } from 'zod'
-import { useRouter } from 'next/navigation'
-import { useAuthStore } from '@/store/auth.store'
-import { getErrorMessage } from '@/lib/errors'
-import { checkPwned } from '@/lib/hibp'
-import { PasswordStrength } from '@/components/auth/PasswordStrength'
+'use client';
+import { useCallback, useEffect, useRef, useState } from 'react';
+import { useForm, useWatch } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { z } from 'zod';
+import { useRouter } from 'next/navigation';
+import { useAuthStore } from '@/store/auth.store';
+import { getErrorMessage } from '@/lib/errors';
+import { checkPwned } from '@/lib/hibp';
+import { PasswordStrength } from '@/components/auth/PasswordStrength';
 
-const schema = z.object({
-  name:     z.string().min(2, 'Name must be at least 2 characters'),
-  email:    z.string().email('Enter a valid email'),
-  password: z.string().min(8, 'Password must be at least 8 characters'),
-  confirm:  z.string(),
-}).refine((d) => d.password === d.confirm, {
-  message: 'Passwords do not match',
-  path:    ['confirm'],
-})
+const schema = z
+  .object({
+    name: z.string().min(2, 'Name must be at least 2 characters'),
+    email: z.string().email('Enter a valid email'),
+    password: z.string().min(8, 'Password must be at least 8 characters'),
+    confirm: z.string(),
+  })
+  .refine((d) => d.password === d.confirm, {
+    message: 'Passwords do not match',
+    path: ['confirm'],
+  });
 
-type FormData = z.infer<typeof schema>
+type FormData = z.infer<typeof schema>;
 
 const fieldStyle = {
-  border:          '1px solid hsl(var(--border))',
+  border: '1px solid hsl(var(--border))',
   backgroundColor: 'hsl(var(--background))',
-  color:           'hsl(var(--foreground))',
-}
+  color: 'hsl(var(--foreground))',
+};
 
 export function RegisterForm() {
-  const router = useRouter()
-  const { register: registerUser, isLoading } = useAuthStore()
+  const router = useRouter();
+  const { register: registerUser, isLoading } = useAuthStore();
 
-  const [pwned, setPwned]       = useState<boolean | undefined>(undefined)
-  const [checking, setChecking] = useState(false)
-  const debounceRef             = useRef<ReturnType<typeof setTimeout> | undefined>(undefined)
+  const [pwned, setPwned] = useState<boolean | undefined>(undefined);
+  const [checking, setChecking] = useState(false);
+  const debounceRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
 
   const {
     register,
@@ -41,52 +43,59 @@ export function RegisterForm() {
     control,
     setError,
     formState: { errors },
-  } = useForm<FormData>({ resolver: zodResolver(schema) })
+  } = useForm<FormData>({ resolver: zodResolver(schema) });
 
   // Watch the password field for live strength + HIBP check
-  const password = useWatch({ control, name: 'password', defaultValue: '' })
+  const password = useWatch({ control, name: 'password', defaultValue: '' });
 
   const runPwnedCheck = useCallback((pwd: string) => {
-    if (pwd.length < 8) { setPwned(undefined); return }
-    clearTimeout(debounceRef.current)
-    setChecking(true)
+    if (pwd.length < 8) {
+      setPwned(undefined);
+      return;
+    }
+    clearTimeout(debounceRef.current);
+    setChecking(true);
     debounceRef.current = setTimeout(async () => {
-      const result = await checkPwned(pwd)
-      setPwned(result)
-      setChecking(false)
-    }, 600)   // 600ms debounce — don't hammer the API on every keystroke
-  }, [])
+      const result = await checkPwned(pwd);
+      setPwned(result);
+      setChecking(false);
+    }, 600); // 600ms debounce — don't hammer the API on every keystroke
+  }, []);
 
   useEffect(() => {
-    runPwnedCheck(password)
-    return () => clearTimeout(debounceRef.current)
-  }, [password, runPwnedCheck])
+    runPwnedCheck(password);
+    return () => clearTimeout(debounceRef.current);
+  }, [password, runPwnedCheck]);
 
   const onSubmit = async (data: FormData) => {
     // Hard block if password is pwned
     if (pwned) {
       setError('password', {
         message: 'This password has appeared in data breaches. Please choose a different one.',
-      })
-      return
+      });
+      return;
     }
 
     try {
-      await registerUser(data.name, data.email, data.password)
-      router.push('/verify-email')
+      await registerUser(data.name, data.email, data.password);
+      router.push('/verify-email');
     } catch (err: unknown) {
-      setError('root', { message: getErrorMessage(err, 'Something went wrong') })
+      setError('root', { message: getErrorMessage(err, 'Something went wrong') });
     }
-  }
+  };
 
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-4">
-
       {/* Name */}
       <div className="flex flex-col gap-1.5">
-        <label htmlFor="name" className="text-sm font-medium">Full name</label>
+        <label htmlFor="name" className="text-sm font-medium">
+          Full name
+        </label>
         <input
-          id="name" type="text" autoComplete="name" placeholder="Jane Smith"
+          id="name"
+          type="text"
+          autoComplete="name"
+          placeholder="Jane Smith"
           className="h-11 rounded-xl px-4 text-sm outline-none focus:ring-2 focus:ring-blue-500 transition-all"
           style={fieldStyle}
           {...register('name')}
@@ -96,9 +105,14 @@ export function RegisterForm() {
 
       {/* Email */}
       <div className="flex flex-col gap-1.5">
-        <label htmlFor="email" className="text-sm font-medium">Email address</label>
+        <label htmlFor="email" className="text-sm font-medium">
+          Email address
+        </label>
         <input
-          id="email" type="email" autoComplete="email" placeholder="you@example.com"
+          id="email"
+          type="email"
+          autoComplete="email"
+          placeholder="you@example.com"
           className="h-11 rounded-xl px-4 text-sm outline-none focus:ring-2 focus:ring-blue-500 transition-all"
           style={fieldStyle}
           {...register('email')}
@@ -108,9 +122,13 @@ export function RegisterForm() {
 
       {/* Password + strength meter */}
       <div className="flex flex-col gap-1.5">
-        <label htmlFor="password" className="text-sm font-medium">Password</label>
+        <label htmlFor="password" className="text-sm font-medium">
+          Password
+        </label>
         <input
-          id="password" type="password" autoComplete="new-password"
+          id="password"
+          type="password"
+          autoComplete="new-password"
           placeholder="At least 8 characters"
           className="h-11 rounded-xl px-4 text-sm outline-none focus:ring-2 focus:ring-blue-500 transition-all"
           style={fieldStyle}
@@ -124,9 +142,13 @@ export function RegisterForm() {
 
       {/* Confirm password */}
       <div className="flex flex-col gap-1.5">
-        <label htmlFor="confirm" className="text-sm font-medium">Confirm password</label>
+        <label htmlFor="confirm" className="text-sm font-medium">
+          Confirm password
+        </label>
         <input
-          id="confirm" type="password" autoComplete="new-password"
+          id="confirm"
+          type="password"
+          autoComplete="new-password"
           placeholder="Repeat your password"
           className="h-11 rounded-xl px-4 text-sm outline-none focus:ring-2 focus:ring-blue-500 transition-all"
           style={fieldStyle}
@@ -153,13 +175,19 @@ export function RegisterForm() {
       >
         {isLoading && (
           <svg className="animate-spin h-4 w-4" fill="none" viewBox="0 0 24 24">
-            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+            <circle
+              className="opacity-25"
+              cx="12"
+              cy="12"
+              r="10"
+              stroke="currentColor"
+              strokeWidth="4"
+            />
             <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z" />
           </svg>
         )}
         {isLoading ? 'Creating account…' : 'Create account'}
       </button>
-
     </form>
-  )
+  );
 }

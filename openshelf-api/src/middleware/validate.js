@@ -1,7 +1,7 @@
-const { validationResult } = require('express-validator')
+import { validationResult } from 'express-validator';
 
 const validate = (req, res, next) => {
-  const errors = validationResult(req)
+  const errors = validationResult(req);
 
   if (!errors.isEmpty()) {
     return res.status(422).json({
@@ -9,10 +9,10 @@ const validate = (req, res, next) => {
         field: e.path,
         message: e.msg,
       })),
-    })
+    });
   }
 
-  next()
-}
+  next();
+};
 
-module.exports = validate
+export default validate;

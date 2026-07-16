@@ -1,15 +1,15 @@
-import { serverApi } from '@/lib/server-api'
-import { UploadForm } from '@/components/resource/UploadForm'
-import { RequireAuth } from '@/components/auth/RequireAuth'
-import type { Metadata } from 'next'
+import { serverApi } from '@/lib/server-api';
+import { UploadForm } from '@/components/resource/UploadForm';
+import { RequireAuth } from '@/components/auth/RequireAuth';
+import type { Metadata } from 'next';
 
-export const metadata: Metadata = { title: 'Upload resource — OpenShelf' }
+export const metadata: Metadata = { title: 'Upload resource — OpenShelf' };
 
 export default async function UploadPage() {
   const [categories, tags] = await Promise.all([
     serverApi.categories.list().catch(() => []),
     serverApi.tags.list().catch(() => []),
-  ])
+  ]);
 
   return (
     <RequireAuth requireVerified>
@@ -23,5 +23,5 @@ export default async function UploadPage() {
         <UploadForm categories={categories} tags={tags} />
       </div>
     </RequireAuth>
-  )
+  );
 }

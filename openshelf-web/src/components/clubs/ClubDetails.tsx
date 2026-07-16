@@ -1,147 +1,144 @@
-'use client'
-import { useState, useEffect } from 'react'
-import { useAuthStore } from '@/store/auth.store'
-import { api } from '@/lib/api'
-import Link from 'next/link'
-import { getErrorMessage } from '@/lib/errors'
-import { toast } from '@/lib/toast'
+'use client';
+import { useState, useEffect } from 'react';
+import { useAuthStore } from '@/store/auth.store';
+import { api } from '@/lib/api';
+import Link from 'next/link';
+import { getErrorMessage } from '@/lib/errors';
+import { toast } from '@/lib/toast';
 
 interface Member {
-  role: string
-  joinedAt: string
-  user: { id: string; name: string; avatarUrl?: string }
+  role: string;
+  joinedAt: string;
+  user: { id: string; name: string; avatarUrl?: string };
 }
 
 interface Discussion {
-  id: string
-  title: string
-  body: string
-  createdAt: string
-  author: { id: string; name: string }
-  resource?: { id: string; title: string; slug: string; type: string }
-  _count: { comments: number }
+  id: string;
+  title: string;
+  body: string;
+  createdAt: string;
+  author: { id: string; name: string };
+  resource?: { id: string; title: string; slug: string; type: string };
+  _count: { comments: number };
 }
 
 interface Club {
-  id: string
-  name: string
-  slug: string
-  description?: string
-  isPublic: boolean
-  createdBy: { id: string; name: string }
-  members: Member[]
-  _count: { members: number; discussions: number }
+  id: string;
+  name: string;
+  slug: string;
+  description?: string;
+  isPublic: boolean;
+  createdBy: { id: string; name: string };
+  members: Member[];
+  _count: { members: number; discussions: number };
 }
 
-type Tab = 'discussions' | 'members'
+type Tab = 'discussions' | 'members';
 
 export function ClubDetail({ club }: { club: Club }) {
-  const { user } = useAuthStore()
-  const [tab, setTab] = useState<Tab>('discussions')
-  const [isMember, setIsMember] = useState(false)
-  const [myRole, setMyRole] = useState<string | null>(null)
-  const [memberCount, setMemberCount] = useState(club._count.members)
-  const [joining, setJoining] = useState(false)
-  const [discussions, setDiscussions] = useState<Discussion[]>([])
-  const [discLoading, setDiscLoading] = useState(true)
-  const [showNewDisc, setShowNewDisc] = useState(false)
-  const [discTitle, setDiscTitle] = useState('')
-  const [discBody, setDiscBody] = useState('')
-  const [posting, setPosting] = useState(false)
-  const [postError, setPostError] = useState('')
-
+  const { user } = useAuthStore();
+  const [tab, setTab] = useState<Tab>('discussions');
+  const [isMember, setIsMember] = useState(false);
+  const [myRole, setMyRole] = useState<string | null>(null);
+  const [memberCount, setMemberCount] = useState(club._count.members);
+  const [joining, setJoining] = useState(false);
+  const [discussions, setDiscussions] = useState<Discussion[]>([]);
+  const [discLoading, setDiscLoading] = useState(true);
+  const [showNewDisc, setShowNewDisc] = useState(false);
+  const [discTitle, setDiscTitle] = useState('');
+  const [discBody, setDiscBody] = useState('');
+  const [posting, setPosting] = useState(false);
+  const [postError, setPostError] = useState('');
 
   // Check membership
   useEffect(() => {
-    if (!user) return
-    api.clubs.getMembership(club.slug)
+    if (!user) return;
+    api.clubs
+      .getMembership(club.slug)
       .then((data) => {
-        setIsMember(data.isMember)
-        setMyRole(data.role)
+        setIsMember(data.isMember);
+        setMyRole(data.role);
       })
-      .catch(() => { })
-  }, [user, club.slug])
+      .catch(() => {});
+  }, [user, club.slug]);
 
   // Load discussions
   useEffect(() => {
-    api.clubs.getDiscussions(club.slug)
+    api.clubs
+      .getDiscussions(club.slug)
       .then(setDiscussions)
-      .catch(() => { })
-      .finally(() => setDiscLoading(false))
-  }, [club.slug])
+      .catch(() => {})
+      .finally(() => setDiscLoading(false));
+  }, [club.slug]);
 
   const handleJoin = async () => {
-    if (!user) return
-    setJoining(true)
+    if (!user) return;
+    setJoining(true);
     try {
-      await toast.promise(
-        api.clubs.join(club.slug),
-        {
-          loading: 'Joining club…',
-          success: 'Joined club!',
-          error: 'Failed to join',
-        }
-      )
-      setIsMember(true)
-      setMyRole('MEMBER')
-      setMemberCount((c) => c + 1)
+      await toast.promise(api.clubs.join(club.slug), {
+        loading: 'Joining club…',
+        success: 'Joined club!',
+        error: 'Failed to join',
+      });
+      setIsMember(true);
+      setMyRole('MEMBER');
+      setMemberCount((c) => c + 1);
     } catch {
     } finally {
-      setJoining(false)
+      setJoining(false);
     }
-  }
+  };
 
   const handleLeave = async () => {
-    if (!confirm('Leave this club?')) return
-    setJoining(true)
+    if (!confirm('Leave this club?')) return;
+    setJoining(true);
     try {
-      await api.clubs.leave(club.slug)
-      setIsMember(false)
-      setMyRole(null)
-      setMemberCount((c) => c - 1)
-      toast.success('Left club')
+      await api.clubs.leave(club.slug);
+      setIsMember(false);
+      setMyRole(null);
+      setMemberCount((c) => c - 1);
+      toast.success('Left club');
     } catch (err: unknown) {
-      toast.error(getErrorMessage(err, 'Failed to leave'))
+      toast.error(getErrorMessage(err, 'Failed to leave'));
     } finally {
-      setJoining(false)
+      setJoining(false);
     }
-  }
+  };
 
   const handlePostDiscussion = async (e: React.FormEvent) => {
-    e.preventDefault()
+    e.preventDefault();
     if (!discTitle.trim() || !discBody.trim()) {
-      setPostError('Title and body are required')
-      return
+      setPostError('Title and body are required');
+      return;
     }
-    setPosting(true)
-    setPostError('')
+    setPosting(true);
+    setPostError('');
     try {
       const discussion = await api.clubs.createDiscussion(club.slug, {
         title: discTitle,
         body: discBody,
-      })
-      setDiscussions((prev) => [discussion, ...prev])
-      setDiscTitle('')
-      setDiscBody('')
-      setShowNewDisc(false)
+      });
+      setDiscussions((prev) => [discussion, ...prev]);
+      setDiscTitle('');
+      setDiscBody('');
+      setShowNewDisc(false);
     } catch (err: unknown) {
-      toast.error(getErrorMessage(err, 'Failed to post'))
+      toast.error(getErrorMessage(err, 'Failed to post'));
     } finally {
-      setPosting(false)
+      setPosting(false);
     }
-  }
+  };
 
   const inputStyle = {
     border: '1px solid hsl(var(--border))',
     backgroundColor: 'hsl(var(--background))',
     color: 'hsl(var(--foreground))',
-  }
+  };
 
-  const isOwner = myRole === 'OWNER'
+  const isOwner = myRole === 'OWNER';
 
   return (
     <div className="max-w-4xl mx-auto px-4 py-10">
-
       {/* ── Header ───────────────────────────────────── */}
       <div
         className="rounded-2xl p-6 mb-8"
@@ -167,19 +164,12 @@ export function ClubDetail({ club }: { club: Club }) {
               )}
             </div>
             {club.description && (
-              <p
-                className="text-sm"
-                style={{ color: 'hsl(var(--muted-foreground))' }}
-              >
+              <p className="text-sm" style={{ color: 'hsl(var(--muted-foreground))' }}>
                 {club.description}
               </p>
             )}
-            <p
-              className="text-xs mt-2"
-              style={{ color: 'hsl(var(--muted-foreground))' }}
-            >
-              {memberCount} members · {club._count.discussions} discussions ·
-              created by{' '}
+            <p className="text-xs mt-2" style={{ color: 'hsl(var(--muted-foreground))' }}>
+              {memberCount} members · {club._count.discussions} discussions · created by{' '}
               <Link
                 href={`/users/${club.createdBy.id}`}
                 className="hover:text-blue-600 transition-colors"
@@ -239,10 +229,7 @@ export function ClubDetail({ club }: { club: Club }) {
       </div>
 
       {/* ── Tabs ─────────────────────────────────────── */}
-      <div
-        className="flex gap-1 mb-6 border-b"
-        style={{ borderColor: 'hsl(var(--border))' }}
-      >
+      <div className="flex gap-1 mb-6 border-b" style={{ borderColor: 'hsl(var(--border))' }}>
         {(['discussions', 'members'] as Tab[]).map((t) => (
           <button
             key={t}
@@ -250,9 +237,7 @@ export function ClubDetail({ club }: { club: Club }) {
             className="px-4 py-2 text-sm font-medium capitalize transition-colors border-b-2 -mb-px"
             style={{
               borderColor: tab === t ? '#2563eb' : 'transparent',
-              color: tab === t
-                ? '#2563eb'
-                : 'hsl(var(--muted-foreground))',
+              color: tab === t ? '#2563eb' : 'hsl(var(--muted-foreground))',
             }}
           >
             {t}
@@ -263,7 +248,6 @@ export function ClubDetail({ club }: { club: Club }) {
       {/* ── Discussions tab ───────────────────────────── */}
       {tab === 'discussions' && (
         <div className="flex flex-col gap-4">
-
           {/* New discussion button */}
           {isMember && (
             <div className="flex justify-end">
@@ -315,9 +299,7 @@ export function ClubDetail({ club }: { club: Club }) {
                 />
               </div>
 
-              {postError && (
-                <p className="text-xs text-red-500">{postError}</p>
-              )}
+              {postError && <p className="text-xs text-red-500">{postError}</p>}
 
               <div className="flex gap-2 justify-end">
                 <button
@@ -362,10 +344,11 @@ export function ClubDetail({ club }: { club: Club }) {
               }}
             >
               <p className="text-lg font-medium mb-1">No discussions yet</p>
-              {isMember
-                ? <p className="text-sm">Start the first discussion above.</p>
-                : <p className="text-sm">Join the club to start a discussion.</p>
-              }
+              {isMember ? (
+                <p className="text-sm">Start the first discussion above.</p>
+              ) : (
+                <p className="text-sm">Join the club to start a discussion.</p>
+              )}
             </div>
           ) : (
             discussions.map((d) => (
@@ -401,13 +384,12 @@ export function ClubDetail({ club }: { club: Club }) {
                     Re: {d.resource.title}
                   </Link>
                 )}
-                <p
-                  className="text-xs"
-                  style={{ color: 'hsl(var(--muted-foreground))' }}
-                >
+                <p className="text-xs" style={{ color: 'hsl(var(--muted-foreground))' }}>
                   by {d.author.name} ·{' '}
                   {new Date(d.createdAt).toLocaleDateString('en-US', {
-                    year: 'numeric', month: 'short', day: 'numeric',
+                    year: 'numeric',
+                    month: 'short',
+                    day: 'numeric',
                   })}
                 </p>
               </Link>
@@ -437,10 +419,7 @@ export function ClubDetail({ club }: { club: Club }) {
               </div>
               <div className="min-w-0">
                 <p className="text-sm font-medium truncate">{m.user.name}</p>
-                <p
-                  className="text-xs capitalize"
-                  style={{ color: 'hsl(var(--muted-foreground))' }}
-                >
+                <p className="text-xs capitalize" style={{ color: 'hsl(var(--muted-foreground))' }}>
                   {m.role.toLowerCase()}
                 </p>
               </div>
@@ -448,7 +427,6 @@ export function ClubDetail({ club }: { club: Club }) {
           ))}
         </div>
       )}
-
     </div>
-  )
+  );
 }

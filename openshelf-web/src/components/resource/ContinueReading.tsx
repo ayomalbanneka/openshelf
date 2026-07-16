@@ -1,45 +1,52 @@
-'use client'
-import { useState, useEffect } from 'react'
-import { useAuthStore } from '@/store/auth.store'
-import { api } from '@/lib/api'
-import Link from 'next/link'
+'use client';
+import { useState, useEffect } from 'react';
+import { useAuthStore } from '@/store/auth.store';
+import { api } from '@/lib/api';
+import Link from 'next/link';
 
 interface ProgressItem {
-  id: string
-  currentPage: number
-  totalPages?: number
-  percentage: number
-  lastReadAt: string
+  id: string;
+  currentPage: number;
+  totalPages?: number;
+  percentage: number;
+  lastReadAt: string;
   resource: {
-    id: string
-    title: string
-    slug: string
-    type: string
-    thumbnailUrl?: string
-    author?: string
-    pageCount?: number
-  }
+    id: string;
+    title: string;
+    slug: string;
+    type: string;
+    thumbnailUrl?: string;
+    author?: string;
+    pageCount?: number;
+  };
 }
 
 const ICONS: Record<string, string> = {
-  BOOK: '📖', COURSE: '🎓',
-  EXAM_PAPER: '📝', DOCUMENT: '📄', AUDIO: '🎧',
-}
+  BOOK: '📖',
+  COURSE: '🎓',
+  EXAM_PAPER: '📝',
+  DOCUMENT: '📄',
+  AUDIO: '🎧',
+};
 
 export function ContinueReading() {
-  const { user } = useAuthStore()
-  const [items, setItems]     = useState<ProgressItem[]>([])
-  const [loading, setLoading] = useState(true)
+  const { user } = useAuthStore();
+  const [items, setItems] = useState<ProgressItem[]>([]);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (!user) { setLoading(false); return }
-    api.progress.getMine()
+    if (!user) {
+      setLoading(false);
+      return;
+    }
+    api.progress
+      .getMine()
       .then(setItems)
       .catch(() => {})
-      .finally(() => setLoading(false))
-  }, [user])
+      .finally(() => setLoading(false));
+  }, [user]);
 
-  if (!user || loading || items.length === 0) return null
+  if (!user || loading || items.length === 0) return null;
 
   return (
     <div className="mb-10">
@@ -77,10 +84,7 @@ export function ContinueReading() {
                 {item.resource.title}
               </p>
               {item.resource.author && (
-                <p
-                  className="text-xs truncate"
-                  style={{ color: 'hsl(var(--muted-foreground))' }}
-                >
+                <p className="text-xs truncate" style={{ color: 'hsl(var(--muted-foreground))' }}>
                   {item.resource.author}
                 </p>
               )}
@@ -96,10 +100,7 @@ export function ContinueReading() {
                     style={{ width: `${item.percentage}%` }}
                   />
                 </div>
-                <p
-                  className="text-xs mt-0.5"
-                  style={{ color: 'hsl(var(--muted-foreground))' }}
-                >
+                <p className="text-xs mt-0.5" style={{ color: 'hsl(var(--muted-foreground))' }}>
                   {Math.round(item.percentage)}%
                   {item.totalPages && item.currentPage
                     ? ` · p.${item.currentPage} of ${item.totalPages}`
@@ -111,5 +112,5 @@ export function ContinueReading() {
         ))}
       </div>
     </div>
-  )
+  );
 }

@@ -1,23 +1,19 @@
 interface Props {
-  currentPage: number
-  totalPages:  number
-  onPageChange?: (page: number) => void   // client-side
-  buildUrl?:    (page: number) => string  // server-side (anchor links)
+  currentPage: number;
+  totalPages: number;
+  onPageChange?: (page: number) => void; // client-side
+  buildUrl?: (page: number) => string; // server-side (anchor links)
 }
 
 export function Pagination({ currentPage, totalPages, onPageChange, buildUrl }: Props) {
-  if (totalPages <= 1) return null
+  if (totalPages <= 1) return null;
 
-  const pages: (number | '...')[] = []
+  const pages: (number | '...')[] = [];
   for (let i = 1; i <= totalPages; i++) {
-    if (
-      i === 1 ||
-      i === totalPages ||
-      (i >= currentPage - 1 && i <= currentPage + 1)
-    ) {
-      pages.push(i)
+    if (i === 1 || i === totalPages || (i >= currentPage - 1 && i <= currentPage + 1)) {
+      pages.push(i);
     } else if (i === currentPage - 2 || i === currentPage + 2) {
-      pages.push('...')
+      pages.push('...');
     }
   }
 
@@ -26,8 +22,8 @@ export function Pagination({ currentPage, totalPages, onPageChange, buildUrl }: 
       ? { backgroundColor: '#2563eb', color: '#fff' }
       : {
           border: '1px solid hsl(var(--border))',
-          color:  'hsl(var(--foreground))',
-        }
+          color: 'hsl(var(--foreground))',
+        };
 
   const renderPage = (p: number | '...', i: number) => {
     if (p === '...') {
@@ -39,38 +35,33 @@ export function Pagination({ currentPage, totalPages, onPageChange, buildUrl }: 
         >
           …
         </span>
-      )
+      );
     }
 
-    const isActive = p === currentPage
-    const cls = `h-9 w-9 flex items-center justify-center rounded-lg text-sm font-medium transition-colors`
+    const isActive = p === currentPage;
+    const cls = `h-9 w-9 flex items-center justify-center rounded-lg text-sm font-medium transition-colors`;
 
     if (buildUrl) {
       return (
         <a key={p} href={buildUrl(p)} className={cls} style={btnStyle(isActive)}>
           {p}
         </a>
-      )
+      );
     }
 
     return (
-      <button
-        key={p}
-        onClick={() => onPageChange?.(p)}
-        className={cls}
-        style={btnStyle(isActive)}
-      >
+      <button key={p} onClick={() => onPageChange?.(p)} className={cls} style={btnStyle(isActive)}>
         {p}
       </button>
-    )
-  }
+    );
+  };
 
   const navCls = `px-3 py-2 rounded-lg text-sm font-medium transition-colors
-    disabled:opacity-30 disabled:cursor-not-allowed`
+    disabled:opacity-30 disabled:cursor-not-allowed`;
   const navStyle = {
     border: '1px solid hsl(var(--border))',
-    color:  'hsl(var(--foreground))',
-  }
+    color: 'hsl(var(--foreground))',
+  };
 
   return (
     <div className="flex items-center justify-center gap-1.5 pt-4">
@@ -118,5 +109,5 @@ export function Pagination({ currentPage, totalPages, onPageChange, buildUrl }: 
         </button>
       )}
     </div>
-  )
+  );
 }

@@ -1,33 +1,33 @@
-'use client'
-import { useState } from 'react'
-import { useAuthStore } from '@/store/auth.store'
-import { useRouter } from 'next/navigation'
-import { http } from '@/lib/api'
-import Link from 'next/link'
-import { AlertTriangle, X } from 'lucide-react'
+'use client';
+import { useState } from 'react';
+import { useAuthStore } from '@/store/auth.store';
+import { useRouter } from 'next/navigation';
+import { http } from '@/lib/api';
+import Link from 'next/link';
+import { AlertTriangle, X } from 'lucide-react';
 
 export function VerificationBanner() {
-  const { user } = useAuthStore()
-  const router   = useRouter()
-  const [sending, setSending]   = useState(false)
-  const [sent, setSent]         = useState(false)
-  const [dismissed, setDismissed] = useState(false)
+  const { user } = useAuthStore();
+  const router = useRouter();
+  const [sending, setSending] = useState(false);
+  const [sent, setSent] = useState(false);
+  const [dismissed, setDismissed] = useState(false);
 
   // Only show for logged-in, unverified users
-  if (!user || user.isEmailVerified || dismissed) return null
+  if (!user || user.isEmailVerified || dismissed) return null;
 
   const handleResend = async () => {
-    setSending(true)
+    setSending(true);
     try {
-      await http.post('/auth/resend-code')
-      setSent(true)
-      router.push('/verify-email')
+      await http.post('/auth/resend-code');
+      setSent(true);
+      router.push('/verify-email');
     } catch {
       // silently fail
     } finally {
-      setSending(false)
+      setSending(false);
     }
-  }
+  };
 
   return (
     <div
@@ -39,16 +39,11 @@ export function VerificationBanner() {
     >
       <div className="flex items-center gap-2">
         <AlertTriangle className="w-4 h-4 text-amber-700" />
-        <p className="text-amber-800">
-          Please verify your email address to unlock all features.
-        </p>
+        <p className="text-amber-800">Please verify your email address to unlock all features.</p>
       </div>
 
       <div className="flex items-center gap-3 shrink-0">
-        <Link
-          href="/verify-email"
-          className="text-xs font-medium text-amber-900 hover:underline"
-        >
+        <Link href="/verify-email" className="text-xs font-medium text-amber-900 hover:underline">
           Enter code
         </Link>
         <button
@@ -67,5 +62,5 @@ export function VerificationBanner() {
         </button>
       </div>
     </div>
-  )
+  );
 }

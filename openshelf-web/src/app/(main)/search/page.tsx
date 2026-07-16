@@ -1,31 +1,31 @@
-import { Suspense } from 'react'
-import { serverApi } from '@/lib/server-api'
-import { SearchResultCard } from '@/components/search/SearchResultCard'
-import { SearchFilters } from '@/components/search/SearchFilters'
-import { Frown, Search } from 'lucide-react'
-import type { Metadata } from 'next'
+import { Suspense } from 'react';
+import { serverApi } from '@/lib/server-api';
+import { SearchResultCard } from '@/components/search/SearchResultCard';
+import { SearchFilters } from '@/components/search/SearchFilters';
+import { Frown, Search } from 'lucide-react';
+import type { Metadata } from 'next';
 
-type SearchHit = Parameters<typeof SearchResultCard>[0]['hit']
+type SearchHit = Parameters<typeof SearchResultCard>[0]['hit'];
 
 interface Props {
   searchParams: Promise<{
-    q?: string
-    type?: string
-    language?: string
-    page?: string
-  }>
+    q?: string;
+    type?: string;
+    language?: string;
+    page?: string;
+  }>;
 }
 
 export async function generateMetadata({ searchParams }: Props): Promise<Metadata> {
-  const { q } = await searchParams
+  const { q } = await searchParams;
   return {
     title: q ? `"${q}" — Search` : 'Search',
-  }
+  };
 }
 
 // ── Results component ─────────────────────────────────────────
 async function SearchResults({ searchParams }: Props) {
-  const { q, type, language, page } = await searchParams
+  const { q, type, language, page } = await searchParams;
 
   // Empty state — no query
   if (!q || q.trim().length < 2) {
@@ -39,20 +39,18 @@ async function SearchResults({ searchParams }: Props) {
       >
         <Search className="w-10 h-10 mb-4" />
         <p className="text-lg font-medium mb-1">What are you looking for?</p>
-        <p className="text-sm">
-          Search across books, courses, exam papers, documents and audio.
-        </p>
+        <p className="text-sm">Search across books, courses, exam papers, documents and audio.</p>
       </div>
-    )
+    );
   }
 
   const result = await serverApi.resources.search({
     q,
     type,
     language,
-    page:  page || 1,
+    page: page || 1,
     limit: 20,
-  })
+  });
 
   // No results
   if (result.data.length === 0) {
@@ -65,14 +63,10 @@ async function SearchResults({ searchParams }: Props) {
         }}
       >
         <Frown className="w-10 h-10 mb-4" />
-        <p className="text-lg font-medium mb-1">
-          No results for &ldquo;{q}&rdquo;
-        </p>
-        <p className="text-sm">
-          Try different keywords, check your spelling, or remove filters.
-        </p>
+        <p className="text-lg font-medium mb-1">No results for &ldquo;{q}&rdquo;</p>
+        <p className="text-sm">Try different keywords, check your spelling, or remove filters.</p>
       </div>
-    )
+    );
   }
 
   return (
@@ -82,16 +76,11 @@ async function SearchResults({ searchParams }: Props) {
         <p className="text-sm" style={{ color: 'hsl(var(--muted-foreground))' }}>
           {result.meta.total.toLocaleString()} result
           {result.meta.total !== 1 ? 's' : ''} for{' '}
-          <span
-            className="font-medium"
-            style={{ color: 'hsl(var(--foreground))' }}
-          >
+          <span className="font-medium" style={{ color: 'hsl(var(--foreground))' }}>
             &ldquo;{q}&rdquo;
           </span>
           {result.meta.processingMs !== undefined && (
-            <span className="ml-2 text-xs">
-              ({result.meta.processingMs}ms)
-            </span>
+            <span className="ml-2 text-xs">({result.meta.processingMs}ms)</span>
           )}
         </p>
       </div>
@@ -114,7 +103,7 @@ async function SearchResults({ searchParams }: Props) {
         />
       )}
     </div>
-  )
+  );
 }
 
 // ── Pagination ────────────────────────────────────────────────
@@ -125,26 +114,26 @@ function SearchPagination({
   type,
   language,
 }: {
-  currentPage: number
-  totalPages: number
-  q?: string
-  type?: string
-  language?: string
+  currentPage: number;
+  totalPages: number;
+  q?: string;
+  type?: string;
+  language?: string;
 }) {
   const buildUrl = (p: number) => {
-    const params = new URLSearchParams()
-    if (q)        params.set('q', q)
-    if (type)     params.set('type', type)
-    if (language) params.set('language', language)
-    params.set('page', String(p))
-    return `/search?${params.toString()}`
-  }
+    const params = new URLSearchParams();
+    if (q) params.set('q', q);
+    if (type) params.set('type', type);
+    if (language) params.set('language', language);
+    params.set('page', String(p));
+    return `/search?${params.toString()}`;
+  };
 
   return (
     <div className="flex items-center justify-center gap-2 pt-4">
       {currentPage > 1 && (
-        
-          <a href={buildUrl(currentPage - 1)}
+        <a
+          href={buildUrl(currentPage - 1)}
           className="px-4 py-2 rounded-lg text-sm font-medium transition-colors"
           style={{
             border: '1px solid hsl(var(--border))',
@@ -154,15 +143,12 @@ function SearchPagination({
           Previous
         </a>
       )}
-      <span
-        className="text-sm"
-        style={{ color: 'hsl(var(--muted-foreground))' }}
-      >
+      <span className="text-sm" style={{ color: 'hsl(var(--muted-foreground))' }}>
         Page {currentPage} of {totalPages}
       </span>
       {currentPage < totalPages && (
-        
-          <a href={buildUrl(currentPage + 1)}
+        <a
+          href={buildUrl(currentPage + 1)}
           className="px-4 py-2 rounded-lg text-sm font-medium transition-colors"
           style={{
             border: '1px solid hsl(var(--border))',
@@ -173,7 +159,7 @@ function SearchPagination({
         </a>
       )}
     </div>
-  )
+  );
 }
 
 // ── Skeleton ──────────────────────────────────────────────────
@@ -188,17 +174,16 @@ function SearchSkeleton() {
         />
       ))}
     </div>
-  )
+  );
 }
 
 // ── Page ──────────────────────────────────────────────────────
 export default async function SearchPage({ searchParams }: Props) {
-  const params = await searchParams
-  const { q, type, language } = params
+  const params = await searchParams;
+  const { q, type, language } = params;
 
   return (
     <div className="max-w-7xl mx-auto px-4 py-10">
-
       {/* Header */}
       <div className="mb-8">
         <h1 className="text-3xl font-bold mb-1">Search</h1>
@@ -208,7 +193,6 @@ export default async function SearchPage({ searchParams }: Props) {
       </div>
 
       <div className="flex flex-col lg:flex-row gap-8">
-
         {/* Sidebar filters */}
         <aside className="lg:w-52 shrink-0">
           <SearchFilters q={q || ''} type={type} language={language} />
@@ -220,8 +204,7 @@ export default async function SearchPage({ searchParams }: Props) {
             <SearchResults searchParams={searchParams} />
           </Suspense>
         </section>
-
       </div>
     </div>
-  )
+  );
 }

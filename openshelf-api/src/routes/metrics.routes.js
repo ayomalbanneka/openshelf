@@ -1,16 +1,18 @@
-const router     = require('express').Router()
-const controller = require('../controllers/metrics.controller')
-const { authenticate, authorize } = require('../middleware/auth')
+import { Router } from 'express';
+import * as controller from '../controllers/metrics.controller.js';
+import { authenticate, authorize } from '../middleware/auth.js';
+
+const router = Router();
 
 // Prometheus scrape endpoint — secured with a static token
 // (Prometheus scraper sends this in Authorization header)
 router.get('/prometheus', (req, res, next) => {
-  const token = req.headers['x-metrics-token']
+  const token = req.headers['x-metrics-token'];
   if (token !== process.env.METRICS_TOKEN) {
-    return res.status(401).json({ message: 'Unauthorized' })
+    return res.status(401).json({ message: 'Unauthorized' });
   }
-  controller.getPrometheusMetrics(req, res, next)
-})
+  controller.getPrometheusMetrics(req, res, next);
+});
 
 // JSON metrics for the admin dashboard
 router.get(
@@ -18,22 +20,23 @@ router.get(
   authenticate,
   authorize('ADMIN', 'MODERATOR'),
   controller.getDashboardMetrics
-)
+);
 
 // Historical trend data for the dashboard chart
-router.get(
-  '/history',
-  authenticate,
-  authorize('ADMIN', 'MODERATOR'),
-  controller.getMetricHistory
-)
+router.get('/history', authenticate, authorize('ADMIN', 'MODERATOR'), controller.getMetricHistory);
 
 // Storage usage — MinIO/R2 bucket stats
+router.get('/storage', authenticate, authorize('ADMIN', 'MODERATOR'), controller.getStorageMetrics);
+
+// Meilisearch health
 router.get(
-  '/storage',
+  '/meilisearch',
   authenticate,
   authorize('ADMIN', 'MODERATOR'),
-  controller.getStorageMetrics
-)
+  controller.getMeilisearchHealth
+);
 
-module.exports = router
+// Email service health
+router.get('/email', authenticate, authorize('ADMIN', 'MODERATOR'), controller.getEmailHealth);
+
+export default router;

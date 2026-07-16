@@ -1,4 +1,4 @@
-import Link from 'next/link'
+import Link from 'next/link';
 import {
   BookOpen,
   GraduationCap,
@@ -6,60 +6,60 @@ import {
   FileText,
   Headphones,
   type LucideIcon,
-} from 'lucide-react'
+} from 'lucide-react';
 
 const TYPE_LABELS: Record<string, string> = {
-  BOOK:       'Book',
-  COURSE:     'Course',
+  BOOK: 'Book',
+  COURSE: 'Course',
   EXAM_PAPER: 'Exam paper',
-  DOCUMENT:   'Document',
-  AUDIO:      'Audio',
-}
+  DOCUMENT: 'Document',
+  AUDIO: 'Audio',
+};
 
 const TYPE_COLOURS: Record<string, { bg: string; text: string }> = {
-  BOOK:       { bg: '#DBEAFE', text: '#1E40AF' },
-  COURSE:     { bg: '#EDE9FE', text: '#5B21B6' },
+  BOOK: { bg: '#DBEAFE', text: '#1E40AF' },
+  COURSE: { bg: '#EDE9FE', text: '#5B21B6' },
   EXAM_PAPER: { bg: '#FEF3C7', text: '#92400E' },
-  DOCUMENT:   { bg: '#CCFBF1', text: '#0F766E' },
-  AUDIO:      { bg: '#FCE7F3', text: '#9D174D' },
-}
+  DOCUMENT: { bg: '#CCFBF1', text: '#0F766E' },
+  AUDIO: { bg: '#FCE7F3', text: '#9D174D' },
+};
 
 const ICONS: Record<string, LucideIcon> = {
-  BOOK:       BookOpen,
-  COURSE:     GraduationCap,
+  BOOK: BookOpen,
+  COURSE: GraduationCap,
   EXAM_PAPER: ClipboardList,
-  DOCUMENT:   FileText,
-  AUDIO:      Headphones,
-}
+  DOCUMENT: FileText,
+  AUDIO: Headphones,
+};
 
 interface SearchHit {
-  id: string
-  title: string
-  slug: string
-  description?: string
-  type: string
-  language: string
-  author?: string
-  thumbnailUrl?: string
-  pageCount?: number
-  publicationYear?: number
-  viewCount: number
-  categoryName?: string
-  categorySlug?: string
-  tags?: string[]
+  id: string;
+  title: string;
+  slug: string;
+  description?: string;
+  type: string;
+  language: string;
+  author?: string;
+  thumbnailUrl?: string;
+  pageCount?: number;
+  publicationYear?: number;
+  viewCount: number;
+  categoryName?: string;
+  categorySlug?: string;
+  tags?: string[];
   _formatted?: {
-    title?: string
-    author?: string
-    description?: string
-  }
+    title?: string;
+    author?: string;
+    description?: string;
+  };
 }
 
 export function SearchResultCard({ hit }: { hit: SearchHit }) {
-  const colour = TYPE_COLOURS[hit.type] || TYPE_COLOURS.DOCUMENT
+  const colour = TYPE_COLOURS[hit.type] || TYPE_COLOURS.DOCUMENT;
 
-  const highlightedTitle  = hit._formatted?.title       || hit.title
-  const highlightedAuthor = hit._formatted?.author      || hit.author
-  const highlightedDesc   = hit._formatted?.description || hit.description
+  const highlightedTitle = hit._formatted?.title || hit.title;
+  const highlightedAuthor = hit._formatted?.author || hit.author;
+  const highlightedDesc = hit._formatted?.description || hit.description;
 
   return (
     <Link
@@ -81,15 +81,12 @@ export function SearchResultCard({ hit }: { hit: SearchHit }) {
             alt={hit.title}
             className="h-20 w-16 object-cover rounded-lg"
           />
-        ) : (() => {
-          const Icon = ICONS[hit.type] || FileText
-          return (
-            <Icon
-              className="w-6 h-6"
-              style={{ color: 'hsl(var(--muted-foreground))' }}
-            />
-          )
-        })()}
+        ) : (
+          (() => {
+            const Icon = ICONS[hit.type] || FileText;
+            return <Icon className="w-6 h-6" style={{ color: 'hsl(var(--muted-foreground))' }} />;
+          })()
+        )}
       </div>
 
       {/* Info */}
@@ -109,10 +106,7 @@ export function SearchResultCard({ hit }: { hit: SearchHit }) {
               {hit.language}
             </span>
           </div>
-          <span
-            className="text-xs shrink-0"
-            style={{ color: 'hsl(var(--muted-foreground))' }}
-          >
+          <span className="text-xs shrink-0" style={{ color: 'hsl(var(--muted-foreground))' }}>
             {hit.viewCount.toLocaleString()} views
           </span>
         </div>
@@ -129,9 +123,7 @@ export function SearchResultCard({ hit }: { hit: SearchHit }) {
             className="text-xs"
             style={{ color: 'hsl(var(--muted-foreground))' }}
             dangerouslySetInnerHTML={{
-              __html: highlightedAuthor
-                ? `by ${highlightedAuthor}`
-                : `by ${hit.author}`,
+              __html: highlightedAuthor ? `by ${highlightedAuthor}` : `by ${hit.author}`,
             }}
           />
         )}
@@ -148,10 +140,7 @@ export function SearchResultCard({ hit }: { hit: SearchHit }) {
         {/* Footer */}
         <div className="flex items-center gap-3 mt-auto pt-1">
           {hit.categoryName && (
-            <span
-              className="text-xs"
-              style={{ color: 'hsl(var(--muted-foreground))' }}
-            >
+            <span className="text-xs" style={{ color: 'hsl(var(--muted-foreground))' }}>
               {hit.categoryName}
             </span>
           )}
@@ -174,5 +163,5 @@ export function SearchResultCard({ hit }: { hit: SearchHit }) {
         </div>
       </div>
     </Link>
-  )
+  );
 }

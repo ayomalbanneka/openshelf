@@ -1,92 +1,94 @@
-'use client'
-import { useState, useRef, useEffect } from 'react'
-import { useRouter, useSearchParams } from 'next/navigation'
-import { useAuthStore } from '@/store/auth.store'
-import { http } from '@/lib/api'
-import { CheckCircle, Mail } from 'lucide-react'
-import { getErrorMessage } from '@/lib/errors'
+'use client';
+import { useState, useRef, useEffect } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
+import { useAuthStore } from '@/store/auth.store';
+import { http } from '@/lib/api';
+import { CheckCircle, Mail } from 'lucide-react';
+import { getErrorMessage } from '@/lib/errors';
 
 export default function VerifyEmailPage() {
-  const { user, setUser } = useAuthStore()
-  const router = useRouter()
-  const [code, setCode] = useState(['', '', '', '', '', ''])
-  const [error, setError] = useState('')
-  const [loading, setLoading] = useState(false)
-  const [resending, setResending] = useState(false)
-  const [resent, setResent] = useState(false)
-  const inputs = useRef<(HTMLInputElement | null)[]>([])
-  const searchParams = useSearchParams()
-  const from = searchParams.get('from')
+  const { user, setUser } = useAuthStore();
+  const router = useRouter();
+  const [code, setCode] = useState(['', '', '', '', '', '']);
+  const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [resending, setResending] = useState(false);
+  const [resent, setResent] = useState(false);
+  const inputs = useRef<(HTMLInputElement | null)[]>([]);
+  const searchParams = useSearchParams();
+  const from = searchParams.get('from');
 
   useEffect(() => {
     // If already verified, redirect to browse
-    if (user?.isEmailVerified) router.replace('/browse')
-  }, [user, router])
+    if (user?.isEmailVerified) router.replace('/browse');
+  }, [user, router]);
 
   const handleChange = (i: number, val: string) => {
-    if (!/^\d*$/.test(val)) return  // digits only
-    const next = [...code]
-    next[i] = val.slice(-1)
-    setCode(next)
-    if (val && i < 5) inputs.current[i + 1]?.focus()
-  }
+    if (!/^\d*$/.test(val)) return; // digits only
+    const next = [...code];
+    next[i] = val.slice(-1);
+    setCode(next);
+    if (val && i < 5) inputs.current[i + 1]?.focus();
+  };
 
   const handleKeyDown = (i: number, e: React.KeyboardEvent) => {
     if (e.key === 'Backspace' && !code[i] && i > 0) {
-      inputs.current[i - 1]?.focus()
+      inputs.current[i - 1]?.focus();
     }
-  }
+  };
 
   const handlePaste = (e: React.ClipboardEvent) => {
-    e.preventDefault()
-    const pasted = e.clipboardData.getData('text').replace(/\D/g, '').slice(0, 6)
+    e.preventDefault();
+    const pasted = e.clipboardData.getData('text').replace(/\D/g, '').slice(0, 6);
     if (pasted.length === 6) {
-      setCode(pasted.split(''))
-      inputs.current[5]?.focus()
+      setCode(pasted.split(''));
+      inputs.current[5]?.focus();
     }
-  }
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-    const fullCode = code.join('')
+    e.preventDefault();
+    const fullCode = code.join('');
     if (fullCode.length < 6) {
-      setError('Enter all 6 digits')
-      return
+      setError('Enter all 6 digits');
+      return;
     }
-    setLoading(true)
-    setError('')
+    setLoading(true);
+    setError('');
     try {
-      await http.post('/auth/verify-email', { code: fullCode })
+      await http.post('/auth/verify-email', { code: fullCode });
       // Update local user state
-      if (user) setUser({ ...user, isEmailVerified: true })
-      router.replace('/browse')
+      if (user) setUser({ ...user, isEmailVerified: true });
+      router.replace('/browse');
     } catch (err: unknown) {
-      setError(getErrorMessage(err, 'Invalid code'))
-      setCode(['', '', '', '', '', ''])
-      inputs.current[0]?.focus()
+      setError(getErrorMessage(err, 'Invalid code'));
+      setCode(['', '', '', '', '', '']);
+      inputs.current[0]?.focus();
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
-  }
+  };
 
   const handleResend = async () => {
-    setResending(true)
+    setResending(true);
     try {
-      await http.post('/auth/resend-code')
-      setResent(true)
-      setTimeout(() => setResent(false), 5000)
+      await http.post('/auth/resend-code');
+      setResent(true);
+      setTimeout(() => setResent(false), 5000);
     } catch {
-      setError('Failed to resend code')
+      setError('Failed to resend code');
     } finally {
-      setResending(false)
+      setResending(false);
     }
-  }
+  };
 
   return (
     <div>
       {from === 'upload' && (
-        <div className="rounded-xl px-4 py-3 mb-5 text-sm"
-          style={{ backgroundColor: '#fef3c7', color: '#92400e', border: '1px solid #fcd34d' }}>
+        <div
+          className="rounded-xl px-4 py-3 mb-5 text-sm"
+          style={{ backgroundColor: '#fef3c7', color: '#92400e', border: '1px solid #fcd34d' }}
+        >
           You need to verify your email before uploading resources.
         </div>
       )}
@@ -107,7 +109,9 @@ export default function VerifyEmailPage() {
           {code.map((digit, i) => (
             <input
               key={i}
-              ref={(el) => { inputs.current[i] = el }}
+              ref={(el) => {
+                inputs.current[i] = el;
+              }}
               type="text"
               inputMode="numeric"
               maxLength={1}
@@ -124,9 +128,7 @@ export default function VerifyEmailPage() {
           ))}
         </div>
 
-        {error && (
-          <p className="text-sm text-red-500 text-center">{error}</p>
-        )}
+        {error && <p className="text-sm text-red-500 text-center">{error}</p>}
 
         {resent && (
           <p className="text-sm text-green-600 text-center inline-flex items-center justify-center gap-1">
@@ -144,8 +146,7 @@ export default function VerifyEmailPage() {
         </button>
       </form>
 
-      <div className="mt-6 text-center text-sm"
-        style={{ color: 'hsl(var(--muted-foreground))' }}>
+      <div className="mt-6 text-center text-sm" style={{ color: 'hsl(var(--muted-foreground))' }}>
         Didn&apos;t receive it?{' '}
         <button
           onClick={handleResend}
@@ -156,5 +157,5 @@ export default function VerifyEmailPage() {
         </button>
       </div>
     </div>
-  )
+  );
 }

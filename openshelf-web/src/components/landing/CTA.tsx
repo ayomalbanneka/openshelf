@@ -1,4 +1,4 @@
-"use client";
+'use client';
 
 import { motion, useInView } from 'framer-motion';
 import { useRef } from 'react';
@@ -19,11 +19,11 @@ export default function CTA() {
         >
           {/* Gradient background */}
           <div className="absolute inset-0 bg-linear-to-br from-blue-600 via-indigo-600 to-violet-700" />
-          
+
           {/* Decorative elements */}
           <div className="absolute top-0 right-0 w-64 h-64 bg-white/10 rounded-full blur-3xl -translate-y-1/2 translate-x-1/4" />
           <div className="absolute bottom-0 left-0 w-64 h-64 bg-white/10 rounded-full blur-3xl translate-y-1/2 -translate-x-1/4" />
-          
+
           {/* Dot pattern */}
           <div
             className="absolute inset-0 opacity-10"
@@ -50,7 +50,9 @@ export default function CTA() {
               transition={{ delay: 0.3 }}
               className="text-3xl sm:text-4xl lg:text-5xl font-bold tracking-tight mb-6"
             >
-              Ready to unlock unlimited<br />knowledge?
+              Ready to unlock unlimited
+              <br />
+              knowledge?
             </motion.h2>
 
             <motion.p
@@ -59,8 +61,8 @@ export default function CTA() {
               transition={{ delay: 0.4 }}
               className="text-lg text-white/80 max-w-xl mx-auto mb-10 leading-relaxed"
             >
-              Join thousands of learners worldwide. Create your free account 
-              and start exploring our library of resources.
+              Join thousands of learners worldwide. Create your free account and start exploring our
+              library of resources.
             </motion.p>
 
             <motion.div
